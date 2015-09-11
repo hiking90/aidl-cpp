@@ -2,6 +2,8 @@
 #
 # Copies files into the directory structure described by a manifest
 
+ifeq (0,1)  # These targets are disabled b/23691099
+
 # This tool is prebuilt if we're doing an app-only build.
 ifeq ($(TARGET_BUILD_APPS)$(filter true,$(TARGET_BUILD_PDK)),)
 
@@ -78,3 +80,5 @@ include $(BUILD_HOST_NATIVE_TEST)
 endif # HOST_OS == linux
 
 endif # No TARGET_BUILD_APPS or TARGET_BUILD_PDK
+
+endif  # ifeq (0,1)
