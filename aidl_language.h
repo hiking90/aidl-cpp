@@ -102,19 +102,6 @@ typedef struct interface_type {
     buffer_type* comments_token; // points into this structure, DO NOT DELETE
 } interface_type;
 
-typedef union lexer_type {
-    buffer_type buffer;
-    type_type type;
-    arg_type *arg;
-    method_type* method;
-    interface_item_type* interface_item;
-    interface_type* interface_obj;
-    user_data_type* user_data;
-    document_item_type* document_item;
-} lexer_type;
-
-
-#define YYSTYPE lexer_type
 
 #if __cplusplus
 extern "C" {
