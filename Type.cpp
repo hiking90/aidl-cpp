@@ -2,6 +2,9 @@
 
 #include <sys/types.h>
 
+namespace android {
+namespace aidl {
+
 Namespace NAMES;
 
 Type* VOID_TYPE;
@@ -1243,3 +1246,6 @@ Namespace::Dump() const
                 t->QualifiedName().c_str());
     }
 }
+
+}  // namespace aidl
+}  // namespace android

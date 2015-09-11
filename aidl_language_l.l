@@ -174,15 +174,12 @@ void drop_extra_text(void)
 void do_package_statement(const char* importText)
 {
     if (g_currentPackage) free((void*)g_currentPackage);
-    g_currentPackage = parse_import_statement(importText);
+    g_currentPackage = android::aidl::parse_import_statement(importText);
 }
 
 
 // main parse function
 // ================================================
-extern ParseState *psGlobal;
-char const* g_currentPackage = NULL;
-
 int parse_aidl(char const *filename) {
   ParseState ps(filename);
   psGlobal = &ps;

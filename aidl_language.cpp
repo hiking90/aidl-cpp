@@ -16,7 +16,10 @@ using std::string;
 using std::cerr;
 using std::endl;
 
+ParseState *psGlobal = NULL;
 ParserCallbacks* g_callbacks = NULL; // &k_parserCallbacks;
+char const* g_currentPackage = NULL;
+
 
 void yylex_init(void **);
 void yylex_destroy(void *);

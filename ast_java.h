@@ -27,8 +27,6 @@ using std::set;
 using std::string;
 using std::vector;
 
-class Type;
-
 enum {
     PACKAGE_PRIVATE = 0x00000000,
     PUBLIC          = 0x00000001,
@@ -45,8 +43,14 @@ enum {
     ALL_MODIFIERS   = 0xffffffff
 };
 
+namespace android {
+namespace aidl {
+
+class CodeWriter;
+class Type;
+
 // Write the modifiers that are set in both mod and mask
-void WriteModifiers(FILE* to, int mod, int mask);
+void WriteModifiers(CodeWriter* to, int mod, int mask);
 
 struct ClassElement
 {
@@ -54,13 +58,13 @@ struct ClassElement
     virtual ~ClassElement();
 
     virtual void GatherTypes(set<Type*>* types) const = 0;
-    virtual void Write(FILE* to) = 0;
+    virtual void Write(CodeWriter* to) const = 0;
 };
 
 struct Expression
 {
     virtual ~Expression();
-    virtual void Write(FILE* to) = 0;
+    virtual void Write(CodeWriter* to) const = 0;
 };
 
 struct LiteralExpression : public Expression
@@ -69,7 +73,7 @@ struct LiteralExpression : public Expression
 
     LiteralExpression(const string& value);
     virtual ~LiteralExpression();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 // TODO: also escape the contents.  not needed for now
@@ -79,7 +83,7 @@ struct StringLiteralExpression : public Expression
 
     StringLiteralExpression(const string& value);
     virtual ~StringLiteralExpression();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct Variable : public Expression
@@ -94,8 +98,8 @@ struct Variable : public Expression
     virtual ~Variable();
 
     virtual void GatherTypes(set<Type*>* types) const;
-    void WriteDeclaration(FILE* to);
-    void Write(FILE* to);
+    void WriteDeclaration(CodeWriter* to) const;
+    void Write(CodeWriter* to) const;
 };
 
 struct FieldVariable : public Expression
@@ -108,7 +112,7 @@ struct FieldVariable : public Expression
     FieldVariable(Type* clazz, const string& name);
     virtual ~FieldVariable();
 
-    void Write(FILE* to);
+    void Write(CodeWriter* to) const;
 };
 
 struct Field : public ClassElement
@@ -123,13 +127,13 @@ struct Field : public ClassElement
     virtual ~Field();
 
     virtual void GatherTypes(set<Type*>* types) const;
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct Statement
 {
     virtual ~Statement();
-    virtual void Write(FILE* to) = 0;
+    virtual void Write(CodeWriter* to) const = 0;
 };
 
 struct StatementBlock : public Statement
@@ -138,7 +142,7 @@ struct StatementBlock : public Statement
 
     StatementBlock();
     virtual ~StatementBlock();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 
     void Add(Statement* statement);
     void Add(Expression* expression);
@@ -150,7 +154,7 @@ struct ExpressionStatement : public Statement
 
     ExpressionStatement(Expression* expression);
     virtual ~ExpressionStatement();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct Assignment : public Expression
@@ -162,7 +166,7 @@ struct Assignment : public Expression
     Assignment(Variable* lvalue, Expression* rvalue);
     Assignment(Variable* lvalue, Expression* rvalue, Type* cast);
     virtual ~Assignment();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct MethodCall : public Expression
@@ -180,7 +184,7 @@ struct MethodCall : public Expression
     MethodCall(Expression* obj, const string& name, int argc, ...);
     MethodCall(Type* clazz, const string& name, int argc, ...);
     virtual ~MethodCall();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 
 private:
     void init(int n, va_list args);
@@ -194,7 +198,7 @@ struct Comparison : public Expression
 
     Comparison(Expression* lvalue, const string& op, Expression* rvalue);
     virtual ~Comparison();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct NewExpression : public Expression
@@ -205,7 +209,7 @@ struct NewExpression : public Expression
     NewExpression(Type* type);
     NewExpression(Type* type, int argc, ...);
     virtual ~NewExpression();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 
 private:
     void init(int n, va_list args);
@@ -218,7 +222,7 @@ struct NewArrayExpression : public Expression
 
     NewArrayExpression(Type* type, Expression* size);
     virtual ~NewArrayExpression();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct Ternary : public Expression
@@ -230,7 +234,7 @@ struct Ternary : public Expression
     Ternary();
     Ternary(Expression* condition, Expression* ifpart, Expression* elsepart);
     virtual ~Ternary();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct Cast : public Expression
@@ -241,7 +245,7 @@ struct Cast : public Expression
     Cast();
     Cast(Type* type, Expression* expression);
     virtual ~Cast();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct VariableDeclaration : public Statement
@@ -253,7 +257,7 @@ struct VariableDeclaration : public Statement
     VariableDeclaration(Variable* lvalue);
     VariableDeclaration(Variable* lvalue, Expression* rvalue, Type* cast = NULL);
     virtual ~VariableDeclaration();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct IfStatement : public Statement
@@ -264,7 +268,7 @@ struct IfStatement : public Statement
 
     IfStatement();
     virtual ~IfStatement();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct ReturnStatement : public Statement
@@ -273,7 +277,7 @@ struct ReturnStatement : public Statement
 
     ReturnStatement(Expression* expression);
     virtual ~ReturnStatement();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct TryStatement : public Statement
@@ -282,7 +286,7 @@ struct TryStatement : public Statement
 
     TryStatement();
     virtual ~TryStatement();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct CatchStatement : public Statement
@@ -292,7 +296,7 @@ struct CatchStatement : public Statement
 
     CatchStatement(Variable* exception);
     virtual ~CatchStatement();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct FinallyStatement : public Statement
@@ -301,7 +305,7 @@ struct FinallyStatement : public Statement
 
     FinallyStatement();
     virtual ~FinallyStatement();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct Case
@@ -312,7 +316,7 @@ struct Case
     Case();
     Case(const string& c);
     virtual ~Case();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct SwitchStatement : public Statement
@@ -322,14 +326,14 @@ struct SwitchStatement : public Statement
 
     SwitchStatement(Expression* expression);
     virtual ~SwitchStatement();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct Break : public Statement
 {
     Break();
     virtual ~Break();
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct Method : public ClassElement
@@ -347,7 +351,7 @@ struct Method : public ClassElement
     virtual ~Method();
 
     virtual void GatherTypes(set<Type*>* types) const;
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct Class : public ClassElement
@@ -369,7 +373,7 @@ struct Class : public ClassElement
     virtual ~Class();
 
     virtual void GatherTypes(set<Type*>* types) const;
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
 
 struct Document
@@ -383,7 +387,10 @@ struct Document
     Document();
     virtual ~Document();
 
-    virtual void Write(FILE* to);
+    virtual void Write(CodeWriter* to) const;
 };
+
+}  // namespace aidl
+}  // namespace android
 
 #endif // AIDL_AST_JAVA_H_

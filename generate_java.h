@@ -6,13 +6,17 @@
 #include "aidl_language.h"
 #include "ast_java.h"
 
+namespace android {
+namespace aidl {
+
 using std::string;
 using std::vector;
 
 int generate_java(const string& filename, const string& originalSrc,
                 interface_type* iface);
 
-Class* generate_binder_interface_class(const interface_type* iface);
+android::aidl::Class* generate_binder_interface_class(
+    const interface_type* iface);
 
 string gather_comments(extra_text_type* extra);
 string append(const char* a, const char* b);
@@ -20,6 +24,9 @@ string append(const char* a, const char* b);
 class VariableFactory
 {
 public:
+    using Variable = android::aidl::Variable;
+    using Type = android::aidl::Type;
+
     VariableFactory(const string& base); // base must be short
     Variable* Get(Type* type);
     Variable* Get(int index);
@@ -29,5 +36,7 @@ private:
     int m_index;
 };
 
-#endif // AIDL_GENERATE_JAVA_H_
+}  // namespace android
+}  // namespace aidl
 
+#endif // AIDL_GENERATE_JAVA_H_

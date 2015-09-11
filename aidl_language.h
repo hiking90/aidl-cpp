@@ -5,6 +5,8 @@
 
 #include <base/macros.h>
 
+#include "aidl.h"
+
 typedef enum {
     NO_EXTRA_TEXT = 0,
     SHORT_COMMENT,
@@ -109,18 +111,12 @@ extern "C" {
 
 int parse_aidl(char const *);
 
-// strips off the leading whitespace, the "import" text
-// also returns whether it's a local or system import
-// we rely on the input matching the import regex from below
-char* parse_import_statement(const char* text);
-
 // in, out or inout
 enum {
     IN_PARAMETER = 1,
     OUT_PARAMETER = 2,
     INOUT_PARAMETER = 3
 };
-int convert_direction(const char* direction);
 
 // callbacks from within the parser
 // these functions all take ownership of the strings
@@ -139,7 +135,6 @@ typedef enum {
 } error_type;
 
 void init_buffer_type(buffer_type* buf, int lineno);
-
 
 class ParseState {
  public:
@@ -167,6 +162,8 @@ class ParseState {
 
   DISALLOW_COPY_AND_ASSIGN(ParseState);
 };
+
+extern ParseState *psGlobal;
 
 #if __cplusplus
 }

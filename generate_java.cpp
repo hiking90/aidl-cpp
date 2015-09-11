@@ -1,9 +1,14 @@
 #include "generate_java.h"
-#include "Type.h"
-#include <string.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "Type.h"
+#include "code_writer.h"
+
+namespace android {
+namespace aidl {
 
 // =================================================
 VariableFactory::VariableFactory(const string& base)
@@ -88,9 +93,11 @@ generate_java(const string& filename, const string& originalSrc,
         }
     }
 
-    document->Write(to);
+    CodeWriterPtr code_writer = get_file_writer(to);
+    document->Write(code_writer.get());
 
-    fclose(to);
     return 0;
 }
 
+}  // namespace android
+}  // namespace aidl

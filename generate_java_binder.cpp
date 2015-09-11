@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+namespace android {
+namespace aidl {
+
 // =================================================
 class StubClass : public Class
 {
@@ -558,3 +561,5 @@ generate_binder_interface_class(const interface_type* iface)
     return interface;
 }
 
+}  // namespace android
+}  // namespace aidl

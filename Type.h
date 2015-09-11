@@ -6,6 +6,9 @@
 
 #include "ast_java.h"
 
+namespace android {
+namespace aidl {
+
 using std::string;
 using std::vector;
 
@@ -470,5 +473,8 @@ extern Expression* TRUE_VALUE;
 extern Expression* FALSE_VALUE;
 
 void register_base_types();
+
+}  // namespace aidl
+}  // namespace android
 
 #endif // AIDL_TYPE_H_

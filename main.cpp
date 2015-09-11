@@ -14,9 +14,9 @@ main(int argc, const char **argv)
 
     switch (options.task) {
         case COMPILE_AIDL:
-            return compile_aidl(options);
+            return android::aidl::compile_aidl(options);
         case PREPROCESS_AIDL:
-            return preprocess_aidl(options);
+            return android::aidl::preprocess_aidl(options);
     }
     fprintf(stderr, "aidl: internal error\n");
     return 1;

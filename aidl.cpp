@@ -31,12 +31,13 @@
 #define MIN_USER_SET_METHOD_ID                0
 #define MAX_USER_SET_METHOD_ID                16777214
 
+namespace android {
+namespace aidl {
+
 using std::map;
 using std::set;
 using std::string;
 using std::vector;
-
-ParseState *psGlobal;
 
 static void
 test_document(document_item_type* d)
@@ -1073,3 +1074,6 @@ preprocess_aidl(const Options& options)
     close(fd);
     return 0;
 }
+
+}  // namespace android
+}  // namespace aidl

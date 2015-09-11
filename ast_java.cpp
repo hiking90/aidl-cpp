@@ -17,47 +17,51 @@
 #include "ast_java.h"
 
 #include "Type.h"
+#include "code_writer.h"
+
+namespace android {
+namespace aidl {
 
 void
-WriteModifiers(FILE* to, int mod, int mask)
+WriteModifiers(CodeWriter* to, int mod, int mask)
 {
     int m = mod & mask;
 
     if (m & OVERRIDE) {
-        fprintf(to, "@Override ");
+        to->Write("@Override ");
     }
 
     if ((m & SCOPE_MASK) == PUBLIC) {
-        fprintf(to, "public ");
+        to->Write("public ");
     }
     else if ((m & SCOPE_MASK) == PRIVATE) {
-        fprintf(to, "private ");
+        to->Write("private ");
     }
     else if ((m & SCOPE_MASK) == PROTECTED) {
-        fprintf(to, "protected ");
+        to->Write("protected ");
     }
 
     if (m & STATIC) {
-        fprintf(to, "static ");
+        to->Write("static ");
     }
     
     if (m & FINAL) {
-        fprintf(to, "final ");
+        to->Write("final ");
     }
 
     if (m & ABSTRACT) {
-        fprintf(to, "abstract ");
+        to->Write("abstract ");
     }
 }
 
 void
-WriteArgumentList(FILE* to, const vector<Expression*>& arguments)
+WriteArgumentList(CodeWriter* to, const vector<Expression*>& arguments)
 {
     size_t N = arguments.size();
     for (size_t i=0; i<N; i++) {
         arguments[i]->Write(to);
         if (i != N-1) {
-            fprintf(to, ", ");
+            to->Write(", ");
         }
     }
 }
@@ -95,18 +99,18 @@ Field::GatherTypes(set<Type*>* types) const
 }
 
 void
-Field::Write(FILE* to)
+Field::Write(CodeWriter* to) const
 {
     if (this->comment.length() != 0) {
-        fprintf(to, "%s\n", this->comment.c_str());
+        to->Write("%s\n", this->comment.c_str());
     }
     WriteModifiers(to, this->modifiers, SCOPE_MASK | STATIC | FINAL | OVERRIDE);
-    fprintf(to, "%s %s", this->variable->type->QualifiedName().c_str(),
+    to->Write("%s %s", this->variable->type->QualifiedName().c_str(),
             this->variable->name.c_str());
     if (this->value.length() != 0) {
-        fprintf(to, " = %s", this->value.c_str());
+        to->Write(" = %s", this->value.c_str());
     }
-    fprintf(to, ";\n");
+    to->Write(";\n");
 }
 
 Expression::~Expression()
@@ -123,9 +127,9 @@ LiteralExpression::~LiteralExpression()
 }
 
 void
-LiteralExpression::Write(FILE* to)
+LiteralExpression::Write(CodeWriter* to) const
 {
-    fprintf(to, "%s", this->value.c_str());
+    to->Write("%s", this->value.c_str());
 }
 
 StringLiteralExpression::StringLiteralExpression(const string& v)
@@ -138,9 +142,9 @@ StringLiteralExpression::~StringLiteralExpression()
 }
 
 void
-StringLiteralExpression::Write(FILE* to)
+StringLiteralExpression::Write(CodeWriter* to) const
 {
-    fprintf(to, "\"%s\"", this->value.c_str());
+    to->Write("\"%s\"", this->value.c_str());
 }
 
 Variable::Variable()
@@ -175,20 +179,20 @@ Variable::GatherTypes(set<Type*>* types) const
 }
 
 void
-Variable::WriteDeclaration(FILE* to)
+Variable::WriteDeclaration(CodeWriter* to) const
 {
     string dim;
     for (int i=0; i<this->dimension; i++) {
         dim += "[]";
     }
-    fprintf(to, "%s%s %s", this->type->QualifiedName().c_str(), dim.c_str(),
+    to->Write("%s%s %s", this->type->QualifiedName().c_str(), dim.c_str(),
             this->name.c_str());
 }
 
 void
-Variable::Write(FILE* to)
+Variable::Write(CodeWriter* to) const
 {
-    fprintf(to, "%s", name.c_str());
+    to->Write("%s", name.c_str());
 }
 
 FieldVariable::FieldVariable(Expression* o, const string& n)
@@ -210,15 +214,15 @@ FieldVariable::~FieldVariable()
 }
 
 void
-FieldVariable::Write(FILE* to)
+FieldVariable::Write(CodeWriter* to) const
 {
     if (this->object != NULL) {
         this->object->Write(to);
     }
     else if (this->clazz != NULL) {
-        fprintf(to, "%s", this->clazz->QualifiedName().c_str());
+        to->Write("%s", this->clazz->QualifiedName().c_str());
     }
-    fprintf(to, ".%s", name.c_str());
+    to->Write(".%s", name.c_str());
 }
 
 
@@ -235,14 +239,14 @@ StatementBlock::~StatementBlock()
 }
 
 void
-StatementBlock::Write(FILE* to)
+StatementBlock::Write(CodeWriter* to) const
 {
-    fprintf(to, "{\n");
+    to->Write("{\n");
     int N = this->statements.size();
     for (int i=0; i<N; i++) {
         this->statements[i]->Write(to);
     }
-    fprintf(to, "}\n");
+    to->Write("}\n");
 }
 
 void
@@ -267,10 +271,10 @@ ExpressionStatement::~ExpressionStatement()
 }
 
 void
-ExpressionStatement::Write(FILE* to)
+ExpressionStatement::Write(CodeWriter* to) const
 {
     this->expression->Write(to);
-    fprintf(to, ";\n");
+    to->Write(";\n");
 }
 
 Assignment::Assignment(Variable* l, Expression* r)
@@ -292,12 +296,12 @@ Assignment::~Assignment()
 }
 
 void
-Assignment::Write(FILE* to)
+Assignment::Write(CodeWriter* to) const
 {
     this->lvalue->Write(to);
-    fprintf(to, " = ");
+    to->Write(" = ");
     if (this->cast != NULL) {
-        fprintf(to, "(%s)", this->cast->QualifiedName().c_str());
+        to->Write("(%s)", this->cast->QualifiedName().c_str());
     }
     this->rvalue->Write(to);
 }
@@ -370,18 +374,18 @@ MethodCall::init(int n, va_list args)
 }
 
 void
-MethodCall::Write(FILE* to)
+MethodCall::Write(CodeWriter* to) const
 {
     if (this->obj != NULL) {
         this->obj->Write(to);
-        fprintf(to, ".");
+        to->Write(".");
     }
     else if (this->clazz != NULL) {
-        fprintf(to, "%s.", this->clazz->QualifiedName().c_str());
+        to->Write("%s.", this->clazz->QualifiedName().c_str());
     }
-    fprintf(to, "%s(", this->name.c_str());
+    to->Write("%s(", this->name.c_str());
     WriteArgumentList(to, this->arguments);
-    fprintf(to, ")");
+    to->Write(")");
 }
 
 Comparison::Comparison(Expression* l, const string& o, Expression* r)
@@ -396,13 +400,13 @@ Comparison::~Comparison()
 }
 
 void
-Comparison::Write(FILE* to)
+Comparison::Write(CodeWriter* to) const
 {
-    fprintf(to, "(");
+    to->Write("(");
     this->lvalue->Write(to);
-    fprintf(to, "%s", this->op.c_str());
+    to->Write("%s", this->op.c_str());
     this->rvalue->Write(to);
-    fprintf(to, ")");
+    to->Write(")");
 }
 
 NewExpression::NewExpression(Type* t)
@@ -433,11 +437,11 @@ NewExpression::init(int n, va_list args)
 }
 
 void
-NewExpression::Write(FILE* to)
+NewExpression::Write(CodeWriter* to) const
 {
-    fprintf(to, "new %s(", this->type->InstantiableName().c_str());
+    to->Write("new %s(", this->type->InstantiableName().c_str());
     WriteArgumentList(to, this->arguments);
-    fprintf(to, ")");
+    to->Write(")");
 }
 
 NewArrayExpression::NewArrayExpression(Type* t, Expression* s)
@@ -451,11 +455,11 @@ NewArrayExpression::~NewArrayExpression()
 }
 
 void
-NewArrayExpression::Write(FILE* to)
+NewArrayExpression::Write(CodeWriter* to) const
 {
-    fprintf(to, "new %s[", this->type->QualifiedName().c_str());
+    to->Write("new %s[", this->type->QualifiedName().c_str());
     size->Write(to);
-    fprintf(to, "]");
+    to->Write("]");
 }
 
 Ternary::Ternary()
@@ -477,15 +481,15 @@ Ternary::~Ternary()
 }
 
 void
-Ternary::Write(FILE* to)
+Ternary::Write(CodeWriter* to) const
 {
-    fprintf(to, "((");
+    to->Write("((");
     this->condition->Write(to);
-    fprintf(to, ")?(");
+    to->Write(")?(");
     this->ifpart->Write(to);
-    fprintf(to, "):(");
+    to->Write("):(");
     this->elsepart->Write(to);
-    fprintf(to, "))");
+    to->Write("))");
 }
 
 Cast::Cast()
@@ -505,11 +509,11 @@ Cast::~Cast()
 }
 
 void
-Cast::Write(FILE* to)
+Cast::Write(CodeWriter* to) const
 {
-    fprintf(to, "((%s)", this->type->QualifiedName().c_str());
+    to->Write("((%s)", this->type->QualifiedName().c_str());
     expression->Write(to);
-    fprintf(to, ")");
+    to->Write(")");
 }
 
 VariableDeclaration::VariableDeclaration(Variable* l, Expression* r, Type* c)
@@ -531,17 +535,17 @@ VariableDeclaration::~VariableDeclaration()
 }
 
 void
-VariableDeclaration::Write(FILE* to)
+VariableDeclaration::Write(CodeWriter* to) const
 {
     this->lvalue->WriteDeclaration(to);
     if (this->rvalue != NULL) {
-        fprintf(to, " = ");
+        to->Write(" = ");
         if (this->cast != NULL) {
-            fprintf(to, "(%s)", this->cast->QualifiedName().c_str());
+            to->Write("(%s)", this->cast->QualifiedName().c_str());
         }
         this->rvalue->Write(to);
     }
-    fprintf(to, ";\n");
+    to->Write(";\n");
 }
 
 IfStatement::IfStatement()
@@ -556,16 +560,16 @@ IfStatement::~IfStatement()
 }
 
 void
-IfStatement::Write(FILE* to)
+IfStatement::Write(CodeWriter* to) const
 {
     if (this->expression != NULL) {
-        fprintf(to, "if (");
+        to->Write("if (");
         this->expression->Write(to);
-        fprintf(to, ") ");
+        to->Write(") ");
     }
     this->statements->Write(to);
     if (this->elseif != NULL) {
-        fprintf(to, "else ");
+        to->Write("else ");
         this->elseif->Write(to);
     }
 }
@@ -580,11 +584,11 @@ ReturnStatement::~ReturnStatement()
 }
 
 void
-ReturnStatement::Write(FILE* to)
+ReturnStatement::Write(CodeWriter* to) const
 {
-    fprintf(to, "return ");
+    to->Write("return ");
     this->expression->Write(to);
-    fprintf(to, ";\n");
+    to->Write(";\n");
 }
 
 TryStatement::TryStatement()
@@ -597,9 +601,9 @@ TryStatement::~TryStatement()
 }
 
 void
-TryStatement::Write(FILE* to)
+TryStatement::Write(CodeWriter* to) const
 {
-    fprintf(to, "try ");
+    to->Write("try ");
     this->statements->Write(to);
 }
 
@@ -614,13 +618,13 @@ CatchStatement::~CatchStatement()
 }
 
 void
-CatchStatement::Write(FILE* to)
+CatchStatement::Write(CodeWriter* to) const
 {
-    fprintf(to, "catch ");
+    to->Write("catch ");
     if (this->exception != NULL) {
-        fprintf(to, "(");
+        to->Write("(");
         this->exception->WriteDeclaration(to);
-        fprintf(to, ") ");
+        to->Write(") ");
     }
     this->statements->Write(to);
 }
@@ -635,9 +639,9 @@ FinallyStatement::~FinallyStatement()
 }
 
 void
-FinallyStatement::Write(FILE* to)
+FinallyStatement::Write(CodeWriter* to) const
 {
-    fprintf(to, "finally ");
+    to->Write("finally ");
     this->statements->Write(to);
 }
 
@@ -657,20 +661,20 @@ Case::~Case()
 }
 
 void
-Case::Write(FILE* to)
+Case::Write(CodeWriter* to) const
 {
     int N = this->cases.size();
     if (N > 0) {
         for (int i=0; i<N; i++) {
             string s = this->cases[i];
             if (s.length() != 0) {
-                fprintf(to, "case %s:\n", s.c_str());
+                to->Write("case %s:\n", s.c_str());
             } else {
-                fprintf(to, "default:\n");
+                to->Write("default:\n");
             }
         }
     } else {
-        fprintf(to, "default:\n");
+        to->Write("default:\n");
     }
     statements->Write(to);
 }
@@ -685,16 +689,16 @@ SwitchStatement::~SwitchStatement()
 }
 
 void
-SwitchStatement::Write(FILE* to)
+SwitchStatement::Write(CodeWriter* to) const
 {
-    fprintf(to, "switch (");
+    to->Write("switch (");
     this->expression->Write(to);
-    fprintf(to, ")\n{\n");
+    to->Write(")\n{\n");
     int N = this->cases.size();
     for (int i=0; i<N; i++) {
         this->cases[i]->Write(to);
     }
-    fprintf(to, "}\n");
+    to->Write("}\n");
 }
 
 Break::Break()
@@ -706,9 +710,9 @@ Break::~Break()
 }
 
 void
-Break::Write(FILE* to)
+Break::Write(CodeWriter* to) const
 {
-    fprintf(to, "break;\n");
+    to->Write("break;\n");
 }
 
 Method::Method()
@@ -745,12 +749,12 @@ Method::GatherTypes(set<Type*>* types) const
 }
 
 void
-Method::Write(FILE* to)
+Method::Write(CodeWriter* to) const
 {
     size_t N, i;
 
     if (this->comment.length() != 0) {
-        fprintf(to, "%s\n", this->comment.c_str());
+        to->Write("%s\n", this->comment.c_str());
     }
 
     WriteModifiers(to, this->modifiers, SCOPE_MASK | STATIC | ABSTRACT | FINAL | OVERRIDE);
@@ -760,36 +764,36 @@ Method::Write(FILE* to)
         for (i=0; i<this->returnTypeDimension; i++) {
             dim += "[]";
         }
-        fprintf(to, "%s%s ", this->returnType->QualifiedName().c_str(),
+        to->Write("%s%s ", this->returnType->QualifiedName().c_str(),
                 dim.c_str());
     }
    
-    fprintf(to, "%s(", this->name.c_str());
+    to->Write("%s(", this->name.c_str());
 
     N = this->parameters.size();
     for (i=0; i<N; i++) {
         this->parameters[i]->WriteDeclaration(to);
         if (i != N-1) {
-            fprintf(to, ", ");
+            to->Write(", ");
         }
     }
 
-    fprintf(to, ")");
+    to->Write(")");
 
     N = this->exceptions.size();
     for (i=0; i<N; i++) {
         if (i == 0) {
-            fprintf(to, " throws ");
+            to->Write(" throws ");
         } else {
-            fprintf(to, ", ");
+            to->Write(", ");
         }
-        fprintf(to, "%s", this->exceptions[i]->QualifiedName().c_str());
+        to->Write("%s", this->exceptions[i]->QualifiedName().c_str());
     }
 
     if (this->statements == NULL) {
-        fprintf(to, ";\n");
+        to->Write(";\n");
     } else {
-        fprintf(to, "\n");
+        to->Write("\n");
         this->statements->Write(to);
     }
 }
@@ -828,20 +832,20 @@ Class::GatherTypes(set<Type*>* types) const
 }
 
 void
-Class::Write(FILE* to)
+Class::Write(CodeWriter* to) const
 {
     size_t N, i;
 
     if (this->comment.length() != 0) {
-        fprintf(to, "%s\n", this->comment.c_str());
+        to->Write("%s\n", this->comment.c_str());
     }
 
     WriteModifiers(to, this->modifiers, ALL_MODIFIERS);
 
     if (this->what == Class::CLASS) {
-        fprintf(to, "class ");
+        to->Write("class ");
     } else {
-        fprintf(to, "interface ");
+        to->Write("interface ");
     }
 
     string name = this->type->Name();
@@ -850,33 +854,33 @@ Class::Write(FILE* to)
         name = name.c_str() + pos + 1;
     }
 
-    fprintf(to, "%s", name.c_str());
+    to->Write("%s", name.c_str());
 
     if (this->extends != NULL) {
-        fprintf(to, " extends %s", this->extends->QualifiedName().c_str());
+        to->Write(" extends %s", this->extends->QualifiedName().c_str());
     }
 
     N = this->interfaces.size();
     if (N != 0) {
         if (this->what == Class::CLASS) {
-            fprintf(to, " implements");
+            to->Write(" implements");
         } else {
-            fprintf(to, " extends");
+            to->Write(" extends");
         }
         for (i=0; i<N; i++) {
-            fprintf(to, " %s", this->interfaces[i]->QualifiedName().c_str());
+            to->Write(" %s", this->interfaces[i]->QualifiedName().c_str());
         }
     }
 
-    fprintf(to, "\n");
-    fprintf(to, "{\n");
+    to->Write("\n");
+    to->Write("{\n");
 
     N = this->elements.size();
     for (i=0; i<N; i++) {
         this->elements[i]->Write(to);
     }
 
-    fprintf(to, "}\n");
+    to->Write("}\n");
 
 }
 
@@ -905,19 +909,19 @@ escape_backslashes(const string& str)
 }
 
 void
-Document::Write(FILE* to)
+Document::Write(CodeWriter* to) const
 {
     size_t N, i;
 
     if (this->comment.length() != 0) {
-        fprintf(to, "%s\n", this->comment.c_str());
+        to->Write("%s\n", this->comment.c_str());
     }
-    fprintf(to, "/*\n"
+    to->Write("/*\n"
                 " * This file is auto-generated.  DO NOT MODIFY.\n"
                 " * Original file: %s\n"
                 " */\n", escape_backslashes(this->originalSrc).c_str());
     if (this->package.length() != 0) {
-        fprintf(to, "package %s;\n", this->package.c_str());
+        to->Write("package %s;\n", this->package.c_str());
     }
 
     N = this->classes.size();
@@ -927,3 +931,5 @@ Document::Write(FILE* to)
     }
 }
 
+}  // namespace aidl
+}  // namespace android
