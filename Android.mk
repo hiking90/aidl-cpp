@@ -32,6 +32,7 @@ LOCAL_SRC_FILES := \
     aidl_language.cpp \
     aidl_language_l.l \
     aidl_language_y.y \
+    ast_cpp.cpp \
     ast_java.cpp \
     code_writer.cpp \
     generate_java.cpp \
@@ -63,6 +64,7 @@ LOCAL_CFLAGS := -g -DUNIT_TEST -Wall -Werror
 # Tragically, the code is riddled with unused parameters.
 LOCAL_CLANG_CFLAGS := -Wno-unused-parameter
 LOCAL_SRC_FILES := \
+    ast_cpp_unittest.cpp \
     ast_java_unittest.cpp \
     options_unittest.cpp \
     test_main.cpp \
