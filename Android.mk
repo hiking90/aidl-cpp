@@ -7,6 +7,8 @@ ifeq ($(TARGET_BUILD_APPS)$(filter true,$(TARGET_BUILD_PDK)),)
 
 LOCAL_PATH:= $(call my-dir)
 
+aidl_static_libraries := libbase
+
 # Logic shared between aidl and its unittests
 include $(CLEAR_VARS)
 LOCAL_MODULE := libaidl-common
@@ -22,6 +24,7 @@ LOCAL_CLANG_CFLAGS += -Wno-unneeded-internal-declaration
 LOCAL_CLANG_CFLAGS += -Wno-deprecated-register
 # yacc also has a habit of using char* over const char*.
 LOCAL_CLANG_CFLAGS += -Wno-writable-strings
+LOCAL_STATIC_LIBRARIES := $(aidl_static_libraries)
 
 LOCAL_SRC_FILES := \
     AST.cpp \
@@ -45,7 +48,7 @@ LOCAL_MODULE := aidl
 LOCAL_MODULE_HOST_OS := darwin linux windows
 LOCAL_CFLAGS := -Wall -Werror
 LOCAL_SRC_FILES := main.cpp
-LOCAL_STATIC_LIBRARIES := libaidl-common
+LOCAL_STATIC_LIBRARIES := libaidl-common $(aidl_static_libraries)
 include $(BUILD_HOST_EXECUTABLE)
 
 
@@ -69,6 +72,7 @@ LOCAL_SHARED_LIBRARIES := \
 
 LOCAL_STATIC_LIBRARIES := \
     libaidl-common \
+    $(aidl_static_libraries) \
     libgmock_host \
     libgtest_host \
 
