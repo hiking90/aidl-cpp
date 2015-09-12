@@ -1,10 +1,10 @@
 #ifndef AIDL_GENERATE_JAVA_H_
 #define AIDL_GENERATE_JAVA_H_
 
-#include "aidl_language.h"
-#include "AST.h"
-
 #include <string>
+
+#include "aidl_language.h"
+#include "ast_java.h"
 
 using std::string;
 using std::vector;

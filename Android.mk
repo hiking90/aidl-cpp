@@ -27,12 +27,12 @@ LOCAL_CLANG_CFLAGS += -Wno-writable-strings
 LOCAL_STATIC_LIBRARIES := $(aidl_static_libraries)
 
 LOCAL_SRC_FILES := \
-    AST.cpp \
     Type.cpp \
     aidl.cpp \
     aidl_language.cpp \
     aidl_language_l.l \
     aidl_language_y.y \
+    ast_java.cpp \
     generate_java.cpp \
     generate_java_binder.cpp \
     options.cpp \

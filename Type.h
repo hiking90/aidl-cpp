@@ -1,9 +1,10 @@
 #ifndef AIDL_TYPE_H_
 #define AIDL_TYPE_H_
 
-#include "AST.h"
 #include <string>
 #include <vector>
+
+#include "ast_java.h"
 
 using std::string;
 using std::vector;
