@@ -4,6 +4,7 @@
 #include "search_path.h"
 #include <string.h>
 #include <stdlib.h>
+#include <iostream>
 
 // comment and whitespace handling
 // these functions save a copy of the buffer
@@ -24,6 +25,7 @@ static void do_package_statement(const char* importText);
         yylval->buffer.extra = get_extra_text(); \
     } while(0)
 
+#define YY_USER_ACTION yylloc->columns(yyleng);
 %}
 
 %option yylineno
@@ -35,26 +37,29 @@ static void do_package_statement(const char* importText);
 %x COPYING LONG_COMMENT
 
 identifier  [_a-zA-Z][_a-zA-Z0-9\.]*
-whitespace  ([ \t\n\r]+)
+whitespace  ([ \t\r]+)
 brackets    \[{whitespace}?\]
 idvalue     (0|[1-9][0-9]*)
 
 %%
+%{
+  /* This happens at every call to yylex (every time we receive one token) */
+  yylloc->step();
+%}
 
 
 \%\%\{              { begin_extra_text(yylineno, COPY_TEXT); BEGIN(COPYING); }
-<COPYING>\}\%\%     { BEGIN(INITIAL); }
-<COPYING>.*\n       { append_extra_text(yytext); }
+<COPYING>\}\%\%     { yylloc->step(); BEGIN(INITIAL); }
 <COPYING>.*         { append_extra_text(yytext); }
-<COPYING>\n+        { append_extra_text(yytext); }
+<COPYING>\n+        { yylloc->lines(yyleng); append_extra_text(yytext); }
 
 
 \/\*                            { begin_extra_text(yylineno, (which_extra_text)LONG_COMMENT);
                                   BEGIN(LONG_COMMENT); }
 <LONG_COMMENT>[^*]*             { append_extra_text(yytext); }
 <LONG_COMMENT>\*+[^/]           { append_extra_text(yytext); }
-<LONG_COMMENT>\n                { append_extra_text(yytext); }
-<LONG_COMMENT>\**\/             { BEGIN(INITIAL); }
+<LONG_COMMENT>\n+               { yylloc->lines(yyleng); append_extra_text(yytext); }
+<LONG_COMMENT>\**\/             { yylloc->step(); BEGIN(INITIAL); }
 
 ^{whitespace}?import{whitespace}[^ \t\r\n]+{whitespace}?;  {
                                                 SET_BUFFER(yy::parser::token::IMPORT);
@@ -68,7 +73,10 @@ idvalue     (0|[1-9][0-9]*)
 <<EOF>>             { yyterminate(); }
 
 \/\/.*\n            { begin_extra_text(yylineno, SHORT_COMMENT);
-                        append_extra_text(yytext); }
+                        append_extra_text(yytext); yylloc->lines(1);
+                        yylloc->step(); }
+
+\n+ { yylloc->lines(yyleng); yylloc->step(); }
 
 {whitespace}    { /* begin_extra_text(yylineno, WHITESPACE);
                     append_extra_text(yytext); */ }
