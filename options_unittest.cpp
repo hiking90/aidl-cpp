@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -21,6 +22,8 @@
 
 #include "options.h"
 
+using std::cerr;
+using std::endl;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -39,25 +42,62 @@ const char* kPreprocessCommand[] = {
     kPreprocessCommandInput1,
     kPreprocessCommandInput2,
     kPreprocessCommandInput3,
+    nullptr,
 };
+
+const char kCompileCommandInput[] = "input.aidl";
+const char kCompileCommandIncludePath[] = "-Iinclude_path";
+const char* kCompileJavaCommand[] = {
+    "aidl",
+    "-b",
+    kCompileCommandIncludePath,
+    kCompileCommandInput,
+    nullptr,
+};
+const char kCompileCommandOutput[] = "input.java";
+
+unique_ptr<Options> GetOptions(const char* command[]) {
+  int argc = 0;
+  const char** command_part = command;
+  for (; *command_part; ++argc, ++command_part) {}
+  unique_ptr<Options> options(Options::ParseOptions(argc, command));
+  if (!options) {
+    cerr << "Failed to parse command line:";
+    for (int i = 0; i < argc; ++i) {
+      cerr << " " << command[i];
+      cerr << endl;
+    }
+  }
+  EXPECT_NE(options, nullptr) << "Failed to parse options!";
+  return options;
+}
 
 }  // namespace
 
 TEST(OptionsTests, ParsesPreprocess) {
-  const int argc = sizeof(kPreprocessCommand) / sizeof(*kPreprocessCommand);
-  unique_ptr<Options> options(Options::ParseOptions(argc, kPreprocessCommand));
-  EXPECT_NE(options, nullptr);
-  EXPECT_EQ(options->task, Options::PREPROCESS_AIDL);
-  EXPECT_EQ(options->fail_on_parcelable_, false);
-  EXPECT_EQ(options->import_paths_.size(), 0u);
-  EXPECT_EQ(options->preprocessed_files_.size(), 0u);
-  EXPECT_EQ(options->input_file_name_, string{});
-  EXPECT_EQ(options->output_file_name_, string{kPreprocessCommandOutputFile});
-  EXPECT_EQ(options->auto_dep_file_, false);
+  unique_ptr<Options> options = GetOptions(kPreprocessCommand);
+  EXPECT_EQ(Options::PREPROCESS_AIDL, options->task);
+  EXPECT_EQ(false, options->fail_on_parcelable_);
+  EXPECT_EQ(0u, options->import_paths_.size());
+  EXPECT_EQ(0u, options->preprocessed_files_.size());
+  EXPECT_EQ(string{}, options->input_file_name_);
+  EXPECT_EQ(string{kPreprocessCommandOutputFile}, options->output_file_name_);
+  EXPECT_EQ(false, options->auto_dep_file_);
   const vector<string> expected_input{kPreprocessCommandInput1,
                                       kPreprocessCommandInput2,
                                       kPreprocessCommandInput3};
-  EXPECT_EQ(options->files_to_preprocess_, expected_input);
+  EXPECT_EQ(expected_input, options->files_to_preprocess_);
+}
+
+TEST(OptionsTests, ParsesCompileJava) {
+  unique_ptr<Options> options = GetOptions(kCompileJavaCommand);
+  EXPECT_EQ(Options::COMPILE_AIDL_TO_JAVA, options->task);
+  EXPECT_EQ(true, options->fail_on_parcelable_);
+  EXPECT_EQ(1u, options->import_paths_.size());
+  EXPECT_EQ(0u, options->preprocessed_files_.size());
+  EXPECT_EQ(string{kCompileCommandInput}, options->input_file_name_);
+  EXPECT_EQ(string{kCompileCommandOutput}, options->output_file_name_);
+  EXPECT_EQ(false, options->auto_dep_file_);
 }
 
 }  // namespace android

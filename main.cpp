@@ -29,7 +29,7 @@ int main(int argc, const char** argv) {
   }
 
   switch (options->task) {
-    case Options::COMPILE_AIDL:
+    case Options::COMPILE_AIDL_TO_JAVA:
       return android::aidl::compile_aidl(*options);
     case Options::PREPROCESS_AIDL:
       return android::aidl::preprocess_aidl(*options);

@@ -69,58 +69,55 @@ unique_ptr<Options> Options::ParseOptions(int argc, const char* const* argv) {
     return options;
   }
 
+  options->task = COMPILE_AIDL_TO_JAVA;
   // OPTIONS
   while (i < argc) {
     const char* s = argv[i];
-    int len = strlen(s);
-    if (s[0] == '-') {
-      if (len > 1) {
-        // -I<system-import-path>
-        if (s[1] == 'I') {
-          if (len > 2) {
-            options->import_paths_.push_back(s + 2);
-          } else {
-            fprintf(stderr, "-I option (%d) requires a path.\n", i);
-            return usage();
-          }
-        } else if (s[1] == 'd') {
-          if (len > 2) {
-            options->dep_file_name_ = s + 2;
-          } else {
-            fprintf(stderr, "-d option (%d) requires a file.\n", i);
-            return usage();
-          }
-        } else if (s[1] == 'a') {
-          options->auto_dep_file_ = true;
-        } else if (s[1] == 'p') {
-          if (len > 2) {
-            options->preprocessed_files_.push_back(s + 2);
-          } else {
-            fprintf(stderr, "-p option (%d) requires a file.\n", i);
-            return usage();
-          }
-        } else if (s[1] == 'o') {
-          if (len > 2) {
-            options->output_base_folder_ = s + 2;
-          } else {
-            fprintf(stderr, "-o option (%d) requires a path.\n", i);
-            return usage();
-          }
-        } else if (len == 2 && s[1] == 'b') {
-          options->fail_on_parcelable_ = true;
-        } else {
-          // s[1] is not known
-          fprintf(stderr, "unknown option (%d): %s\n", i, s);
-          return usage();
-        }
+    const size_t len = strlen(s);
+    if (s[0] != '-') {
+      break;
+    }
+    if (len <= 1) {
+      fprintf(stderr, "unknown option (%d): %s\n", i, s);
+      return usage();
+    }
+    // -I<system-import-path>
+    if (s[1] == 'I') {
+      if (len > 2) {
+        options->import_paths_.push_back(s + 2);
       } else {
-        // len <= 1
-        fprintf(stderr, "unknown option (%d): %s\n", i, s);
+        fprintf(stderr, "-I option (%d) requires a path.\n", i);
         return usage();
       }
+    } else if (s[1] == 'd') {
+      if (len > 2) {
+        options->dep_file_name_ = s + 2;
+      } else {
+        fprintf(stderr, "-d option (%d) requires a file.\n", i);
+        return usage();
+      }
+    } else if (strcmp(s, "-a") == 0) {
+      options->auto_dep_file_ = true;
+    } else if (s[1] == 'p') {
+      if (len > 2) {
+        options->preprocessed_files_.push_back(s + 2);
+      } else {
+        fprintf(stderr, "-p option (%d) requires a file.\n", i);
+        return usage();
+      }
+    } else if (s[1] == 'o') {
+      if (len > 2) {
+        options->output_base_folder_= s + 2;
+      } else {
+        fprintf(stderr, "-o option (%d) requires a path.\n", i);
+        return usage();
+      }
+    } else if (strcmp(s, "-b") == 0) {
+      options->fail_on_parcelable_ = true;
     } else {
-      // s[0] != '-'
-      break;
+      // s[1] is not known
+      fprintf(stderr, "unknown option (%d): %s\n", i, s);
+      return usage();
     }
     i++;
   }
@@ -138,7 +135,7 @@ unique_ptr<Options> Options::ParseOptions(int argc, const char* const* argv) {
   if (i < argc) {
     options->output_file_name_ = argv[i];
     i++;
-  } else if (options->output_base_folder_.length() == 0) {
+  } else if (options->output_base_folder_.empty()) {
     // copy input into output and change the extension from .aidl to .java
     options->output_file_name_= options->input_file_name_;
     const size_t suffix_len = 5;  // 5 = strlen(".aidl")

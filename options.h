@@ -31,8 +31,8 @@ namespace aidl {
 class Options {
  public:
   enum {
-      COMPILE_AIDL,
-      PREPROCESS_AIDL
+      COMPILE_AIDL_TO_JAVA,
+      PREPROCESS_AIDL,
   };
 
   ~Options() = default;
@@ -43,7 +43,7 @@ class Options {
   static std::unique_ptr<Options> ParseOptions(int argc,
                                                const char* const* argv);
 
-  int task{COMPILE_AIDL};
+  int task{COMPILE_AIDL_TO_JAVA};
   bool fail_on_parcelable_{false};
   std::vector<std::string> import_paths_;
   std::vector<std::string> preprocessed_files_;
