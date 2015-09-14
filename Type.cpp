@@ -181,6 +181,19 @@ Type::~Type()
 {
 }
 
+string
+Type::HumanReadableKind() const {
+    switch (Kind())
+    {
+        case INTERFACE:
+            return "an interface";
+        case USERDATA:
+            return "a user data";
+        default:
+            return "ERROR";
+    }
+}
+
 bool
 Type::CanBeArray() const
 {

@@ -14,22 +14,16 @@
  * limitations under the License.
  */
 
-#include "aidl_language.h"
-#include "logging.h"
-#include "options.h"
-#include "os.h"
-#include "search_path.h"
-#include "Type.h"
-#include "generate_java.h"
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/param.h>
-#include <sys/stat.h>
+#include "aidl.h"
 
+#include <fcntl.h>
+#include <map>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <map>
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #ifdef _WIN32
 #include <io.h>
@@ -37,118 +31,38 @@
 #include <sys/stat.h>
 #endif
 
+
+#include "Type.h"
+#include "aidl_language.h"
+#include "generate_java.h"
+#include "logging.h"
+#include "options.h"
+#include "os.h"
+#include "parse_helpers.h"
+#include "search_path.h"
+
 #ifndef O_BINARY
 #  define O_BINARY  0
 #endif
-
-// The following are gotten as the offset from the allowable id's between
-// android.os.IBinder.FIRST_CALL_TRANSACTION=1 and
-// android.os.IBinder.LAST_CALL_TRANSACTION=16777215
-#define MIN_USER_SET_METHOD_ID                0
-#define MAX_USER_SET_METHOD_ID                16777214
-
-namespace android {
-namespace aidl {
 
 using std::map;
 using std::set;
 using std::string;
 using std::vector;
 
-static void
-test_document(document_item_type* d)
-{
-    while (d) {
-        if (d->item_type == INTERFACE_TYPE_BINDER) {
-            interface_type* c = (interface_type*)d;
-            printf("interface %s %s {\n", c->package, c->name.data);
-            interface_item_type *q = (interface_item_type*)c->interface_items;
-            while (q) {
-                if (q->item_type == METHOD_TYPE) {
-                    method_type *m = (method_type*)q;
-                    printf("  %s %s(", m->type.type.data, m->name.data);
-                    arg_type *p = m->args;
-                    while (p) {
-                        printf("%s %s",p->type.type.data,p->name.data);
-                        if (p->next) printf(", ");
-                        p=p->next;
-                    }
-                    printf(")");
-                    printf(";\n");
-                }
-                q=q->next;
-            }
-            printf("}\n");
-        }
-        else if (d->item_type == USER_DATA_TYPE) {
-            user_data_type* b = (user_data_type*)d;
-            if (b->parcelable) {
-                printf("parcelable %s %s;\n", b->package, b->name.data);
-            }
-        }
-        else {
-            printf("UNKNOWN d=0x%08lx d->item_type=%d\n", (long)d, d->item_type);
-        }
-        d = d->next;
-    }
-}
+namespace android {
+namespace aidl {
+namespace {
 
-// ==========================================================
-int
-convert_direction(const char* direction)
-{
-    if (direction == NULL) {
-        return IN_PARAMETER;
-    }
-    if (0 == strcmp(direction, "in")) {
-        return IN_PARAMETER;
-    }
-    if (0 == strcmp(direction, "out")) {
-        return OUT_PARAMETER;
-    }
-    return INOUT_PARAMETER;
-}
+// The following are gotten as the offset from the allowable id's between
+// android.os.IBinder.FIRST_CALL_TRANSACTION=1 and
+// android.os.IBinder.LAST_CALL_TRANSACTION=16777215
+const int kMinUserSetMethodId = 0;
+const int kMaxUserSetMethodId = 16777214;
 
-// ==========================================================
-
-char*
-parse_import_statement(const char* text)
-{
-    const char* end;
-    int len;
-
-    while (isspace(*text)) {
-        text++;
-    }
-    while (!isspace(*text)) {
-        text++;
-    }
-    while (isspace(*text)) {
-        text++;
-    }
-    end = text;
-    while (!isspace(*end) && *end != ';') {
-        end++;
-    }
-    len = end-text;
-
-    char* rv = (char*)malloc(len+1);
-    memcpy(rv, text, len);
-    rv[len] = '\0';
-
-    return rv;
-}
-
-// ==========================================================
-static void
-import_import_parsed(buffer_type* statement)
-{
-}
-
-// ==========================================================
-static int
-check_filename(const char* filename, const char* package, buffer_type* name)
-{
+int check_filename(const char* filename,
+                   const char* package,
+                   buffer_type* name) {
     const char* p;
     string expected;
     string fn;
@@ -225,9 +139,7 @@ check_filename(const char* filename, const char* package, buffer_type* name)
     return 0;
 }
 
-static int
-check_filenames(const char* filename, document_item_type* items)
-{
+int check_filenames(const char* filename, document_item_type* items) {
     int err = 0;
     while (items) {
         if (items->item_type == USER_DATA_TYPE) {
@@ -248,24 +160,7 @@ check_filenames(const char* filename, document_item_type* items)
     return err;
 }
 
-// ==========================================================
-static const char*
-kind_to_string(int kind)
-{
-    switch (kind)
-    {
-        case Type::INTERFACE:
-            return "an interface";
-        case Type::USERDATA:
-            return "a user data";
-        default:
-            return "ERROR";
-    }
-}
-
-static char*
-rfind(char* str, char c)
-{
+char* rfind(char* str, char c) {
     char* p = str + strlen(str) - 1;
     while (p >= str) {
         if (*p == c) {
@@ -276,9 +171,7 @@ rfind(char* str, char c)
     return NULL;
 }
 
-static int
-gather_types(const char* filename, document_item_type* items)
-{
+int gather_types(const char* filename, document_item_type* items) {
     int err = 0;
     while (items) {
         Type* type;
@@ -330,14 +223,13 @@ gather_types(const char* filename, document_item_type* items)
                 err = 1;
             }
             else if (type->Kind() != old->Kind()) {
-                const char* oldKind = kind_to_string(old->Kind());
-                const char* newKind = kind_to_string(type->Kind());
-
                 fprintf(stderr, "%s:%d attempt to redefine %s as %s,\n",
                             filename, type->DeclLine(),
-                            type->QualifiedName().c_str(), newKind);
+                            type->QualifiedName().c_str(),
+                            type->HumanReadableKind().c_str());
                 fprintf(stderr, "%s:%d    previously defined here as %s.\n",
-                            old->DeclFile().c_str(), old->DeclLine(), oldKind);
+                            old->DeclFile().c_str(), old->DeclLine(),
+                            old->HumanReadableKind().c_str());
                 err = 1;
             }
         }
@@ -347,34 +239,7 @@ gather_types(const char* filename, document_item_type* items)
     return err;
 }
 
-// ==========================================================
-static bool
-matches_keyword(const char* str)
-{
-    static const char* KEYWORDS[] = { "abstract", "assert", "boolean", "break",
-        "byte", "case", "catch", "char", "class", "const", "continue",
-        "default", "do", "double", "else", "enum", "extends", "final",
-        "finally", "float", "for", "goto", "if", "implements", "import",
-        "instanceof", "int", "interface", "long", "native", "new", "package",
-        "private", "protected", "public", "return", "short", "static",
-        "strictfp", "super", "switch", "synchronized", "this", "throw",
-        "throws", "transient", "try", "void", "volatile", "while",
-        "true", "false", "null",
-        NULL
-    };
-    const char** k = KEYWORDS;
-    while (*k) {
-        if (0 == strcmp(str, *k)) {
-            return true;
-        }
-        k++;
-    }
-    return false;
-}
-
-static int
-check_method(const char* filename, method_type* m)
-{
+int check_method(const char* filename, method_type* m) {
     int err = 0;
 
     // return type
@@ -469,7 +334,7 @@ check_method(const char* filename, method_type* m)
         }
 
         // check that the name doesn't match a keyword
-        if (matches_keyword(arg->name.data)) {
+        if (is_java_keyword(arg->name.data)) {
             fprintf(stderr, "%s:%d parameter %d %s is named the same as a"
                     " Java or aidl keyword\n",
                     filename, m->name.lineno, index, arg->name.data);
@@ -484,9 +349,7 @@ next:
     return err;
 }
 
-static int
-check_types(const char* filename, document_item_type* items)
-{
+int check_types(const char* filename, document_item_type* items) {
     int err = 0;
     while (items) {
         // (nothing to check for USER_DATA_TYPE)
@@ -522,11 +385,10 @@ check_types(const char* filename, document_item_type* items)
     return err;
 }
 
-// ==========================================================
-static int
-exactly_one_interface(const char* filename, const document_item_type* items, const JavaOptions& options,
-                      bool* onlyParcelable)
-{
+int exactly_one_interface(const char* filename,
+                          const document_item_type* items,
+                          const JavaOptions& options,
+                          bool* onlyParcelable) {
     if (items == NULL) {
         fprintf(stderr, "%s: file does not contain any interfaces\n",
                             filename);
@@ -563,11 +425,9 @@ exactly_one_interface(const char* filename, const document_item_type* items, con
     return 0;
 }
 
-// ==========================================================
-void
-generate_dep_file(const JavaOptions& options, const document_item_type* items,
-                  const Parser& p)
-{
+void generate_dep_file(const JavaOptions& options,
+                       const document_item_type* items,
+                       const Parser& p) {
     /* we open the file in binary mode to ensure that the same output is
      * generated on all platforms !!
      */
@@ -626,10 +486,9 @@ generate_dep_file(const JavaOptions& options, const document_item_type* items,
     fclose(to);
 }
 
-// ==========================================================
-static string
-generate_outputFileName2(const JavaOptions& options, const buffer_type& name, const char* package)
-{
+string generate_outputFileName2(const JavaOptions& options,
+                                const buffer_type& name,
+                                const char* package) {
     string result;
 
     // create the path to the destination folder based on the
@@ -658,10 +517,8 @@ generate_outputFileName2(const JavaOptions& options, const buffer_type& name, co
     return result;
 }
 
-// ==========================================================
-static string
-generate_outputFileName(const JavaOptions& options, const document_item_type* items)
-{
+string generate_outputFileName(const JavaOptions& options,
+                               const document_item_type* items) {
     // items has already been checked to have only one interface.
     if (items->item_type == INTERFACE_TYPE_BINDER) {
         interface_type* type = (interface_type*)items;
@@ -678,10 +535,7 @@ generate_outputFileName(const JavaOptions& options, const document_item_type* it
 }
 
 
-
-// ==========================================================
-static void
-check_outputFilePath(const string& path) {
+void check_outputFilePath(const string& path) {
     size_t len = path.length();
     for (size_t i=0; i<len ; i++) {
         if (path[i] == OS_PATH_SEPARATOR) {
@@ -698,10 +552,7 @@ check_outputFilePath(const string& path) {
 }
 
 
-// ==========================================================
-static int
-parse_preprocessed_file(const string& filename)
-{
+int parse_preprocessed_file(const string& filename) {
     int err;
 
     FILE* f = fopen(filename.c_str(), "rb");
@@ -789,9 +640,8 @@ parse_preprocessed_file(const string& filename)
     return 0;
 }
 
-static int
-check_and_assign_method_ids(const char * filename, interface_item_type* first_item)
-{
+int check_and_assign_method_ids(const char * filename,
+                                interface_item_type* first_item) {
     // Check whether there are any methods with manually assigned id's and any that are not.
     // Either all method id's must be manually assigned or all of them must not.
     // Also, check for duplicates of user set id's and that the id's are within the proper bounds.
@@ -815,13 +665,13 @@ check_and_assign_method_ids(const char * filename, interface_item_type* first_it
                     return 1;
                 }
                 // Ensure that the user set id is within the appropriate limits
-                if (method_item->assigned_id < MIN_USER_SET_METHOD_ID ||
-                        method_item->assigned_id > MAX_USER_SET_METHOD_ID) {
+                if (method_item->assigned_id < kMinUserSetMethodId ||
+                        method_item->assigned_id > kMaxUserSetMethodId) {
                     fprintf(stderr, "%s:%d Found out of bounds id (%d) for method: %s\n",
                             filename, method_item->id.lineno,
                             method_item->assigned_id, method_item->name.data);
                     fprintf(stderr, "    Value for id must be between %d and %d inclusive.\n",
-                            MIN_USER_SET_METHOD_ID, MAX_USER_SET_METHOD_ID);
+                            kMinUserSetMethodId, kMaxUserSetMethodId);
                     return 1;
                 }
                 usedIds.insert(method_item->assigned_id);
@@ -855,18 +705,14 @@ check_and_assign_method_ids(const char * filename, interface_item_type* first_it
     return 0;
 }
 
-// ==========================================================
-int
-compile_aidl_to_cpp(const CppOptions& options)
-{
+}  // namespace
+
+int compile_aidl_to_cpp(const CppOptions& options) {
   UNIMPLEMENTED(FATAL) << "C++ generation is unimplemented.";
   return 0;
 }
 
-// ==========================================================
-int
-compile_aidl_to_java(const JavaOptions& options)
-{
+int compile_aidl_to_java(const JavaOptions& options) {
     int err = 0, N;
 
     set_import_paths(options.import_paths_);
@@ -935,19 +781,6 @@ compile_aidl_to_java(const JavaOptions& options)
         import = import->next;
     }
 
-#if 0
-    printf("---- main doc ----\n");
-    test_document(mainDoc);
-
-    import = g_imports;
-    while (import) {
-        printf("---- import doc ----\n");
-        test_document(import->doc);
-        import = import->next;
-    }
-    NAMES.Dump();
-#endif
-
     // check the referenced types in mainDoc to make sure we've imported them
     err |= check_types(options.input_file_name_.c_str(), mainDoc);
 
@@ -997,9 +830,7 @@ compile_aidl_to_java(const JavaOptions& options)
     return err;
 }
 
-int
-preprocess_aidl(const JavaOptions& options)
-{
+int preprocess_aidl(const JavaOptions& options) {
     vector<string> lines;
     int err;
 

@@ -5,8 +5,6 @@
 
 #include <base/macros.h>
 
-#include "aidl.h"
-
 typedef enum {
     NO_EXTRA_TEXT = 0,
     SHORT_COMMENT,

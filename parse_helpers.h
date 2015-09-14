@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef AIDL_AIDL_H_
-#define AIDL_AIDL_H_
-
-#include "options.h"
+#ifndef AIDL_PARSE_HELPERS_H_
+#define AIDL_PARSE_HELPERS_H_
 
 namespace android {
 namespace aidl {
 
-int compile_aidl_to_cpp(const CppOptions& options);
-int compile_aidl_to_java(const JavaOptions& options);
-int preprocess_aidl(const JavaOptions& options);
+// strips off the leading whitespace, the "import" text
+// also returns whether it's a local or system import
+// we rely on the input matching the import regex from below
+char* parse_import_statement(const char* text);
+
+int convert_direction(const char* direction);
+
+bool is_java_keyword(const char* str);
 
 }  // namespace android
 }  // namespace aidl
 
-#endif  // AIDL_AIDL_H_
+#endif // AIDL_PARSE_HELPERS_H_

@@ -39,6 +39,7 @@ LOCAL_SRC_FILES := \
     generate_java.cpp \
     generate_java_binder.cpp \
     options.cpp \
+    parse_helpers.cpp \
     search_path.cpp \
 
 include $(BUILD_HOST_STATIC_LIBRARY)
@@ -80,6 +81,7 @@ LOCAL_SRC_FILES := \
     ast_cpp_unittest.cpp \
     ast_java_unittest.cpp \
     options_unittest.cpp \
+    parse_helpers_unittest.cpp \
     test_main.cpp \
     tests/end_to_end_tests.cpp \
     tests/example_interface_test_data.cpp \

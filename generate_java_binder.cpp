@@ -1,9 +1,12 @@
 #include "generate_java.h"
-#include "Type.h"
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "Type.h"
+#include "parse_helpers.h"
 
 namespace android {
 namespace aidl {

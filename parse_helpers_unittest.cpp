@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef AIDL_AIDL_H_
-#define AIDL_AIDL_H_
+#include "parse_helpers.h"
 
-#include "options.h"
+#include <gtest/gtest.h>
 
 namespace android {
 namespace aidl {
 
-int compile_aidl_to_cpp(const CppOptions& options);
-int compile_aidl_to_java(const JavaOptions& options);
-int preprocess_aidl(const JavaOptions& options);
+TEST(ParseHelpersTests, RecognizesJavaKeywords) {
+  EXPECT_TRUE(is_java_keyword("abstract"));
+  EXPECT_TRUE(is_java_keyword("synchronized"));
+  EXPECT_TRUE(is_java_keyword("volatile"));
+  EXPECT_FALSE(is_java_keyword("banana"));
+  EXPECT_FALSE(is_java_keyword("if in Rome"));
+  EXPECT_FALSE(is_java_keyword("Default"));
+}
 
 }  // namespace android
 }  // namespace aidl
-
-#endif  // AIDL_AIDL_H_
