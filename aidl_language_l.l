@@ -5,8 +5,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-extern YYSTYPE yylval;
-
 // comment and whitespace handling
 // these functions save a copy of the buffer
 static void begin_extra_text(unsigned lineno, which_extra_text which);
