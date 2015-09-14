@@ -876,7 +876,7 @@ check_and_assign_method_ids(const char * filename, interface_item_type* first_it
 
 // ==========================================================
 int
-compile_aidl(Options& options)
+compile_aidl(const Options& options)
 {
     int err = 0, N;
 
@@ -976,10 +976,10 @@ compile_aidl(Options& options)
         return 1;
     }
 
+    string outputFileName = options.outputFileName;
     // if needed, generate the outputFileName from the outputBaseFolder
-    if (options.outputFileName.length() == 0 &&
-            options.outputBaseFolder.length() > 0) {
-        options.outputFileName = generate_outputFileName(options, mainDoc);
+    if (outputFileName.length() == 0 && options.outputBaseFolder.length() > 0) {
+        outputFileName = generate_outputFileName(options, mainDoc);
     }
 
     // if we were asked to, generate a make dependency file
@@ -987,7 +987,7 @@ compile_aidl(Options& options)
     if ((options.autoDepFile || options.depFileName != "") &&
             !(onlyParcelable && options.failOnParcelable)) {
         // make sure the folders of the output file all exists
-        check_outputFilePath(options.outputFileName);
+        check_outputFilePath(outputFileName);
         generate_dep_file(options, mainDoc);
     }
 
@@ -997,9 +997,9 @@ compile_aidl(Options& options)
     }
 
     // make sure the folders of the output file all exists
-    check_outputFilePath(options.outputFileName);
+    check_outputFilePath(outputFileName);
 
-    err = generate_java(options.outputFileName, options.inputFileName.c_str(),
+    err = generate_java(outputFileName, options.inputFileName.c_str(),
                         (interface_type*)mainDoc);
 
     return err;

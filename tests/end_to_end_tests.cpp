@@ -34,6 +34,8 @@ using std::vector;
 
 using namespace aidl::test_data;
 
+namespace android {
+namespace aidl {
 namespace {
 
 const char kDiffTemplate[] = "diff %s %s";
@@ -163,3 +165,6 @@ TEST_F(EndToEndTest, IExampleInterface) {
                     kIExampleInterfaceJava);
   // We'd like to check the depends file, but it mentions unique file paths.
 }
+
+}  // namespace android
+}  // namespace aidl

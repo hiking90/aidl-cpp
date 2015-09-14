@@ -14,6 +14,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libaidl-common
 LOCAL_MODULE_HOST_OS := darwin linux windows
 
+LOCAL_C_INCLUDES := external/gtest/include
 LOCAL_CLANG_CFLAGS := -Wall -Werror
 # Tragically, the code is riddled with unused parameters.
 LOCAL_CLANG_CFLAGS += -Wno-unused-parameter
@@ -49,6 +50,7 @@ LOCAL_MODULE := aidl
 
 LOCAL_MODULE_HOST_OS := darwin linux windows
 LOCAL_CFLAGS := -Wall -Werror
+LOCAL_C_INCLUDES := external/gtest/include
 LOCAL_SRC_FILES := main.cpp
 LOCAL_STATIC_LIBRARIES := libaidl-common $(aidl_static_libraries)
 include $(BUILD_HOST_EXECUTABLE)

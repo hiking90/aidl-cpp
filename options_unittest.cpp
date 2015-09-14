@@ -21,8 +21,13 @@
 
 #include "options.h"
 
-using std::vector;
 using std::string;
+using std::unique_ptr;
+using std::vector;
+
+namespace android {
+namespace aidl {
+namespace {
 
 const char kPreprocessCommandOutputFile[] = "output_file_name";
 const char kPreprocessCommandInput1[] = "input1";
@@ -36,19 +41,24 @@ const char* kPreprocessCommand[] = {
     kPreprocessCommandInput3,
 };
 
+}  // namespace
+
 TEST(OptionsTests, ParsesPreprocess) {
-  Options options;
   const int argc = sizeof(kPreprocessCommand) / sizeof(*kPreprocessCommand);
-  EXPECT_EQ(parse_options(argc, kPreprocessCommand, &options), 0);
-  EXPECT_EQ(options.task, PREPROCESS_AIDL);
-  EXPECT_EQ(options.failOnParcelable, false);
-  EXPECT_EQ(options.importPaths.size(), 0u);
-  EXPECT_EQ(options.preprocessedFiles.size(), 0u);
-  EXPECT_EQ(options.inputFileName, string{""});
-  EXPECT_EQ(options.outputFileName, string{kPreprocessCommandOutputFile});
-  EXPECT_EQ(options.autoDepFile, false);
+  unique_ptr<Options> options(Options::ParseOptions(argc, kPreprocessCommand));
+  EXPECT_NE(options, nullptr);
+  EXPECT_EQ(options->task, Options::PREPROCESS_AIDL);
+  EXPECT_EQ(options->failOnParcelable, false);
+  EXPECT_EQ(options->importPaths.size(), 0u);
+  EXPECT_EQ(options->preprocessedFiles.size(), 0u);
+  EXPECT_EQ(options->inputFileName, string{""});
+  EXPECT_EQ(options->outputFileName, string{kPreprocessCommandOutputFile});
+  EXPECT_EQ(options->autoDepFile, false);
   const vector<string> expected_input{kPreprocessCommandInput1,
                                       kPreprocessCommandInput2,
                                       kPreprocessCommandInput3};
-  EXPECT_EQ(options.filesToPreprocess, expected_input);
+  EXPECT_EQ(options->filesToPreprocess, expected_input);
 }
+
+}  // namespace android
+}  // namespace aidl

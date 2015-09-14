@@ -13,7 +13,7 @@ char* parse_import_statement(const char* text);
 
 int convert_direction(const char* direction);
 
-int compile_aidl(Options& options);
+int compile_aidl(const Options& options);
 int preprocess_aidl(const Options& options);
 
 }  // namespace android
