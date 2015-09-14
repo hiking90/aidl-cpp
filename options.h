@@ -44,15 +44,15 @@ class Options {
                                                const char* const* argv);
 
   int task{COMPILE_AIDL};
-  bool failOnParcelable{false};
-  std::vector<std::string> importPaths;
-  std::vector<std::string> preprocessedFiles;
-  std::string inputFileName;
-  std::string outputFileName;
-  std::string outputBaseFolder;
-  std::string depFileName;
-  bool autoDepFile{false};
-  std::vector<std::string> filesToPreprocess;
+  bool fail_on_parcelable_{false};
+  std::vector<std::string> import_paths_;
+  std::vector<std::string> preprocessed_files_;
+  std::string input_file_name_;
+  std::string output_file_name_;
+  std::string output_base_folder_;
+  std::string dep_file_name_;
+  bool auto_dep_file_{false};
+  std::vector<std::string> files_to_preprocess_;
 
  private:
   Options() = default;

@@ -207,7 +207,7 @@ check_filename(const char* filename, const char* package, buffer_type* name)
     p = strchr(name->data, '.');
     len = p ? p-name->data : strlen(name->data);
     expected.append(name->data, len);
-    
+
     expected += ".aidl";
 
     len = fn.length();
@@ -495,7 +495,7 @@ check_method(const char* filename, method_type* m)
                     filename, m->name.lineno, index, arg->name.data);
             err = 1;
         }
-        
+
 next:
         index++;
         arg = arg->next;
@@ -567,7 +567,7 @@ exactly_one_interface(const char* filename, const document_item_type* items, con
 
     if (items->item_type == USER_DATA_TYPE) {
         *onlyParcelable = true;
-        if (options.failOnParcelable) {
+        if (options.fail_on_parcelable_) {
             fprintf(stderr, "%s:%d aidl can only generate code for interfaces, not"
                             " parcelables,\n", filename,
                             ((user_data_type*)items)->keyword_token.lineno);
@@ -591,11 +591,11 @@ generate_dep_file(const Options& options, const document_item_type* items)
      * generated on all platforms !!
      */
     FILE* to = NULL;
-    if (options.autoDepFile) {
-        string fileName = options.outputFileName + ".d";
+    if (options.auto_dep_file_) {
+        string fileName = options.output_file_name_ + ".d";
         to = fopen(fileName.c_str(), "wb");
     } else {
-        to = fopen(options.depFileName.c_str(), "wb");
+        to = fopen(options.dep_file_name_.c_str(), "wb");
     }
 
     if (to == NULL) {
@@ -609,12 +609,12 @@ generate_dep_file(const Options& options, const document_item_type* items)
     }
 
     if (items->item_type == INTERFACE_TYPE_BINDER) {
-        fprintf(to, "%s: \\\n", options.outputFileName.c_str());
+        fprintf(to, "%s: \\\n", options.output_file_name_.c_str());
     } else {
         // parcelable: there's no output file.
         fprintf(to, " : \\\n");
     }
-    fprintf(to, "  %s %s\n", options.inputFileName.c_str(), slash);
+    fprintf(to, "  %s %s\n", options.input_file_name_.c_str(), slash);
 
     while (import) {
         if (import->next == NULL) {
@@ -630,7 +630,7 @@ generate_dep_file(const Options& options, const document_item_type* items)
 
     // Output "<input_aidl_file>: " so make won't fail if the input .aidl file
     // has been deleted, moved or renamed in incremental build.
-    fprintf(to, "%s :\n", options.inputFileName.c_str());
+    fprintf(to, "%s :\n", options.input_file_name_.c_str());
 
     // Output "<imported_file>: " so make won't fail if the imported file has
     // been deleted, moved or renamed in incremental build.
@@ -653,7 +653,7 @@ generate_outputFileName2(const Options& options, const buffer_type& name, const 
 
     // create the path to the destination folder based on the
     // interface package name
-    result = options.outputBaseFolder;
+    result = options.output_base_folder_;
     result += OS_PATH_SEPARATOR;
 
     string packageStr = package;
@@ -756,7 +756,7 @@ parse_preprocessed_file(const string& filename)
         //printf("%s:%d:...%s...%s...%s...\n", filename.c_str(), lineno,
         //        type, packagename, classname);
         document_item_type* doc;
-        
+
         if (0 == strcmp("parcelable", type)) {
             user_data_type* parcl = (user_data_type*)malloc(
                     sizeof(user_data_type));
@@ -880,14 +880,14 @@ compile_aidl(const Options& options)
 {
     int err = 0, N;
 
-    set_import_paths(options.importPaths);
+    set_import_paths(options.import_paths_);
 
     register_base_types();
 
     // import the preprocessed file
-    N = options.preprocessedFiles.size();
+    N = options.preprocessed_files_.size();
     for (int i=0; i<N; i++) {
-        const string& s = options.preprocessedFiles[i];
+        const string& s = options.preprocessed_files_[i];
         err |= parse_preprocessed_file(s);
     }
     if (err != 0) {
@@ -896,7 +896,7 @@ compile_aidl(const Options& options)
 
     // parse the main file
     g_callbacks = &g_mainCallbacks;
-    err = parse_aidl(options.inputFileName.c_str());
+    err = parse_aidl(options.input_file_name_.c_str());
     document_item_type* mainDoc = g_document;
     g_document = NULL;
 
@@ -928,7 +928,7 @@ compile_aidl(const Options& options)
     }
 
     // complain about ones that aren't in the right files
-    err |= check_filenames(options.inputFileName.c_str(), mainDoc);
+    err |= check_filenames(options.input_file_name_.c_str(), mainDoc);
     import = g_imports;
     while (import) {
         err |= check_filenames(import->filename, import->doc);
@@ -936,7 +936,7 @@ compile_aidl(const Options& options)
     }
 
     // gather the types that have been declared
-    err |= gather_types(options.inputFileName.c_str(), mainDoc);
+    err |= gather_types(options.input_file_name_.c_str(), mainDoc);
     import = g_imports;
     while (import) {
         err |= gather_types(import->filename, import->doc);
@@ -957,16 +957,16 @@ compile_aidl(const Options& options)
 #endif
 
     // check the referenced types in mainDoc to make sure we've imported them
-    err |= check_types(options.inputFileName.c_str(), mainDoc);
+    err |= check_types(options.input_file_name_.c_str(), mainDoc);
 
     // finally, there really only needs to be one thing in mainDoc, and it
     // needs to be an interface.
     bool onlyParcelable = false;
-    err |= exactly_one_interface(options.inputFileName.c_str(), mainDoc, options, &onlyParcelable);
+    err |= exactly_one_interface(options.input_file_name_.c_str(), mainDoc, options, &onlyParcelable);
 
     // If this includes an interface definition, then assign method ids and validate.
     if (!onlyParcelable) {
-        err |= check_and_assign_method_ids(options.inputFileName.c_str(),
+        err |= check_and_assign_method_ids(options.input_file_name_.c_str(),
                 ((interface_type*)mainDoc)->interface_items);
     }
 
@@ -976,30 +976,30 @@ compile_aidl(const Options& options)
         return 1;
     }
 
-    string outputFileName = options.outputFileName;
-    // if needed, generate the outputFileName from the outputBaseFolder
-    if (outputFileName.length() == 0 && options.outputBaseFolder.length() > 0) {
-        outputFileName = generate_outputFileName(options, mainDoc);
+    string output_file_name = options.output_file_name_;
+    // if needed, generate the output file name from the base folder
+    if (output_file_name.length() == 0 && options.output_base_folder_.length() > 0) {
+        output_file_name = generate_outputFileName(options, mainDoc);
     }
 
     // if we were asked to, generate a make dependency file
     // unless it's a parcelable *and* it's supposed to fail on parcelable
-    if ((options.autoDepFile || options.depFileName != "") &&
-            !(onlyParcelable && options.failOnParcelable)) {
+    if ((options.auto_dep_file_ || options.dep_file_name_ != "") &&
+            !(onlyParcelable && options.fail_on_parcelable_)) {
         // make sure the folders of the output file all exists
-        check_outputFilePath(outputFileName);
+        check_outputFilePath(output_file_name);
         generate_dep_file(options, mainDoc);
     }
 
     // they didn't ask to fail on parcelables, so just exit quietly.
-    if (onlyParcelable && !options.failOnParcelable) {
+    if (onlyParcelable && !options.fail_on_parcelable_) {
         return 0;
     }
 
     // make sure the folders of the output file all exists
-    check_outputFilePath(outputFileName);
+    check_outputFilePath(output_file_name);
 
-    err = generate_java(outputFileName, options.inputFileName.c_str(),
+    err = generate_java(output_file_name, options.input_file_name_.c_str(),
                         (interface_type*)mainDoc);
 
     return err;
@@ -1012,10 +1012,10 @@ preprocess_aidl(const Options& options)
     int err;
 
     // read files
-    int N = options.filesToPreprocess.size();
+    int N = options.files_to_preprocess_.size();
     for (int i=0; i<N; i++) {
         g_callbacks = &g_mainCallbacks;
-        err = parse_aidl(options.filesToPreprocess[i].c_str());
+        err = parse_aidl(options.files_to_preprocess_[i].c_str());
         if (err != 0) {
             return err;
         }
@@ -1045,16 +1045,16 @@ preprocess_aidl(const Options& options)
     }
 
     // write preprocessed file
-    int fd = open( options.outputFileName.c_str(), 
+    int fd = open( options.output_file_name_.c_str(),
                    O_RDWR|O_CREAT|O_TRUNC|O_BINARY,
 #ifdef _WIN32
                    _S_IREAD|_S_IWRITE);
-#else    
+#else
                    S_IRUSR|S_IWUSR|S_IRGRP);
-#endif            
+#endif
     if (fd == -1) {
         fprintf(stderr, "aidl: could not open file for write: %s\n",
-                options.outputFileName.c_str());
+                options.output_file_name_.c_str());
         return 1;
     }
 
@@ -1064,9 +1064,9 @@ preprocess_aidl(const Options& options)
         int len = s.length();
         if (len != write(fd, s.c_str(), len)) {
             fprintf(stderr, "aidl: error writing to file %s\n",
-                options.outputFileName.c_str());
+                options.output_file_name_.c_str());
             close(fd);
-            unlink(options.outputFileName.c_str());
+            unlink(options.output_file_name_.c_str());
             return 1;
         }
     }

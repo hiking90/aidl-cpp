@@ -48,16 +48,16 @@ TEST(OptionsTests, ParsesPreprocess) {
   unique_ptr<Options> options(Options::ParseOptions(argc, kPreprocessCommand));
   EXPECT_NE(options, nullptr);
   EXPECT_EQ(options->task, Options::PREPROCESS_AIDL);
-  EXPECT_EQ(options->failOnParcelable, false);
-  EXPECT_EQ(options->importPaths.size(), 0u);
-  EXPECT_EQ(options->preprocessedFiles.size(), 0u);
-  EXPECT_EQ(options->inputFileName, string{""});
-  EXPECT_EQ(options->outputFileName, string{kPreprocessCommandOutputFile});
-  EXPECT_EQ(options->autoDepFile, false);
+  EXPECT_EQ(options->fail_on_parcelable_, false);
+  EXPECT_EQ(options->import_paths_.size(), 0u);
+  EXPECT_EQ(options->preprocessed_files_.size(), 0u);
+  EXPECT_EQ(options->input_file_name_, string{});
+  EXPECT_EQ(options->output_file_name_, string{kPreprocessCommandOutputFile});
+  EXPECT_EQ(options->auto_dep_file_, false);
   const vector<string> expected_input{kPreprocessCommandInput1,
                                       kPreprocessCommandInput2,
                                       kPreprocessCommandInput3};
-  EXPECT_EQ(options->filesToPreprocess, expected_input);
+  EXPECT_EQ(options->files_to_preprocess_, expected_input);
 }
 
 }  // namespace android
