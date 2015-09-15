@@ -51,7 +51,7 @@ LOCAL_MODULE := aidl
 LOCAL_MODULE_HOST_OS := darwin linux windows
 LOCAL_CFLAGS := -Wall -Werror
 LOCAL_C_INCLUDES := external/gtest/include
-LOCAL_SRC_FILES := main.cpp
+LOCAL_SRC_FILES := main_java.cpp
 LOCAL_STATIC_LIBRARIES := libaidl-common $(aidl_static_libraries)
 include $(BUILD_HOST_EXECUTABLE)
 

@@ -56,11 +56,12 @@ const char* kCompileJavaCommand[] = {
 };
 const char kCompileCommandOutput[] = "input.java";
 
-unique_ptr<Options> GetOptions(const char* command[]) {
+template <typename T>
+unique_ptr<T> GetOptions(const char* command[]) {
   int argc = 0;
   const char** command_part = command;
   for (; *command_part; ++argc, ++command_part) {}
-  unique_ptr<Options> options(Options::ParseOptions(argc, command));
+  unique_ptr<T> options(T::Parse(argc, command));
   if (!options) {
     cerr << "Failed to parse command line:";
     for (int i = 0; i < argc; ++i) {
@@ -74,9 +75,9 @@ unique_ptr<Options> GetOptions(const char* command[]) {
 
 }  // namespace
 
-TEST(OptionsTests, ParsesPreprocess) {
-  unique_ptr<Options> options = GetOptions(kPreprocessCommand);
-  EXPECT_EQ(Options::PREPROCESS_AIDL, options->task);
+TEST(JavaOptionsTests, ParsesPreprocess) {
+  unique_ptr<JavaOptions> options = GetOptions<JavaOptions>(kPreprocessCommand);
+  EXPECT_EQ(JavaOptions::PREPROCESS_AIDL, options->task);
   EXPECT_EQ(false, options->fail_on_parcelable_);
   EXPECT_EQ(0u, options->import_paths_.size());
   EXPECT_EQ(0u, options->preprocessed_files_.size());
@@ -89,9 +90,10 @@ TEST(OptionsTests, ParsesPreprocess) {
   EXPECT_EQ(expected_input, options->files_to_preprocess_);
 }
 
-TEST(OptionsTests, ParsesCompileJava) {
-  unique_ptr<Options> options = GetOptions(kCompileJavaCommand);
-  EXPECT_EQ(Options::COMPILE_AIDL_TO_JAVA, options->task);
+TEST(JavaOptionsTests, ParsesCompileJava) {
+  unique_ptr<JavaOptions> options =
+      GetOptions<JavaOptions>(kCompileJavaCommand);
+  EXPECT_EQ(JavaOptions::COMPILE_AIDL_TO_JAVA, options->task);
   EXPECT_EQ(true, options->fail_on_parcelable_);
   EXPECT_EQ(1u, options->import_paths_.size());
   EXPECT_EQ(0u, options->preprocessed_files_.size());

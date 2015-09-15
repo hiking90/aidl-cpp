@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2015, The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "aidl_language.h"
 #include "options.h"
@@ -544,7 +559,7 @@ check_types(const char* filename, document_item_type* items)
 
 // ==========================================================
 static int
-exactly_one_interface(const char* filename, const document_item_type* items, const Options& options,
+exactly_one_interface(const char* filename, const document_item_type* items, const JavaOptions& options,
                       bool* onlyParcelable)
 {
     if (items == NULL) {
@@ -585,7 +600,7 @@ exactly_one_interface(const char* filename, const document_item_type* items, con
 
 // ==========================================================
 void
-generate_dep_file(const Options& options, const document_item_type* items)
+generate_dep_file(const JavaOptions& options, const document_item_type* items)
 {
     /* we open the file in binary mode to ensure that the same output is
      * generated on all platforms !!
@@ -647,7 +662,7 @@ generate_dep_file(const Options& options, const document_item_type* items)
 
 // ==========================================================
 static string
-generate_outputFileName2(const Options& options, const buffer_type& name, const char* package)
+generate_outputFileName2(const JavaOptions& options, const buffer_type& name, const char* package)
 {
     string result;
 
@@ -679,7 +694,7 @@ generate_outputFileName2(const Options& options, const buffer_type& name, const 
 
 // ==========================================================
 static string
-generate_outputFileName(const Options& options, const document_item_type* items)
+generate_outputFileName(const JavaOptions& options, const document_item_type* items)
 {
     // items has already been checked to have only one interface.
     if (items->item_type == INTERFACE_TYPE_BINDER) {
@@ -876,7 +891,7 @@ check_and_assign_method_ids(const char * filename, interface_item_type* first_it
 
 // ==========================================================
 int
-compile_aidl(const Options& options)
+compile_aidl(const JavaOptions& options)
 {
     int err = 0, N;
 
@@ -1006,7 +1021,7 @@ compile_aidl(const Options& options)
 }
 
 int
-preprocess_aidl(const Options& options)
+preprocess_aidl(const JavaOptions& options)
 {
     vector<string> lines;
     int err;

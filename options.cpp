@@ -25,7 +25,7 @@ namespace android {
 namespace aidl {
 namespace {
 
-unique_ptr<Options> usage() {
+unique_ptr<JavaOptions> java_usage() {
   fprintf(stderr,
           "usage: aidl OPTIONS INPUT [OUTPUT]\n"
           "       aidl --preprocess OUTPUT INPUT...\n"
@@ -48,18 +48,18 @@ unique_ptr<Options> usage() {
           "used, with the .aidl extension changed to a .java extension.\n"
           "   If the -o option is used, the generated files will be placed in "
           "the base output folder, under their package folder\n");
-  return unique_ptr<Options>(nullptr);
+  return unique_ptr<JavaOptions>(nullptr);
 }
 
 }  // namespace
 
-unique_ptr<Options> Options::ParseOptions(int argc, const char* const* argv) {
-  unique_ptr<Options> options(new Options());
+unique_ptr<JavaOptions> JavaOptions::Parse(int argc, const char* const* argv) {
+  unique_ptr<JavaOptions> options(new JavaOptions());
   int i = 1;
 
   if (argc >= 2 && 0 == strcmp(argv[1], "--preprocess")) {
     if (argc < 4) {
-      return usage();
+      return java_usage();
     }
     options->output_file_name_ = argv[2];
     for (int i = 3; i < argc; i++) {
@@ -79,7 +79,7 @@ unique_ptr<Options> Options::ParseOptions(int argc, const char* const* argv) {
     }
     if (len <= 1) {
       fprintf(stderr, "unknown option (%d): %s\n", i, s);
-      return usage();
+      return java_usage();
     }
     // -I<system-import-path>
     if (s[1] == 'I') {
@@ -87,14 +87,14 @@ unique_ptr<Options> Options::ParseOptions(int argc, const char* const* argv) {
         options->import_paths_.push_back(s + 2);
       } else {
         fprintf(stderr, "-I option (%d) requires a path.\n", i);
-        return usage();
+        return java_usage();
       }
     } else if (s[1] == 'd') {
       if (len > 2) {
         options->dep_file_name_ = s + 2;
       } else {
         fprintf(stderr, "-d option (%d) requires a file.\n", i);
-        return usage();
+        return java_usage();
       }
     } else if (strcmp(s, "-a") == 0) {
       options->auto_dep_file_ = true;
@@ -103,32 +103,31 @@ unique_ptr<Options> Options::ParseOptions(int argc, const char* const* argv) {
         options->preprocessed_files_.push_back(s + 2);
       } else {
         fprintf(stderr, "-p option (%d) requires a file.\n", i);
-        return usage();
+        return java_usage();
       }
     } else if (s[1] == 'o') {
       if (len > 2) {
         options->output_base_folder_= s + 2;
       } else {
         fprintf(stderr, "-o option (%d) requires a path.\n", i);
-        return usage();
+        return java_usage();
       }
     } else if (strcmp(s, "-b") == 0) {
       options->fail_on_parcelable_ = true;
     } else {
       // s[1] is not known
       fprintf(stderr, "unknown option (%d): %s\n", i, s);
-      return usage();
+      return java_usage();
     }
     i++;
   }
-
   // INPUT
   if (i < argc) {
     options->input_file_name_ = argv[i];
     i++;
   } else {
     fprintf(stderr, "INPUT required\n");
-    return usage();
+    return java_usage();
   }
 
   // OUTPUT
@@ -144,7 +143,7 @@ unique_ptr<Options> Options::ParseOptions(int argc, const char* const* argv) {
       options->output_file_name_.replace(pos, suffix_len, ".java");
     } else {
       fprintf(stderr, "INPUT is not an .aidl file.\n");
-      return usage();
+      return java_usage();
     }
   }
 
@@ -156,7 +155,7 @@ unique_ptr<Options> Options::ParseOptions(int argc, const char* const* argv) {
       fprintf(stderr, " %s", argv[i]);
     }
     fprintf(stderr, "\n");
-    return usage();
+    return java_usage();
   }
 
   return options;

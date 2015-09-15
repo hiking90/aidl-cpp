@@ -27,21 +27,20 @@
 namespace android {
 namespace aidl {
 
-// This struct is the parsed version of the command line options
-class Options {
+// This object represents the parsed options to the Java generating aidl.
+class JavaOptions final {
  public:
   enum {
       COMPILE_AIDL_TO_JAVA,
       PREPROCESS_AIDL,
   };
 
-  ~Options() = default;
+  ~JavaOptions() = default;
 
-  // Takes the inputs from the command line and returns a pointer to an
-  // Options object on success.
-  // Also prints the usage statement on failure.
-  static std::unique_ptr<Options> ParseOptions(int argc,
-                                               const char* const* argv);
+  // Parses the command line and returns a non-null pointer to an JavaOptions
+  // object on success.
+  // Prints the usage statement on failure.
+  static std::unique_ptr<JavaOptions> Parse(int argc, const char* const* argv);
 
   int task{COMPILE_AIDL_TO_JAVA};
   bool fail_on_parcelable_{false};
@@ -55,10 +54,10 @@ class Options {
   std::vector<std::string> files_to_preprocess_;
 
  private:
-  Options() = default;
+  JavaOptions() = default;
 
   FRIEND_TEST(EndToEndTest, IExampleInterface);
-  DISALLOW_COPY_AND_ASSIGN(Options);
+  DISALLOW_COPY_AND_ASSIGN(JavaOptions);
 };
 
 }  // namespace android

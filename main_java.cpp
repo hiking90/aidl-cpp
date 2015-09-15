@@ -21,20 +21,20 @@
 #include "logging.h"
 #include "options.h"
 
-using android::aidl::Options;
+using android::aidl::JavaOptions;
 
 int main(int argc, char** argv) {
   android::base::InitLogging(argv);
   LOG(DEBUG) << "aidl starting";
-  std::unique_ptr<Options> options = Options::ParseOptions(argc, argv);
+  std::unique_ptr<JavaOptions> options = JavaOptions::Parse(argc, argv);
   if (!options) {
     return 1;
   }
 
   switch (options->task) {
-    case Options::COMPILE_AIDL_TO_JAVA:
+    case JavaOptions::COMPILE_AIDL_TO_JAVA:
       return android::aidl::compile_aidl(*options);
-    case Options::PREPROCESS_AIDL:
+    case JavaOptions::PREPROCESS_AIDL:
       return android::aidl::preprocess_aidl(*options);
   }
   std::cerr << "aidl: internal error" << std::endl;

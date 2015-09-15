@@ -150,7 +150,7 @@ class EndToEndTest : public ::testing::Test {
 };
 
 TEST_F(EndToEndTest, IExampleInterface) {
-  Options options;
+  JavaOptions options;
   options.fail_on_parcelable_ = true;
   options.import_paths_.push_back(inputDir_.value());
   options.input_file_name_ =
