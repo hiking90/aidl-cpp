@@ -7,7 +7,7 @@ ifeq ($(TARGET_BUILD_APPS)$(filter true,$(TARGET_BUILD_PDK)),)
 
 LOCAL_PATH:= $(call my-dir)
 
-aidl_static_libraries := libbase
+aidl_static_libraries := libbase libcutils
 
 # Logic shared between aidl and its unittests
 include $(CLEAR_VARS)
