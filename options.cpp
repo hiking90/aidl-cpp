@@ -16,8 +16,11 @@
 
 #include "options.h"
 
+#include <iostream>
 #include <stdio.h>
 
+using std::cerr;
+using std::endl;
 using std::string;
 using std::unique_ptr;
 
@@ -157,6 +160,66 @@ unique_ptr<JavaOptions> JavaOptions::Parse(int argc, const char* const* argv) {
     fprintf(stderr, "\n");
     return java_usage();
   }
+
+  return options;
+}
+
+namespace {
+
+unique_ptr<CppOptions> cpp_usage() {
+  cerr << "usage: aidl-cpp INPUT_FILE OUTPUT_DIR" << endl
+       << endl
+       << "OPTIONS:" << endl
+       << "   -I<DIR>   search path for import statements" << endl
+       << "   -d<FILE>  generate dependency file" << endl
+       << endl
+       << "INPUT_FILE:" << endl
+       << "   an aidl interface file" << endl
+       << "OUTPUT_DIR:" << endl
+       << "   directory to put generated code" << endl;
+  return unique_ptr<CppOptions>(nullptr);
+}
+
+}  // namespace
+
+string CppOptions::InputFileName() const {
+  return input_file_name_;
+}
+
+unique_ptr<CppOptions> CppOptions::Parse(int argc, const char* const* argv) {
+  unique_ptr<CppOptions> options(new CppOptions());
+  int i = 1;
+
+  // Parse flags, all of which start with '-'
+  for ( ; i < argc; ++i) {
+    const size_t len = strlen(argv[i]);
+    const char *s = argv[i];
+    if (s[0] != '-') {
+      break;  // On to the positional arguments.
+    }
+    if (len < 2) {
+      cerr << "Invalid argument '" << s << "'." << endl;
+      return cpp_usage();
+    }
+    const string the_rest = s + 2;
+    if (s[1] == 'I') {
+      options->import_paths_.push_back(the_rest);
+    } else if (s[1] == 'd') {
+      options->dep_file_name_ = the_rest;
+    } else {
+      cerr << "Invalid argument '" << s << "'." << endl;
+      return cpp_usage();
+    }
+  }
+
+  // There are exactly two positional arguments.
+  const int remaining_args = argc - i;
+  if (remaining_args != 2) {
+    cerr << "Expected 2 positional arguments but got " << remaining_args << "." << endl;
+    return cpp_usage();
+  }
+  options->input_file_name_ = argv[i];
+  options->output_base_folder_ = argv[i + 1];
 
   return options;
 }

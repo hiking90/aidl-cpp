@@ -55,6 +55,17 @@ LOCAL_SRC_FILES := main_java.cpp
 LOCAL_STATIC_LIBRARIES := libaidl-common $(aidl_static_libraries)
 include $(BUILD_HOST_EXECUTABLE)
 
+# aidl-cpp executable
+include $(CLEAR_VARS)
+LOCAL_MODULE := aidl-cpp
+
+LOCAL_MODULE_HOST_OS := darwin linux windows
+LOCAL_CFLAGS := -Wall -Werror
+LOCAL_C_INCLUDES := external/gtest/include
+LOCAL_SRC_FILES := main_cpp.cpp
+LOCAL_STATIC_LIBRARIES := libaidl-common $(aidl_static_libraries)
+include $(BUILD_HOST_EXECUTABLE)
+
 
 # TODO(wiley) Compile these for mac as well after b/22771504
 ifeq ($(HOST_OS),linux)

@@ -15,6 +15,7 @@
  */
 
 #include "aidl_language.h"
+#include "logging.h"
 #include "options.h"
 #include "os.h"
 #include "search_path.h"
@@ -891,7 +892,15 @@ check_and_assign_method_ids(const char * filename, interface_item_type* first_it
 
 // ==========================================================
 int
-compile_aidl(const JavaOptions& options)
+compile_aidl_to_cpp(const CppOptions& options)
+{
+  UNIMPLEMENTED(FATAL) << "C++ generation is unimplemented.";
+  return 0;
+}
+
+// ==========================================================
+int
+compile_aidl_to_java(const JavaOptions& options)
 {
     int err = 0, N;
 

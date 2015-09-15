@@ -14,29 +14,22 @@
  * limitations under the License.
  */
 
-#include <iostream>
 #include <memory>
 
 #include "aidl.h"
 #include "logging.h"
 #include "options.h"
 
-using android::aidl::JavaOptions;
+using android::aidl::CppOptions;
 
 int main(int argc, char** argv) {
   android::base::InitLogging(argv);
   LOG(DEBUG) << "aidl starting";
-  std::unique_ptr<JavaOptions> options = JavaOptions::Parse(argc, argv);
+
+  std::unique_ptr<CppOptions> options = CppOptions::Parse(argc, argv);
   if (!options) {
     return 1;
   }
 
-  switch (options->task) {
-    case JavaOptions::COMPILE_AIDL_TO_JAVA:
-      return android::aidl::compile_aidl_to_java(*options);
-    case JavaOptions::PREPROCESS_AIDL:
-      return android::aidl::preprocess_aidl(*options);
-  }
-  std::cerr << "aidl: internal error" << std::endl;
-  return 1;
+  return android::aidl::compile_aidl_to_cpp(*options);
 }

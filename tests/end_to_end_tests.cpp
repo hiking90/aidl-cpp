@@ -160,7 +160,7 @@ TEST_F(EndToEndTest, IExampleInterface) {
   options.auto_dep_file_ = true;
   options.output_base_folder_ = outputDir_.value();
   WriteStubAidls(kIExampleInterfaceParcelables, kIExampleInterfaceInterfaces);
-  EXPECT_EQ(android::aidl::compile_aidl(options), 0);
+  EXPECT_EQ(android::aidl::compile_aidl_to_java(options), 0);
   CheckFileContents(GetPathForPackageClass(kIExampleInterfaceClass, ".java"),
                     kIExampleInterfaceJava);
   // We'd like to check the depends file, but it mentions unique file paths.

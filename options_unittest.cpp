@@ -56,6 +56,17 @@ const char* kCompileJavaCommand[] = {
 };
 const char kCompileCommandOutput[] = "input.java";
 
+const char kCompileDepFile[] = "-doutput.deps";
+const char kCompileCommandOutputDir[] = "output/dir";
+const char* kCompileCppCommand[] = {
+    "aidl-cpp",
+    kCompileCommandIncludePath,
+    kCompileDepFile,
+    kCompileCommandInput,
+    kCompileCommandOutputDir,
+    nullptr,
+};
+
 template <typename T>
 unique_ptr<T> GetOptions(const char* command[]) {
   int argc = 0;
@@ -100,6 +111,16 @@ TEST(JavaOptionsTests, ParsesCompileJava) {
   EXPECT_EQ(string{kCompileCommandInput}, options->input_file_name_);
   EXPECT_EQ(string{kCompileCommandOutput}, options->output_file_name_);
   EXPECT_EQ(false, options->auto_dep_file_);
+}
+
+TEST(CppOptionsTests, ParsesCompileCpp) {
+  unique_ptr<CppOptions> options = GetOptions<CppOptions>(kCompileCppCommand);
+  ASSERT_EQ(1u, options->import_paths_.size());
+  EXPECT_EQ(string{kCompileCommandIncludePath}.substr(2),
+            options->import_paths_[0]);
+  EXPECT_EQ(string{kCompileDepFile}.substr(2), options->dep_file_name_);
+  EXPECT_EQ(kCompileCommandInput, options->InputFileName());
+  EXPECT_EQ(kCompileCommandOutputDir, options->output_base_folder_);
 }
 
 }  // namespace android

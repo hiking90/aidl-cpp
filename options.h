@@ -60,6 +60,31 @@ class JavaOptions final {
   DISALLOW_COPY_AND_ASSIGN(JavaOptions);
 };
 
+class CppOptions final {
+ public:
+
+  ~CppOptions() = default;
+
+  // Parses the command line and returns a non-null pointer to an CppOptions
+  // object on success.
+  // Prints the usage statement on failure.
+  static std::unique_ptr<CppOptions> Parse(int argc, const char* const* argv);
+
+  std::string InputFileName() const;
+  // TODO(wiley) Introduce other getters as necessary.
+
+ private:
+  CppOptions() = default;
+
+  std::string input_file_name_;
+  std::vector<std::string> import_paths_;
+  std::string output_base_folder_;
+  std::string dep_file_name_;
+
+  FRIEND_TEST(CppOptionsTests, ParsesCompileCpp);
+  DISALLOW_COPY_AND_ASSIGN(CppOptions);
+};
+
 }  // namespace android
 }  // namespace aidl
 
