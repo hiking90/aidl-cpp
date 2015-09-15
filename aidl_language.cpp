@@ -16,7 +16,7 @@ using std::string;
 using std::cerr;
 using std::endl;
 
-ParseState *psGlobal = NULL;
+Parser *psGlobal = NULL;
 ParserCallbacks* g_callbacks = NULL; // &k_parserCallbacks;
 char const* g_currentPackage = NULL;
 
@@ -24,40 +24,26 @@ char const* g_currentPackage = NULL;
 void yylex_init(void **);
 void yylex_destroy(void *);
 void yyset_in(FILE *f, void *);
-int yyparse(ParseState*);
+int yyparse(Parser*);
 
-ParseState::ParseState() : ParseState("") {}
-
-ParseState::ParseState(const string& filename)
+Parser::Parser(const string& filename)
     : filename_(filename) {
   yylex_init(&scanner_);
 }
 
-ParseState::~ParseState() {
+Parser::~Parser() {
   yylex_destroy(scanner_);
 }
 
-string ParseState::FileName() {
+string Parser::FileName() {
   return filename_;
 }
 
-string ParseState::Package() {
+string Parser::Package() {
   return g_currentPackage;
 }
 
-void ParseState::ProcessDocument(const document_item_type& items) {
-  /* The cast is not my fault. I didn't write the code on the other side. */
-  /* TODO(sadmac): b/23977313 */
-  g_callbacks->document((document_item_type *)&items);
-}
-
-void ParseState::ProcessImport(const buffer_type& statement) {
-  /* The cast is not my fault. I didn't write the code on the other side. */
-  /* TODO(sadmac): b/23977313 */
-  g_callbacks->import((buffer_type *)&statement);
-}
-
-void ParseState::ReportError(const string& err) {
+void Parser::ReportError(const string& err) {
   /* FIXME: We're printing out the line number as -1. We used to use yylineno
    * (which was NEVER correct even before reentrant parsing). Now we'll need
    * another way.
@@ -66,15 +52,15 @@ void ParseState::ReportError(const string& err) {
   error_ = 1;
 }
 
-bool ParseState::FoundNoErrors() {
+bool Parser::FoundNoErrors() {
   return error_ == 0;
 }
 
-void *ParseState::Scanner() {
+void *Parser::Scanner() {
   return scanner_;
 }
 
-bool ParseState::OpenFileFromDisk() {
+bool Parser::OpenFileFromDisk() {
   FILE *in = fopen(FileName().c_str(), "r");
 
   if (! in)
@@ -84,14 +70,42 @@ bool ParseState::OpenFileFromDisk() {
   return true;
 }
 
-int ParseState::RunParser() {
+bool Parser::RunParser() {
   int ret = yy::parser(this).parse();
 
   free((void *)g_currentPackage);
   g_currentPackage = NULL;
 
   if (error_)
-    return 1;
+    return true;
 
   return ret;
+}
+
+void Parser::SetDocument(document_item_type *d)
+{
+  document_ = d;
+}
+
+void Parser::AddImport(const buffer_type& statement)
+{
+  import_info* import = (import_info*)malloc(sizeof(import_info));
+  memset(import, 0, sizeof(import_info));
+  import->from = strdup(this->FileName().c_str());
+  import->statement.lineno = statement.lineno;
+  import->statement.data = strdup(statement.data);
+  import->statement.extra = NULL;
+  import->next = imports_;
+  import->neededClass = android::aidl::parse_import_statement(statement.data);
+  imports_ = import;
+}
+
+document_item_type *Parser::GetDocument() const
+{
+  return document_;
+}
+
+import_info *Parser::GetImports() const
+{
+  return imports_;
 }

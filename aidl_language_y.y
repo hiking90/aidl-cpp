@@ -13,7 +13,7 @@ static int count_brackets(const char*);
 
 %}
 
-%parse-param { ParseState* ps }
+%parse-param { Parser* ps }
 %lex-param { void *lex_scanner }
 
 %pure-parser
@@ -45,8 +45,8 @@ static int count_brackets(const char*);
 %type<buffer> error
 %%
 document:
-        document_items                          { ps->ProcessDocument(*$1); }
-    |   headers document_items                  { ps->ProcessDocument(*$2); }
+        document_items                          { ps->SetDocument($1); }
+    |   headers document_items                  { ps->SetDocument($2); }
     ;
 
 headers:
@@ -60,8 +60,8 @@ package:
     ;
 
 imports:
-        IMPORT                                  { ps->ProcessImport($1); }
-    |   IMPORT imports                          { ps->ProcessImport($1); }
+        IMPORT                                  { ps->AddImport($1); }
+    |   IMPORT imports                          { ps->AddImport($1); }
     ;
 
 document_items:
