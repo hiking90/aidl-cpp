@@ -157,7 +157,6 @@ TEST_F(EndToEndTest, IExampleInterface) {
       CreateInputFile(GetPathForPackageClass(kIExampleInterfaceClass, ".aidl"),
                       kIExampleInterfaceContents,
                       strlen(kIExampleInterfaceContents)).value();
-  options.auto_dep_file_ = true;
   options.output_base_folder_ = outputDir_.value();
   WriteStubAidls(kIExampleInterfaceParcelables, kIExampleInterfaceInterfaces);
   EXPECT_EQ(android::aidl::compile_aidl_to_java(options), 0);
