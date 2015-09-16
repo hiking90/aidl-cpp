@@ -43,7 +43,7 @@ string Parser::FileName() {
 }
 
 string Parser::Package() {
-  return g_currentPackage;
+  return g_currentPackage ? g_currentPackage : "";
 }
 
 void Parser::ReportError(const string& err) {
