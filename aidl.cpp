@@ -713,121 +713,122 @@ int compile_aidl_to_cpp(const CppOptions& options) {
 }
 
 int compile_aidl_to_java(const JavaOptions& options) {
-    int err = 0, N;
+  int err = 0, N;
 
-    set_import_paths(options.import_paths_);
+  set_import_paths(options.import_paths_);
 
-    register_base_types();
+  register_base_types();
 
-    // import the preprocessed file
-    N = options.preprocessed_files_.size();
-    for (int i=0; i<N; i++) {
-        const string& s = options.preprocessed_files_[i];
-        err |= parse_preprocessed_file(s);
-    }
-    if (err != 0) {
-        return err;
-    }
+  // import the preprocessed file
+  N = options.preprocessed_files_.size();
+  for (int i = 0; i < N; i++) {
+    const string& s = options.preprocessed_files_[i];
+    err |= parse_preprocessed_file(s);
+  }
+  if (err != 0) {
+    return err;
+  }
 
-    // parse the main file
-    Parser p{options.input_file_name_};
-    if (!p.OpenFileFromDisk())
-        return 1;
-    err = p.RunParser() ? 0 : 1;
-    document_item_type* mainDoc = p.GetDocument();
+  // parse the main file
+  Parser p{options.input_file_name_};
+  if (!p.OpenFileFromDisk()) return 1;
+  err = p.RunParser() ? 0 : 1;
+  document_item_type* mainDoc = p.GetDocument();
 
-    // parse the imports
-    import_info* import = p.GetImports();
-    while (import) {
-        if (NAMES.Find(import->neededClass) == NULL) {
-            import->filename = find_import_file(import->neededClass);
-            if (!import->filename) {
-                fprintf(stderr, "%s:%d: couldn't find import for class %s\n",
-                        import->from, import->statement.lineno,
-                        import->neededClass);
-                err |= 1;
-            } else {
-                Parser p{import->filename};
-                err |= p.OpenFileFromDisk() ? 0 : 1;
-                if (! err)
-                    err |= p.RunParser() ? 0 : 1;
-                import->doc = p.GetDocument();
-                if (import->doc == NULL) {
-                    err |= 1;
-                }
-            }
+  // parse the imports
+  import_info* import = p.GetImports();
+  while (import) {
+    if (NAMES.Find(import->neededClass) == NULL) {
+      import->filename = find_import_file(import->neededClass);
+      if (!import->filename) {
+        fprintf(stderr, "%s:%d: couldn't find import for class %s\n",
+                import->from, import->statement.lineno, import->neededClass);
+        err |= 1;
+      } else {
+        Parser p{import->filename};
+        err |= p.OpenFileFromDisk() ? 0 : 1;
+        if (!err) err |= p.RunParser() ? 0 : 1;
+        import->doc = p.GetDocument();
+        if (import->doc == NULL) {
+          err |= 1;
         }
-        import = import->next;
+      }
     }
-    // bail out now if parsing wasn't successful
-    if (err != 0 || mainDoc == NULL) {
-        //fprintf(stderr, "aidl: parsing failed, stopping.\n");
-        return 1;
-    }
+    import = import->next;
+  }
+  // bail out now if parsing wasn't successful
+  if (err != 0 || mainDoc == NULL) {
+    // fprintf(stderr, "aidl: parsing failed, stopping.\n");
+    return 1;
+  }
 
-    // complain about ones that aren't in the right files
-    err |= check_filenames(options.input_file_name_.c_str(), mainDoc);
-    import = p.GetImports();
-    while (import) {
-        err |= check_filenames(import->filename, import->doc);
-        import = import->next;
-    }
+  // complain about ones that aren't in the right files
+  err |= check_filenames(options.input_file_name_.c_str(), mainDoc);
+  import = p.GetImports();
+  while (import) {
+    err |= check_filenames(import->filename, import->doc);
+    import = import->next;
+  }
 
-    // gather the types that have been declared
-    err |= gather_types(options.input_file_name_.c_str(), mainDoc);
-    import = p.GetImports();
-    while (import) {
-        err |= gather_types(import->filename, import->doc);
-        import = import->next;
-    }
+  // gather the types that have been declared
+  err |= gather_types(options.input_file_name_.c_str(), mainDoc);
+  import = p.GetImports();
+  while (import) {
+    err |= gather_types(import->filename, import->doc);
+    import = import->next;
+  }
 
-    // check the referenced types in mainDoc to make sure we've imported them
-    err |= check_types(options.input_file_name_.c_str(), mainDoc);
+  // check the referenced types in mainDoc to make sure we've imported them
+  err |= check_types(options.input_file_name_.c_str(), mainDoc);
 
-    // finally, there really only needs to be one thing in mainDoc, and it
-    // needs to be an interface.
-    bool onlyParcelable = false;
-    err |= exactly_one_interface(options.input_file_name_.c_str(), mainDoc, options, &onlyParcelable);
+  // finally, there really only needs to be one thing in mainDoc, and it
+  // needs to be an interface.
+  bool onlyParcelable = false;
+  err |= exactly_one_interface(options.input_file_name_.c_str(), mainDoc,
+                               options, &onlyParcelable);
 
-    // If this includes an interface definition, then assign method ids and validate.
-    if (!onlyParcelable) {
-        err |= check_and_assign_method_ids(options.input_file_name_.c_str(),
-                ((interface_type*)mainDoc)->interface_items);
-    }
+  // If this includes an interface definition, then assign method ids and
+  // validate.
+  if (!onlyParcelable) {
+    err |= check_and_assign_method_ids(
+        options.input_file_name_.c_str(),
+        ((interface_type*)mainDoc)->interface_items);
+  }
 
-    // after this, there shouldn't be any more errors because of the
-    // input.
-    if (err != 0 || mainDoc == NULL) {
-        return 1;
-    }
+  // after this, there shouldn't be any more errors because of the
+  // input.
+  if (err != 0 || mainDoc == NULL) {
+    return 1;
+  }
 
-    string output_file_name = options.output_file_name_;
-    // if needed, generate the output file name from the base folder
-    if (output_file_name.length() == 0 && options.output_base_folder_.length() > 0) {
-        output_file_name = generate_outputFileName(options, mainDoc);
-    }
+  string output_file_name = options.output_file_name_;
+  // if needed, generate the output file name from the base folder
+  if (output_file_name.length() == 0 &&
+      options.output_base_folder_.length() > 0) {
+    output_file_name = generate_outputFileName(options, mainDoc);
+  }
 
-    // if we were asked to, generate a make dependency file
-    // unless it's a parcelable *and* it's supposed to fail on parcelable
-    if ((options.auto_dep_file_ || options.dep_file_name_ != "") &&
-            !(onlyParcelable && options.fail_on_parcelable_)) {
-        // make sure the folders of the output file all exists
-        check_outputFilePath(output_file_name);
-        generate_dep_file(options, mainDoc, p);
-    }
-
-    // they didn't ask to fail on parcelables, so just exit quietly.
-    if (onlyParcelable && !options.fail_on_parcelable_) {
-        return 0;
-    }
-
+  // if we were asked to, generate a make dependency file
+  // unless it's a parcelable *and* it's supposed to fail on parcelable
+  if ((options.auto_dep_file_ || options.dep_file_name_ != "") &&
+      !(onlyParcelable && options.fail_on_parcelable_)) {
     // make sure the folders of the output file all exists
     check_outputFilePath(output_file_name);
+    generate_dep_file(options, mainDoc, p);
+  }
 
-    err = generate_java(output_file_name, options.input_file_name_.c_str(),
-                        (interface_type*)mainDoc);
+  // they didn't ask to fail on parcelables, so just exit quietly.
+  if (onlyParcelable && !options.fail_on_parcelable_) {
+    return 0;
+  }
 
-    return err;
+  // make sure the folders of the output file all exists
+  check_outputFilePath(output_file_name);
+
+  err = generate_java(output_file_name, options.input_file_name_.c_str(),
+                      (interface_type*)mainDoc);
+
+  return err;
 }
 
 int preprocess_aidl(const JavaOptions& options) {
