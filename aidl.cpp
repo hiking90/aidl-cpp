@@ -17,6 +17,7 @@
 #include "aidl.h"
 
 #include <fcntl.h>
+#include <iostream>
 #include <map>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,6 +46,8 @@
 #  define O_BINARY  0
 #endif
 
+using std::cerr;
+using std::endl;
 using std::map;
 using std::set;
 using std::string;
@@ -385,46 +388,6 @@ int check_types(const char* filename, document_item_type* items) {
     return err;
 }
 
-int exactly_one_interface(const char* filename,
-                          const document_item_type* items,
-                          const JavaOptions& options,
-                          bool* onlyParcelable) {
-    if (items == NULL) {
-        fprintf(stderr, "%s: file does not contain any interfaces\n",
-                            filename);
-        return 1;
-    }
-
-    const document_item_type* next = items->next;
-    // Allow parcelables to skip the "one-only" rule.
-    if (items->next != NULL && next->item_type != USER_DATA_TYPE) {
-        int lineno = -1;
-        if (next->item_type == INTERFACE_TYPE_BINDER) {
-            lineno = ((interface_type*)next)->interface_token.lineno;
-        }
-        fprintf(stderr, "%s:%d aidl can only handle one interface per file\n",
-                            filename, lineno);
-        return 1;
-    }
-
-    if (items->item_type == USER_DATA_TYPE) {
-        *onlyParcelable = true;
-        if (options.fail_on_parcelable_) {
-            fprintf(stderr, "%s:%d aidl can only generate code for interfaces, not"
-                            " parcelables,\n", filename,
-                            ((user_data_type*)items)->keyword_token.lineno);
-            fprintf(stderr, "%s:%d .aidl files that only declare parcelables"
-                            "may not go in the Makefile.\n", filename,
-                            ((user_data_type*)items)->keyword_token.lineno);
-            return 1;
-        }
-    } else {
-        *onlyParcelable = false;
-    }
-
-    return 0;
-}
-
 void generate_dep_file(const JavaOptions& options,
                        const document_item_type* items,
                        const Parser& p) {
@@ -713,120 +676,109 @@ int compile_aidl_to_cpp(const CppOptions& options) {
 }
 
 int compile_aidl_to_java(const JavaOptions& options) {
-  int err = 0, N;
+  int err = 0;
 
   set_import_paths(options.import_paths_);
 
   register_base_types();
 
   // import the preprocessed file
-  N = options.preprocessed_files_.size();
-  for (int i = 0; i < N; i++) {
-    const string& s = options.preprocessed_files_[i];
+  for (const string& s : options.preprocessed_files_) {
     err |= parse_preprocessed_file(s);
   }
   if (err != 0) {
     return err;
   }
 
-  // parse the main file
+  // parse the input file
   Parser p{options.input_file_name_};
-  if (!p.OpenFileFromDisk()) return 1;
-  err = p.RunParser() ? 0 : 1;
-  document_item_type* mainDoc = p.GetDocument();
-
-  // parse the imports
-  import_info* import = p.GetImports();
-  while (import) {
-    if (NAMES.Find(import->neededClass) == NULL) {
-      import->filename = find_import_file(import->neededClass);
-      if (!import->filename) {
-        fprintf(stderr, "%s:%d: couldn't find import for class %s\n",
-                import->from, import->statement.lineno, import->neededClass);
-        err |= 1;
-      } else {
-        Parser p{import->filename};
-        err |= p.OpenFileFromDisk() ? 0 : 1;
-        if (!err) err |= p.RunParser() ? 0 : 1;
-        import->doc = p.GetDocument();
-        if (import->doc == NULL) {
-          err |= 1;
-        }
-      }
-    }
-    import = import->next;
-  }
-  // bail out now if parsing wasn't successful
-  if (err != 0 || mainDoc == NULL) {
-    // fprintf(stderr, "aidl: parsing failed, stopping.\n");
+  if (!p.OpenFileFromDisk() || !p.RunParser()) {
     return 1;
   }
+  document_item_type* parsed_doc = p.GetDocument();
+  // We could in theory declare parcelables in the same file as the interface.
+  // In practice, those parcelables would have to have the same name as
+  // the interface, since this was originally written to support Java, with its
+  // packages and names that correspond to file system structure.
+  // Since we can't have two distinct classes with the same name and package,
+  // we can't actually declare parcelables in the same file.
+  if (parsed_doc == nullptr ||
+      parsed_doc->item_type != INTERFACE_TYPE_BINDER ||
+      parsed_doc->next != nullptr) {
+    cerr << "aidl expects exactly one interface per input file";
+    err |= 1;
+  }
+  interface_type* interface = (interface_type*)parsed_doc;
+  err |= check_filename(options.input_file_name_.c_str(),
+                        interface->package, &interface->name);
 
-  // complain about ones that aren't in the right files
-  err |= check_filenames(options.input_file_name_.c_str(), mainDoc);
-  import = p.GetImports();
-  while (import) {
+  // parse the imports of the input file
+  for (import_info* import = p.GetImports(); import; import = import->next) {
+    if (NAMES.Find(import->neededClass) != NULL) {
+      continue;
+    }
+    import->filename = find_import_file(import->neededClass);
+    if (!import->filename) {
+      cerr << import->from << ":" << import->statement.lineno
+           << ": couldn't find import for class "
+           << import->neededClass << endl;
+      err |= 1;
+      continue;
+    }
+    Parser p{import->filename};
+    if (!p.OpenFileFromDisk() || !p.RunParser() || p.GetDocument() == nullptr) {
+      cerr << "error while parsing import for class "
+           << import->neededClass << endl;
+      err |= 1;
+      continue;
+    }
+    import->doc = p.GetDocument();
     err |= check_filenames(import->filename, import->doc);
-    import = import->next;
+  }
+  if (err != 0) {
+    return err;
   }
 
   // gather the types that have been declared
-  err |= gather_types(options.input_file_name_.c_str(), mainDoc);
-  import = p.GetImports();
-  while (import) {
+  err |= gather_types(options.input_file_name_.c_str(), parsed_doc);
+  for (import_info* import = p.GetImports(); import; import = import->next) {
     err |= gather_types(import->filename, import->doc);
-    import = import->next;
   }
 
-  // check the referenced types in mainDoc to make sure we've imported them
-  err |= check_types(options.input_file_name_.c_str(), mainDoc);
+  // check the referenced types in parsed_doc to make sure we've imported them
+  err |= check_types(options.input_file_name_.c_str(), parsed_doc);
 
-  // finally, there really only needs to be one thing in mainDoc, and it
-  // needs to be an interface.
-  bool onlyParcelable = false;
-  err |= exactly_one_interface(options.input_file_name_.c_str(), mainDoc,
-                               options, &onlyParcelable);
 
-  // If this includes an interface definition, then assign method ids and
-  // validate.
-  if (!onlyParcelable) {
-    err |= check_and_assign_method_ids(
-        options.input_file_name_.c_str(),
-        ((interface_type*)mainDoc)->interface_items);
-  }
+  // assign method ids and validate.
+  err |= check_and_assign_method_ids(options.input_file_name_.c_str(),
+                                     interface->interface_items);
 
   // after this, there shouldn't be any more errors because of the
   // input.
-  if (err != 0 || mainDoc == NULL) {
-    return 1;
+  if (err != 0) {
+    return err;
   }
 
   string output_file_name = options.output_file_name_;
   // if needed, generate the output file name from the base folder
   if (output_file_name.length() == 0 &&
       options.output_base_folder_.length() > 0) {
-    output_file_name = generate_outputFileName(options, mainDoc);
+    output_file_name = generate_outputFileName(options, parsed_doc);
   }
 
   // if we were asked to, generate a make dependency file
   // unless it's a parcelable *and* it's supposed to fail on parcelable
-  if ((options.auto_dep_file_ || options.dep_file_name_ != "") &&
-      !(onlyParcelable && options.fail_on_parcelable_)) {
+  if (options.auto_dep_file_ || options.dep_file_name_ != "") {
     // make sure the folders of the output file all exists
     check_outputFilePath(output_file_name);
-    generate_dep_file(options, mainDoc, p);
-  }
-
-  // they didn't ask to fail on parcelables, so just exit quietly.
-  if (onlyParcelable && !options.fail_on_parcelable_) {
-    return 0;
+    generate_dep_file(options, parsed_doc, p);
   }
 
   // make sure the folders of the output file all exists
   check_outputFilePath(output_file_name);
 
   err = generate_java(output_file_name, options.input_file_name_.c_str(),
-                      (interface_type*)mainDoc);
+                      (interface_type*)parsed_doc);
 
   return err;
 }
