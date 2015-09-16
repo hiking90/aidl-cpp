@@ -35,6 +35,7 @@
 
 #include "Type.h"
 #include "aidl_language.h"
+#include "generate_cpp.h"
 #include "generate_java.h"
 #include "logging.h"
 #include "options.h"
@@ -390,7 +391,7 @@ int check_types(const char* filename, document_item_type* items) {
 
 void generate_dep_file(const JavaOptions& options,
                        const document_item_type* items,
-                       const Parser& p) {
+                       import_info* import_head) {
     /* we open the file in binary mode to ensure that the same output is
      * generated on all platforms !!
      */
@@ -407,7 +408,7 @@ void generate_dep_file(const JavaOptions& options,
     }
 
     const char* slash = "\\";
-    import_info* import = p.GetImports();
+    import_info* import = import_head;
     if (import == NULL) {
         slash = "";
     }
@@ -438,7 +439,7 @@ void generate_dep_file(const JavaOptions& options,
 
     // Output "<imported_file>: " so make won't fail if the imported file has
     // been deleted, moved or renamed in incremental build.
-    import = p.GetImports();
+    import = import_head;
     while (import) {
         if (import->filename) {
             fprintf(to, "%s :\n", import->filename);
@@ -668,22 +669,19 @@ int check_and_assign_method_ids(const char * filename,
     return 0;
 }
 
-}  // namespace
-
-int compile_aidl_to_cpp(const CppOptions& options) {
-  UNIMPLEMENTED(FATAL) << "C++ generation is unimplemented.";
-  return 0;
-}
-
-int compile_aidl_to_java(const JavaOptions& options) {
+int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
+                           const std::vector<std::string> import_paths,
+                           const std::string& input_file_name,
+                           interface_type** returned_interface,
+                           import_info** returned_imports) {
   int err = 0;
 
-  set_import_paths(options.import_paths_);
+  set_import_paths(import_paths);
 
   register_base_types();
 
   // import the preprocessed file
-  for (const string& s : options.preprocessed_files_) {
+  for (const string& s : preprocessed_files) {
     err |= parse_preprocessed_file(s);
   }
   if (err != 0) {
@@ -691,7 +689,7 @@ int compile_aidl_to_java(const JavaOptions& options) {
   }
 
   // parse the input file
-  Parser p{options.input_file_name_};
+  Parser p{input_file_name};
   if (!p.OpenFileFromDisk() || !p.RunParser()) {
     return 1;
   }
@@ -709,7 +707,7 @@ int compile_aidl_to_java(const JavaOptions& options) {
     err |= 1;
   }
   interface_type* interface = (interface_type*)parsed_doc;
-  err |= check_filename(options.input_file_name_.c_str(),
+  err |= check_filename(input_file_name.c_str(),
                         interface->package, &interface->name);
 
   // parse the imports of the input file
@@ -740,17 +738,17 @@ int compile_aidl_to_java(const JavaOptions& options) {
   }
 
   // gather the types that have been declared
-  err |= gather_types(options.input_file_name_.c_str(), parsed_doc);
+  err |= gather_types(input_file_name.c_str(), parsed_doc);
   for (import_info* import = p.GetImports(); import; import = import->next) {
     err |= gather_types(import->filename, import->doc);
   }
 
   // check the referenced types in parsed_doc to make sure we've imported them
-  err |= check_types(options.input_file_name_.c_str(), parsed_doc);
+  err |= check_types(input_file_name.c_str(), parsed_doc);
 
 
   // assign method ids and validate.
-  err |= check_and_assign_method_ids(options.input_file_name_.c_str(),
+  err |= check_and_assign_method_ids(input_file_name.c_str(),
                                      interface->interface_items);
 
   // after this, there shouldn't be any more errors because of the
@@ -758,6 +756,43 @@ int compile_aidl_to_java(const JavaOptions& options) {
   if (err != 0) {
     return err;
   }
+
+  *returned_interface = interface;
+  *returned_imports = p.GetImports();
+  return 0;
+}
+
+}  // namespace
+
+int compile_aidl_to_cpp(const CppOptions& options) {
+  interface_type* interface = nullptr;
+  import_info* imports = nullptr;
+  int err = load_and_validate_aidl(std::vector<std::string>{},
+                                   options.ImportPaths(),
+                                   options.InputFileName(),
+                                   &interface,
+                                   &imports);
+  if (err != 0) {
+    return err;
+  }
+
+  // TODO(wiley) b/23600457 generate a dependency file if requested with -b
+
+  return generate_cpp(options, interface);
+}
+
+int compile_aidl_to_java(const JavaOptions& options) {
+  interface_type* interface = nullptr;
+  import_info* imports = nullptr;
+  int err = load_and_validate_aidl(options.preprocessed_files_,
+                                   options.import_paths_,
+                                   options.input_file_name_,
+                                   &interface,
+                                   &imports);
+  if (err != 0) {
+    return err;
+  }
+  document_item_type* parsed_doc = (document_item_type*)interface;
 
   string output_file_name = options.output_file_name_;
   // if needed, generate the output file name from the base folder
@@ -771,14 +806,14 @@ int compile_aidl_to_java(const JavaOptions& options) {
   if (options.auto_dep_file_ || options.dep_file_name_ != "") {
     // make sure the folders of the output file all exists
     check_outputFilePath(output_file_name);
-    generate_dep_file(options, parsed_doc, p);
+    generate_dep_file(options, parsed_doc, imports);
   }
 
   // make sure the folders of the output file all exists
   check_outputFilePath(output_file_name);
 
   err = generate_java(output_file_name, options.input_file_name_.c_str(),
-                      (interface_type*)parsed_doc);
+                      interface);
 
   return err;
 }

@@ -71,6 +71,7 @@ class CppOptions final {
   static std::unique_ptr<CppOptions> Parse(int argc, const char* const* argv);
 
   std::string InputFileName() const;
+  std::vector<std::string> ImportPaths() const;
   // TODO(wiley) Introduce other getters as necessary.
 
  private:

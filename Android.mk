@@ -36,6 +36,7 @@ LOCAL_SRC_FILES := \
     ast_cpp.cpp \
     ast_java.cpp \
     code_writer.cpp \
+    generate_cpp.cpp \
     generate_java.cpp \
     generate_java_binder.cpp \
     options.cpp \

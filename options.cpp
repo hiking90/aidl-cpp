@@ -23,6 +23,7 @@ using std::cerr;
 using std::endl;
 using std::string;
 using std::unique_ptr;
+using std::vector;
 
 namespace android {
 namespace aidl {
@@ -184,6 +185,10 @@ unique_ptr<CppOptions> cpp_usage() {
 
 string CppOptions::InputFileName() const {
   return input_file_name_;
+}
+
+vector<string> CppOptions::ImportPaths() const {
+  return import_paths_;
 }
 
 unique_ptr<CppOptions> CppOptions::Parse(int argc, const char* const* argv) {
