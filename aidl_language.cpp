@@ -79,10 +79,7 @@ bool Parser::RunParser() {
   free((void *)g_currentPackage);
   g_currentPackage = NULL;
 
-  if (error_)
-    return true;
-
-  return ret;
+  return ret == 0 && error_ == 0;
 }
 
 void Parser::SetDocument(document_item_type *d)

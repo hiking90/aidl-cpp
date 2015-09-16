@@ -732,8 +732,8 @@ int compile_aidl_to_java(const JavaOptions& options) {
     // parse the main file
     Parser p{options.input_file_name_};
     if (!p.OpenFileFromDisk())
-        return -1;
-    err = p.RunParser();
+        return 1;
+    err = p.RunParser() ? 0 : 1;
     document_item_type* mainDoc = p.GetDocument();
 
     // parse the imports
@@ -750,7 +750,7 @@ int compile_aidl_to_java(const JavaOptions& options) {
                 Parser p{import->filename};
                 err |= p.OpenFileFromDisk() ? 0 : 1;
                 if (! err)
-                    err |= p.RunParser();
+                    err |= p.RunParser() ? 0 : 1;
                 import->doc = p.GetDocument();
                 if (import->doc == NULL) {
                     err |= 1;
@@ -832,18 +832,15 @@ int compile_aidl_to_java(const JavaOptions& options) {
 
 int preprocess_aidl(const JavaOptions& options) {
     vector<string> lines;
-    int err;
 
     // read files
     int N = options.files_to_preprocess_.size();
     for (int i=0; i<N; i++) {
         Parser p{options.files_to_preprocess_[i]};
-        if (! p.OpenFileFromDisk())
+        if (!p.OpenFileFromDisk())
             return 1;
-        err = p.RunParser();
-        if (err != 0) {
-            return err;
-        }
+        if (!p.RunParser())
+            return 1;
         document_item_type* doc = p.GetDocument();
         string line;
         if (doc->item_type == USER_DATA_TYPE) {
