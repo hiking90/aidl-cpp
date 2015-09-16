@@ -110,42 +110,6 @@ convert_direction(const char* direction)
 }
 
 // ==========================================================
-struct import_info {
-    const char* from;
-    const char* filename;
-    buffer_type statement;
-    const char* neededClass;
-    document_item_type* doc;
-    struct import_info* next;
-};
-
-document_item_type* g_document = NULL;
-import_info* g_imports = NULL;
-
-static void
-main_document_parsed(document_item_type* d)
-{
-    g_document = d;
-}
-
-static void
-main_import_parsed(buffer_type* statement)
-{
-    import_info* import = (import_info*)malloc(sizeof(import_info));
-    memset(import, 0, sizeof(import_info));
-    import->from = strdup(psGlobal->FileName().c_str());
-    import->statement.lineno = statement->lineno;
-    import->statement.data = strdup(statement->data);
-    import->statement.extra = NULL;
-    import->next = g_imports;
-    import->neededClass = parse_import_statement(statement->data);
-    g_imports = import;
-}
-
-static ParserCallbacks g_mainCallbacks = {
-    &main_document_parsed,
-    &main_import_parsed
-};
 
 char*
 parse_import_statement(const char* text)
@@ -601,7 +565,8 @@ exactly_one_interface(const char* filename, const document_item_type* items, con
 
 // ==========================================================
 void
-generate_dep_file(const JavaOptions& options, const document_item_type* items)
+generate_dep_file(const JavaOptions& options, const document_item_type* items,
+                  const Parser& p)
 {
     /* we open the file in binary mode to ensure that the same output is
      * generated on all platforms !!
@@ -619,7 +584,7 @@ generate_dep_file(const JavaOptions& options, const document_item_type* items)
     }
 
     const char* slash = "\\";
-    import_info* import = g_imports;
+    import_info* import = p.GetImports();
     if (import == NULL) {
         slash = "";
     }
@@ -650,7 +615,7 @@ generate_dep_file(const JavaOptions& options, const document_item_type* items)
 
     // Output "<imported_file>: " so make won't fail if the imported file has
     // been deleted, moved or renamed in incremental build.
-    import = g_imports;
+    import = p.GetImports();
     while (import) {
         if (import->filename) {
             fprintf(to, "%s :\n", import->filename);
@@ -919,14 +884,14 @@ compile_aidl_to_java(const JavaOptions& options)
     }
 
     // parse the main file
-    g_callbacks = &g_mainCallbacks;
-    err = parse_aidl(options.input_file_name_.c_str());
-    document_item_type* mainDoc = g_document;
-    g_document = NULL;
+    Parser p{options.input_file_name_};
+    if (!p.OpenFileFromDisk())
+        return -1;
+    err = p.RunParser();
+    document_item_type* mainDoc = p.GetDocument();
 
     // parse the imports
-    g_callbacks = &g_mainCallbacks;
-    import_info* import = g_imports;
+    import_info* import = p.GetImports();
     while (import) {
         if (NAMES.Find(import->neededClass) == NULL) {
             import->filename = find_import_file(import->neededClass);
@@ -936,8 +901,11 @@ compile_aidl_to_java(const JavaOptions& options)
                         import->neededClass);
                 err |= 1;
             } else {
-                err |= parse_aidl(import->filename);
-                import->doc = g_document;
+                Parser p{import->filename};
+                err |= p.OpenFileFromDisk() ? 0 : 1;
+                if (! err)
+                    err |= p.RunParser();
+                import->doc = p.GetDocument();
                 if (import->doc == NULL) {
                     err |= 1;
                 }
@@ -953,7 +921,7 @@ compile_aidl_to_java(const JavaOptions& options)
 
     // complain about ones that aren't in the right files
     err |= check_filenames(options.input_file_name_.c_str(), mainDoc);
-    import = g_imports;
+    import = p.GetImports();
     while (import) {
         err |= check_filenames(import->filename, import->doc);
         import = import->next;
@@ -961,7 +929,7 @@ compile_aidl_to_java(const JavaOptions& options)
 
     // gather the types that have been declared
     err |= gather_types(options.input_file_name_.c_str(), mainDoc);
-    import = g_imports;
+    import = p.GetImports();
     while (import) {
         err |= gather_types(import->filename, import->doc);
         import = import->next;
@@ -1012,7 +980,7 @@ compile_aidl_to_java(const JavaOptions& options)
             !(onlyParcelable && options.fail_on_parcelable_)) {
         // make sure the folders of the output file all exists
         check_outputFilePath(output_file_name);
-        generate_dep_file(options, mainDoc);
+        generate_dep_file(options, mainDoc, p);
     }
 
     // they didn't ask to fail on parcelables, so just exit quietly.
@@ -1038,12 +1006,14 @@ preprocess_aidl(const JavaOptions& options)
     // read files
     int N = options.files_to_preprocess_.size();
     for (int i=0; i<N; i++) {
-        g_callbacks = &g_mainCallbacks;
-        err = parse_aidl(options.files_to_preprocess_[i].c_str());
+        Parser p{options.files_to_preprocess_[i]};
+        if (! p.OpenFileFromDisk())
+            return 1;
+        err = p.RunParser();
         if (err != 0) {
             return err;
         }
-        document_item_type* doc = g_document;
+        document_item_type* doc = p.GetDocument();
         string line;
         if (doc->item_type == USER_DATA_TYPE) {
             user_data_type* parcelable = (user_data_type*)doc;

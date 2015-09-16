@@ -182,18 +182,3 @@ void do_package_statement(const char* importText)
     if (g_currentPackage) free((void*)g_currentPackage);
     g_currentPackage = android::aidl::parse_import_statement(importText);
 }
-
-
-// main parse function
-// ================================================
-int parse_aidl(char const *filename) {
-  ParseState ps(filename);
-  psGlobal = &ps;
-
-  if (!ps.OpenFileFromDisk()) {
-    fprintf(stderr, "aidl: unable to open file for read: %s\n", filename);
-    return 1;
-  }
-
-  return ps.RunParser();
-}

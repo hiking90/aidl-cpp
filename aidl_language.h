@@ -109,8 +109,6 @@ typedef struct interface_type {
 extern "C" {
 #endif
 
-int parse_aidl(char const *);
-
 // in, out or inout
 enum {
     IN_PARAMETER = 1,
@@ -136,14 +134,22 @@ typedef enum {
 
 void init_buffer_type(buffer_type* buf, int lineno);
 
-class ParseState {
+struct import_info {
+    const char* from;
+    const char* filename;
+    buffer_type statement;
+    const char* neededClass;
+    document_item_type* doc;
+    struct import_info* next;
+};
+
+class Parser {
  public:
-  ParseState();
-  ParseState(const std::string& filename);
-  ~ParseState();
+  Parser(const std::string& filename);
+  ~Parser();
 
   bool OpenFileFromDisk();
-  int RunParser();
+  bool RunParser();
   void ReportError(const std::string& err);
 
   bool FoundNoErrors();
@@ -151,23 +157,25 @@ class ParseState {
   std::string Package();
   void *Scanner();
 
-  void ProcessDocument(const document_item_type& items);
-  void ProcessImport(const buffer_type& statement);
+  void SetDocument(document_item_type *items);
+  void AddImport(const buffer_type& statement);
+
+  document_item_type *GetDocument() const;
+  import_info *GetImports() const;
 
  private:
   int error_ = 0;
   std::string filename_;
   std::string package_;
   void *scanner_ = nullptr;
+  document_item_type* document_ = nullptr;
+  import_info* imports_ = nullptr;
 
-  DISALLOW_COPY_AND_ASSIGN(ParseState);
+  DISALLOW_COPY_AND_ASSIGN(Parser);
 };
-
-extern ParseState *psGlobal;
 
 #if __cplusplus
 }
 #endif
-
 
 #endif // AIDL_AIDL_LANGUAGE_H_
