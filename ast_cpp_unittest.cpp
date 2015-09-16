@@ -35,9 +35,12 @@ R"(#ifndef HEADER_INCLUDE_GUARD_H_
 #include <memory>
 
 namespace android {
+
 namespace test {
 
+
 }  // namespace test
+
 }  // namespace android
 
 #endif  // HEADER_INCLUDE_GUARD_H_)";
@@ -45,9 +48,13 @@ namespace test {
 }  // namespace
 
 TEST(AstCppTests, GeneratesHeader) {
-  CppHeader cpp_header("HEADER_INCLUDE_GUARD_H_",
-                       {"string", "memory"},
-                       {"android", "test"});
+  CppHeader cpp_header{"HEADER_INCLUDE_GUARD_H_",
+    {"string", "memory"},
+    new CppNamespace {"android", {
+      new CppNamespace {"test", {
+      }}
+    }}
+  };
   string actual_output;
   CodeWriterPtr writer = get_string_writer(&actual_output);
   cpp_header.Write(writer.get());

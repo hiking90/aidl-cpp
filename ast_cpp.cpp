@@ -5,54 +5,58 @@
 namespace android {
 namespace aidl {
 
-namespace {
+CppNamespace::CppNamespace(const std::string& name,
+                           std::vector<CppDeclaration *> declarations)
+    : declarations_(declarations),
+      name_(name) {}
 
-void WriteDocumentBody(CodeWriter* to,
-                       const std::vector<std::string>& include_list,
-                       const std::vector<std::string>& namespaces) {
-  for (const auto& include : include_list) {
+CppNamespace::~CppNamespace() {
+  for (auto dec : declarations_)
+    delete dec;
+}
+
+void CppNamespace::Write(CodeWriter* to) const {
+  to->Write("namespace %s {\n\n", name_.c_str());
+
+  for (const auto& dec : declarations_)
+    dec->Write(to);
+
+  to->Write("\n}  // namespace %s\n", name_.c_str());
+}
+
+CppDocument::CppDocument(const std::vector<std::string>& include_list,
+                         CppNamespace *a_namespace)
+    : include_list_(include_list),
+      namespace_(a_namespace) {}
+
+void CppDocument::Write(CodeWriter* to) const {
+  for (const auto& include : include_list_) {
     to->Write("#include <%s>\n", include.c_str());
   }
   to->Write("\n");
 
-  for (const auto& space : namespaces) {
-    to->Write("namespace %s {\n", space.c_str());
-  }
-  to->Write("\n");
-
-  // TODO(wiley) When we have classes to generate, put them here.
-  for (auto it = namespaces.rbegin(); it != namespaces.rend(); ++it) {
-    to->Write("}  // namespace %s\n", it->c_str());
-  }
+  namespace_->Write(to);
 }
-
-}  // namespace
 
 CppHeader::CppHeader(const std::string& include_guard,
                      const std::vector<std::string>& include_list,
-                     const std::vector<std::string>& namespaces)
-    : include_guard_(include_guard),
-      include_list_(include_list),
-      namespaces_(namespaces) {}
+                     CppNamespace *a_namespace)
+    : CppDocument(include_list, a_namespace),
+      include_guard_(include_guard) {}
 
 void CppHeader::Write(CodeWriter* to) const {
   to->Write("#ifndef %s\n", include_guard_.c_str());
   to->Write("#define %s\n\n", include_guard_.c_str());
 
-  WriteDocumentBody(to, include_list_, namespaces_);
+  CppDocument::Write(to);
   to->Write("\n");
 
   to->Write("#endif  // %s", include_guard_.c_str());
 }
 
-CppDocument::CppDocument(const std::vector<std::string>& include_list,
-            const std::vector<std::string>& namespaces)
-    : include_list_(include_list),
-      namespaces_(namespaces) {}
-
-void CppDocument::Write(CodeWriter* to) const {
-  WriteDocumentBody(to, include_list_, namespaces_);
-}
+CppSource::CppSource(const std::vector<std::string>& include_list,
+                     CppNamespace *a_namespace)
+    : CppDocument(include_list, a_namespace) {}
 
 }  // namespace aidl
 }  // namespace android

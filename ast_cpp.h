@@ -19,6 +19,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 #include <base/macros.h>
 
@@ -27,33 +28,75 @@ namespace aidl {
 
 class CodeWriter;
 
-class CppHeader final {
+class CppNode {
+ public:
+  CppNode() = default;
+  virtual ~CppNode() = default;
+  virtual void Write(CodeWriter* to) const = 0;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(CppNode);
+};  // class CppNode
+
+class CppDeclaration : public CppNode {
+ public:
+  CppDeclaration() = default;
+  virtual ~CppDeclaration() = default;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(CppDeclaration);
+};  // class CppDeclaration
+
+class CppNamespace : public CppDeclaration {
+ public:
+  CppNamespace(const std::string& name,
+               std::vector<CppDeclaration *> declarations);
+  virtual ~CppNamespace();
+
+  void Write(CodeWriter* to) const override;
+
+ private:
+  std::vector<CppDeclaration *> declarations_;
+  std::string name_;
+
+  DISALLOW_COPY_AND_ASSIGN(CppNamespace);
+};  // class CppNamespace
+
+class CppDocument : public CppNode {
+ public:
+  CppDocument(const std::vector<std::string>& include_list,
+              CppNamespace *a_namespace);
+
+  void Write(CodeWriter* to) const override;
+
+ private:
+  std::vector<std::string> include_list_;
+  std::unique_ptr<CppNamespace> namespace_;
+
+  DISALLOW_COPY_AND_ASSIGN(CppDocument);
+};  // class CppDocument
+
+class CppHeader final : public CppDocument {
  public:
   CppHeader(const std::string& include_guard,
             const std::vector<std::string>& include_list,
-            const std::vector<std::string>& namespaces);
-  virtual void Write(CodeWriter* to) const;
+            CppNamespace *a_namespace);
+  void Write(CodeWriter* to) const override;
 
  private:
   const std::string include_guard_;
-  std::vector<std::string> include_list_;
-  std::vector<std::string> namespaces_;
 
   DISALLOW_COPY_AND_ASSIGN(CppHeader);
 };  // class CppHeader
 
-class CppDocument final {
+class CppSource final : public CppDocument {
  public:
-  CppDocument(const std::vector<std::string>& include_list,
-              const std::vector<std::string>& namespaces);
-  virtual void Write(CodeWriter* to) const;
+  CppSource(const std::vector<std::string>& include_list,
+            CppNamespace *a_namespace);
 
  private:
-  std::vector<std::string> include_list_;
-  std::vector<std::string> namespaces_;
-
-  DISALLOW_COPY_AND_ASSIGN(CppDocument);
-};  // class CppDocument
+  DISALLOW_COPY_AND_ASSIGN(CppSource);
+};  // class CppSource
 
 }  // namespace aidl
 }  // namespace android
