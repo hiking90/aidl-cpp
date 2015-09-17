@@ -66,6 +66,28 @@ class CppClassDeclaration : public CppDeclaration {
   DISALLOW_COPY_AND_ASSIGN(CppClassDeclaration);
 };  // class CppClassDeclaration
 
+class CppMethodDeclaration : public CppDeclaration {
+ public:
+  CppMethodDeclaration(const std::string& return_type,
+                       const std::string& name,
+                       std::vector<std::string> arguments,
+                       bool is_const = false,
+                       bool is_virtual = false);
+
+  virtual ~CppMethodDeclaration() = default;
+
+  void Write(CodeWriter* to) const override;
+
+ private:
+  const std::string return_type_;
+  const std::string name_;
+  std::vector<std::string> arguments_;
+  bool is_const_;
+  bool is_virtual_;
+
+  DISALLOW_COPY_AND_ASSIGN(CppMethodDeclaration);
+};
+
 class CppNamespace : public CppDeclaration {
  public:
   CppNamespace(const std::string& name,

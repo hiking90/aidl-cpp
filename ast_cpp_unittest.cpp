@@ -39,14 +39,15 @@ namespace android {
 namespace test {
 
 class TestClass {
-
-
-}  // class TestClass
+public:
+void NormalMethod(int normalarg, float normal2);
+virtual void SubMethod(int subarg) const;
+};  // class TestClass
 
 class TestSubClass : public TestClass {
-
-
-}  // class TestSubClass
+public:
+virtual void SubMethod(int subarg) const;
+};  // class TestSubClass
 
 }  // namespace test
 
@@ -62,11 +63,16 @@ TEST(AstCppTests, GeneratesHeader) {
     new CppNamespace {"android", {
       new CppNamespace {"test", {
         new CppClassDeclaration { "TestClass", "",
-          {},
+          {
+            new CppMethodDeclaration("void", "NormalMethod", { "int normalarg", "float normal2" }),
+            new CppMethodDeclaration("void", "SubMethod", { "int subarg" }, true, true)
+          },
           {}
         },
         new CppClassDeclaration { "TestSubClass", "TestClass",
-          {},
+          {
+            new CppMethodDeclaration("void", "SubMethod", { "int subarg" }, true, true)
+          },
           {}
         }
       }}
