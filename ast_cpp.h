@@ -17,9 +17,9 @@
 #ifndef AIDL_AST_JAVA_H_
 #define AIDL_AST_JAVA_H_
 
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 #include <base/macros.h>
 
@@ -47,16 +47,35 @@ class CppDeclaration : public CppNode {
   DISALLOW_COPY_AND_ASSIGN(CppDeclaration);
 };  // class CppDeclaration
 
+class CppClassDeclaration : public CppDeclaration {
+ public:
+  CppClassDeclaration(const std::string& name,
+                      const std::string& parent,
+                      std::vector<CppDeclaration*> public_members,
+                      std::vector<CppDeclaration*> private_members);
+  virtual ~CppClassDeclaration();
+
+  void Write(CodeWriter* to) const override;
+
+ private:
+  std::string name_;
+  std::string parent_;
+  std::vector<CppDeclaration*> public_members_;
+  std::vector<CppDeclaration*> private_members_;
+
+  DISALLOW_COPY_AND_ASSIGN(CppClassDeclaration);
+};  // class CppClassDeclaration
+
 class CppNamespace : public CppDeclaration {
  public:
   CppNamespace(const std::string& name,
-               std::vector<CppDeclaration *> declarations);
+               std::vector<CppDeclaration*> declarations);
   virtual ~CppNamespace();
 
   void Write(CodeWriter* to) const override;
 
  private:
-  std::vector<CppDeclaration *> declarations_;
+  std::vector<CppDeclaration*> declarations_;
   std::string name_;
 
   DISALLOW_COPY_AND_ASSIGN(CppNamespace);
@@ -65,7 +84,7 @@ class CppNamespace : public CppDeclaration {
 class CppDocument : public CppNode {
  public:
   CppDocument(const std::vector<std::string>& include_list,
-              CppNamespace *a_namespace);
+              CppNamespace* a_namespace);
 
   void Write(CodeWriter* to) const override;
 
@@ -80,7 +99,7 @@ class CppHeader final : public CppDocument {
  public:
   CppHeader(const std::string& include_guard,
             const std::vector<std::string>& include_list,
-            CppNamespace *a_namespace);
+            CppNamespace* a_namespace);
   void Write(CodeWriter* to) const override;
 
  private:
@@ -92,7 +111,7 @@ class CppHeader final : public CppDocument {
 class CppSource final : public CppDocument {
  public:
   CppSource(const std::vector<std::string>& include_list,
-            CppNamespace *a_namespace);
+            CppNamespace* a_namespace);
 
  private:
   DISALLOW_COPY_AND_ASSIGN(CppSource);

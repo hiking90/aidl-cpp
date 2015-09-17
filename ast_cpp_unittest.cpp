@@ -38,6 +38,15 @@ namespace android {
 
 namespace test {
 
+class TestClass {
+
+
+}  // class TestClass
+
+class TestSubClass : public TestClass {
+
+
+}  // class TestSubClass
 
 }  // namespace test
 
@@ -52,6 +61,14 @@ TEST(AstCppTests, GeneratesHeader) {
     {"string", "memory"},
     new CppNamespace {"android", {
       new CppNamespace {"test", {
+        new CppClassDeclaration { "TestClass", "",
+          {},
+          {}
+        },
+        new CppClassDeclaration { "TestSubClass", "TestClass",
+          {},
+          {}
+        }
       }}
     }}
   };
