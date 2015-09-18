@@ -16,9 +16,13 @@
 
 #include "code_writer.h"
 
+#include <iostream>
 #include <stdarg.h>
 
 #include <base/stringprintf.h>
+
+using std::cerr;
+using std::endl;
 
 namespace android {
 namespace aidl {
@@ -43,9 +47,13 @@ class StringCodeWriter : public CodeWriter {
 
 class FileCodeWriter : public CodeWriter {
  public:
-  FileCodeWriter(FILE* output_file) : output_(output_file) {}
+  FileCodeWriter(FILE* output_file, bool close_on_destruction)
+      : output_(output_file),
+        close_on_destruction_(close_on_destruction) {}
   ~FileCodeWriter() {
-    fclose(output_);
+    if (close_on_destruction_) {
+      fclose(output_);
+    }
   }
 
   bool Write(const char* format, ...) override {
@@ -59,15 +67,34 @@ class FileCodeWriter : public CodeWriter {
 
  private:
   FILE* output_;
+  bool close_on_destruction_;
 };  // class StringCodeWriter
 
 }  // namespace
 
-CodeWriterPtr get_file_writer(FILE* output_file) {
-  return CodeWriterPtr(new FileCodeWriter(output_file));
+CodeWriterPtr GetFileWriter(const std::string& output_file) {
+  CodeWriterPtr result;
+  FILE* to = nullptr;
+  bool close_on_destruction = true;
+  if (output_file == "-") {
+    to = stdout;
+    close_on_destruction = false;
+  } else {
+    // open file in binary mode to ensure that the tool produces the
+    // same output on all platforms !!
+    to = fopen(output_file.c_str(), "wb");
+  }
+
+  if (to != nullptr) {
+    result.reset(new FileCodeWriter(to, close_on_destruction));
+  } else {
+    cerr << "unable to open " << output_file << " for write" << endl;
+  }
+
+  return result;
 }
 
-CodeWriterPtr get_string_writer(std::string* output_buffer) {
+CodeWriterPtr GetStringWriter(std::string* output_buffer) {
   return CodeWriterPtr(new StringCodeWriter(output_buffer));
 }
 

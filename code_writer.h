@@ -38,14 +38,12 @@ class CodeWriter {
 using CodeWriterPtr = std::unique_ptr<CodeWriter>;
 
 // Get a CodeWriter that writes to |output_file|.
-// The CodeWriter will take ownership of |output_file| and close it
-// upon destruction.
-CodeWriterPtr get_file_writer(FILE* output_file);
+CodeWriterPtr GetFileWriter(const std::string& output_file);
 
 // Get a CodeWriter that writes to a string buffer.
 // Caller retains ownership of the buffer.
 // The buffer must outlive the CodeWriter.
-CodeWriterPtr get_string_writer(std::string* output_buffer);
+CodeWriterPtr GetStringWriter(std::string* output_buffer);
 
 }  // namespace aidl
 }  // namespace android

@@ -79,7 +79,7 @@ TEST(AstCppTests, GeneratesHeader) {
     }}
   };
   string actual_output;
-  CodeWriterPtr writer = get_string_writer(&actual_output);
+  CodeWriterPtr writer = GetStringWriter(&actual_output);
   cpp_header.Write(writer.get());
   EXPECT_EQ(string(kExpectedHeaderOutput), actual_output);
 }

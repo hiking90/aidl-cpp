@@ -78,22 +78,7 @@ generate_java(const string& filename, const string& originalSrc,
         document->originalSrc = originalSrc;
         document->classes.push_back(cl);
 
-//    printf("outputting... filename=%s\n", filename.c_str());
-    FILE* to;
-    if (filename == "-") {
-        to = stdout;
-    } else {
-       /* open file in binary mode to ensure that the tool produces the
-        * same output on all platforms !!
-        */
-        to = fopen(filename.c_str(), "wb");
-        if (to == NULL) {
-            fprintf(stderr, "unable to open %s for write\n", filename.c_str());
-            return 1;
-        }
-    }
-
-    CodeWriterPtr code_writer = get_file_writer(to);
+    CodeWriterPtr code_writer = GetFileWriter(filename);
     document->Write(code_writer.get());
 
     return 0;
