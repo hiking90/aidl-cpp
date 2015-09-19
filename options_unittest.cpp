@@ -45,7 +45,7 @@ const char* kPreprocessCommand[] = {
     nullptr,
 };
 
-const char kCompileCommandInput[] = "input.aidl";
+const char kCompileCommandInput[] = "directory/ITool.aidl";
 const char kCompileCommandIncludePath[] = "-Iinclude_path";
 const char* kCompileJavaCommand[] = {
     "aidl",
@@ -54,7 +54,7 @@ const char* kCompileJavaCommand[] = {
     kCompileCommandInput,
     nullptr,
 };
-const char kCompileCommandOutput[] = "input.java";
+const char kCompileCommandJavaOutput[] = "directory/ITool.java";
 
 const char kCompileDepFile[] = "-doutput.deps";
 const char kCompileCommandOutputDir[] = "output/dir";
@@ -66,6 +66,14 @@ const char* kCompileCppCommand[] = {
     kCompileCommandOutputDir,
     nullptr,
 };
+
+const char kClientCppPath[] = "output/dir/BpTool.cpp";
+const char kClientHeaderPath[] = "output/dir/BpTool.h";
+const char kServerCppPath[] = "output/dir/BnTool.cpp";
+const char kServerHeaderPath[] = "output/dir/BnTool.h";
+const char kInterfaceCppPath[] = "output/dir/ITool.cpp";
+const char kInterfaceHeaderPath[] = "output/dir/ITool.h";
+
 
 template <typename T>
 unique_ptr<T> GetOptions(const char* command[]) {
@@ -109,7 +117,7 @@ TEST(JavaOptionsTests, ParsesCompileJava) {
   EXPECT_EQ(1u, options->import_paths_.size());
   EXPECT_EQ(0u, options->preprocessed_files_.size());
   EXPECT_EQ(string{kCompileCommandInput}, options->input_file_name_);
-  EXPECT_EQ(string{kCompileCommandOutput}, options->output_file_name_);
+  EXPECT_EQ(string{kCompileCommandJavaOutput}, options->output_file_name_);
   EXPECT_EQ(false, options->auto_dep_file_);
 }
 
@@ -120,7 +128,44 @@ TEST(CppOptionsTests, ParsesCompileCpp) {
             options->import_paths_[0]);
   EXPECT_EQ(string{kCompileDepFile}.substr(2), options->dep_file_name_);
   EXPECT_EQ(kCompileCommandInput, options->InputFileName());
-  EXPECT_EQ(kCompileCommandOutputDir, options->output_base_folder_);
+
+  EXPECT_EQ(kClientCppPath, options->ClientCppFileName());
+  EXPECT_EQ(kClientHeaderPath, options->ClientHeaderFileName());
+  EXPECT_EQ(kServerCppPath, options->ServerCppFileName());
+  EXPECT_EQ(kServerHeaderPath, options->ServerHeaderFileName());
+  EXPECT_EQ(kInterfaceCppPath, options->InterfaceCppFileName());
+  EXPECT_EQ(kInterfaceHeaderPath, options->InterfaceHeaderFileName());
+}
+
+TEST(OptionsTests, EndsWith) {
+  EXPECT_TRUE(EndsWith("foo", ""));
+  EXPECT_TRUE(EndsWith("foo", "o"));
+  EXPECT_TRUE(EndsWith("foo", "foo"));
+  EXPECT_FALSE(EndsWith("foo", "fooo"));
+  EXPECT_FALSE(EndsWith("", "o"));
+  EXPECT_TRUE(EndsWith("", ""));
+}
+
+TEST(OptionsTests, ReplaceSuffix) {
+  struct test_case_t {
+    const char* input;
+    const char* old_suffix;
+    const char* new_suffix;
+    const char* result;
+  };
+  const size_t kNumCases = 3;
+  test_case_t kTestInput[kNumCases] = {
+    {"foo.bar", "bar", "foo", "foo.foo"},
+    {"whole", "whole", "new", "new"},
+    {"", "", "", ""},
+  };
+  for (const auto& test_case : kTestInput) {
+    string mutated = test_case.input;
+    EXPECT_TRUE(ReplaceSuffix(test_case.old_suffix,
+                              test_case.new_suffix,
+                              &mutated));
+    EXPECT_EQ(mutated, test_case.result);
+  }
 }
 
 }  // namespace android

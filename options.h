@@ -72,19 +72,37 @@ class CppOptions final {
 
   std::string InputFileName() const;
   std::vector<std::string> ImportPaths() const;
+
+  std::string ClientCppFileName() const;
+  std::string ClientHeaderFileName() const;
+
+  std::string ServerCppFileName() const;
+  std::string ServerHeaderFileName() const;
+
+  std::string InterfaceCppFileName() const;
+  std::string InterfaceHeaderFileName() const;
+
   // TODO(wiley) Introduce other getters as necessary.
 
  private:
   CppOptions() = default;
+  std::string MakeOutputName(const std::string& prefix,
+                             const std::string& suffix) const;
 
   std::string input_file_name_;
   std::vector<std::string> import_paths_;
   std::string output_base_folder_;
+  std::string output_base_name_;
   std::string dep_file_name_;
 
   FRIEND_TEST(CppOptionsTests, ParsesCompileCpp);
   DISALLOW_COPY_AND_ASSIGN(CppOptions);
 };
+
+bool EndsWith(const std::string& str, const std::string& suffix);
+bool ReplaceSuffix(const std::string& old_suffix,
+                   const std::string& new_suffix,
+                   std::string* str);
 
 }  // namespace android
 }  // namespace aidl
