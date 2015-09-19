@@ -23,7 +23,7 @@
 namespace android {
 namespace aidl {
 
-int generate_cpp(const CppOptions& options, interface_type* parsed_doc);
+bool GenerateCpp(const CppOptions& options, interface_type* parsed_doc);
 
 }  // namespace android
 }  // namespace aidl
