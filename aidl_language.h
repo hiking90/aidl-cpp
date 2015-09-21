@@ -22,16 +22,22 @@ typedef struct extra_text_type {
 } extra_text_type;
 
 typedef struct buffer_type {
-    unsigned lineno;
-    unsigned token;
-    char *data;
-    extra_text_type* extra;
+  unsigned lineno;
+  unsigned token;
+  char *data;
+  extra_text_type* extra;
+
+  std::string Literal() const {
+    return std::string(data);
+  }
 } buffer_type;
 
 typedef struct type_type {
-    buffer_type type;
-    buffer_type array_token;
-    int dimension;
+  buffer_type type;
+  buffer_type array_token;
+  int dimension;
+
+  std::string Brackets() const;
 } type_type;
 
 typedef struct arg_type {

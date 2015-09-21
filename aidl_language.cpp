@@ -109,3 +109,12 @@ import_info *Parser::GetImports() const
 {
   return imports_;
 }
+
+std::string type_type::Brackets() const {
+  std::string result;
+
+  for (int i = 0; i < dimension; i++)
+    result += "[]";
+
+  return result;
+}

@@ -16,19 +16,35 @@
 
 #include "generate_cpp.h"
 
+#include <cctype>
 #include <memory>
+#include <random>
 #include <string>
 
 #include "ast_cpp.h"
 #include "code_writer.h"
 #include "logging.h"
 
-using std::unique_ptr;
 using std::string;
+using std::unique_ptr;
 
 namespace android {
 namespace aidl {
 namespace {
+
+const int kGuardSize = 32;
+
+string RandomGuardString() {
+  std::default_random_engine generator;
+  std::uniform_int_distribution<int> distribution(0,25);
+
+  string ret{kGuardSize, '-'};
+
+  for (char& c : ret)
+    c = 'A' + distribution(generator);
+
+  return ret;
+}
 
 unique_ptr<CppDocument> BuildClientSource(interface_type* parsed_doc) {
   return unique_ptr<CppDocument>{new CppSource{
@@ -72,14 +88,39 @@ unique_ptr<CppDocument> BuildClientHeader(interface_type* parsed_doc) {
 }
 
 unique_ptr<CppDocument> BuildServerHeader(interface_type* parsed_doc) {
-  return unique_ptr<CppDocument>{new CppHeader{
-      "FILL_ME_IN",
-      {},
-      new CppNamespace{
-          "android",
-          {}
-      }
-  }};
+  string i_name = parsed_doc->name.Literal();
+  string c_name;
+
+  if (i_name.length() >= 2 && i_name[0] == 'I' && isupper(i_name[1]))
+    c_name = i_name.substr(1);
+  else
+    c_name = i_name;
+
+  string bn_name = "Bn" + c_name;
+
+  CppDeclaration* on_transact =
+      new CppMethodDeclaration("android::status_t", "onTransact",
+                               { "uint32_t code",
+                                 "const android::Parcel& data",
+                                 "android::Parcel* reply",
+                                 "uint32_t flags = 0"
+                               });
+
+  CppClassDeclaration* bn_class =
+      new CppClassDeclaration{bn_name,
+                              "public android::BnInterface<" + i_name + ">",
+                              { on_transact },
+                              {}
+      };
+
+  CppNamespace* ns = new CppNamespace{"android", {bn_class}};
+
+  unique_ptr<CppDocument> bn_header{new CppHeader{RandomGuardString(),
+                                                  {"binder/IInterface.h",
+                                                   i_name + ".h"},
+                                                  ns }};
+
+  return bn_header;
 }
 
 unique_ptr<CppDocument> BuildInterfaceHeader(interface_type* parsed_doc) {
