@@ -1132,7 +1132,7 @@ Type*
 Namespace::Find(const char* package, const char* name) const
 {
     string s;
-    if (package != NULL) {
+    if (package != nullptr && *package != '\0') {
         s += package;
         s += '.';
     }
