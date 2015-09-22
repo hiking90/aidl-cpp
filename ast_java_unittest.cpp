@@ -18,9 +18,9 @@
 
 #include <gtest/gtest.h>
 
-#include "Type.h"
 #include "ast_java.h"
 #include "code_writer.h"
+#include "type_java.h"
 
 namespace android {
 namespace aidl {

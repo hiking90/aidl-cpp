@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "Type.h"
 #include "code_writer.h"
+#include "type_java.h"
 
 namespace android {
 namespace aidl {

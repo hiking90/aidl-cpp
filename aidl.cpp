@@ -33,7 +33,6 @@
 #endif
 
 
-#include "Type.h"
 #include "aidl_language.h"
 #include "generate_cpp.h"
 #include "generate_java.h"
@@ -42,6 +41,7 @@
 #include "os.h"
 #include "parse_helpers.h"
 #include "search_path.h"
+#include "type_java.h"
 
 #ifndef O_BINARY
 #  define O_BINARY  0

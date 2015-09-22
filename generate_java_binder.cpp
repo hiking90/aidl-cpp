@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "Type.h"
 #include "parse_helpers.h"
+#include "type_java.h"
 
 namespace android {
 namespace aidl {

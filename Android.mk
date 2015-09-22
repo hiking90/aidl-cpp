@@ -28,7 +28,6 @@ LOCAL_CLANG_CFLAGS += -Wno-writable-strings
 LOCAL_STATIC_LIBRARIES := $(aidl_static_libraries)
 
 LOCAL_SRC_FILES := \
-    Type.cpp \
     aidl.cpp \
     aidl_language.cpp \
     aidl_language_l.l \
@@ -42,6 +41,7 @@ LOCAL_SRC_FILES := \
     options.cpp \
     parse_helpers.cpp \
     search_path.cpp \
+    type_java.cpp \
 
 include $(BUILD_HOST_STATIC_LIBRARY)
 
