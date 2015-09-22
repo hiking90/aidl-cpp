@@ -161,10 +161,10 @@ struct Assignment : public Expression
 {
     Variable* lvalue;
     Expression* rvalue;
-    Type* cast;
+    const Type* cast;
 
     Assignment(Variable* lvalue, Expression* rvalue);
-    Assignment(Variable* lvalue, Expression* rvalue, Type* cast);
+    Assignment(Variable* lvalue, Expression* rvalue, const Type* cast);
     virtual ~Assignment();
     virtual void Write(CodeWriter* to) const;
 };

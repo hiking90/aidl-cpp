@@ -284,7 +284,7 @@ Assignment::Assignment(Variable* l, Expression* r)
 {
 }
 
-Assignment::Assignment(Variable* l, Expression* r, Type* c)
+Assignment::Assignment(Variable* l, Expression* r, const Type* c)
     :lvalue(l),
      rvalue(r),
      cast(c)

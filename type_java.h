@@ -57,24 +57,24 @@ class Type {
   virtual string InstantiableName() const;
 
   virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
+                             Variable* parcel, int flags) const;
   virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
+                                Variable* parcel, Variable** cl) const;
   virtual void ReadFromParcel(StatementBlock* addTo, Variable* v,
-                              Variable* parcel, Variable** cl);
+                              Variable* parcel, Variable** cl) const;
 
   virtual bool CanBeArray() const;
 
   virtual void WriteArrayToParcel(StatementBlock* addTo, Variable* v,
-                                  Variable* parcel, int flags);
+                                  Variable* parcel, int flags) const;
   virtual void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                     Variable* parcel, Variable** cl);
+                                     Variable* parcel, Variable** cl) const;
   virtual void ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                   Variable* parcel, Variable** cl);
+                                   Variable* parcel, Variable** cl) const;
 
  protected:
   void SetQualifiedName(const string& qualified);
-  Expression* BuildWriteToParcelFlags(int flags);
+  Expression* BuildWriteToParcelFlags(int flags) const;
 
  private:
   Type();
@@ -96,19 +96,19 @@ class BasicType : public Type {
             const string& unmarshallParcel, const string& writeArrayParcel,
             const string& createArrayParcel, const string& readArrayParcel);
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
 
-  virtual bool CanBeArray() const;
+  bool CanBeArray() const override;
 
-  virtual void WriteArrayToParcel(StatementBlock* addTo, Variable* v,
-                                  Variable* parcel, int flags);
-  virtual void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                     Variable* parcel, Variable** cl);
-  virtual void ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                   Variable* parcel, Variable** cl);
+  void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                          int flags) const override;
+  void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
+                             Variable* parcel, Variable** cl) const override;
+  void ReadArrayFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                           Variable** cl) const override;
 
  private:
   string m_marshallParcel;
@@ -122,184 +122,184 @@ class BooleanType : public Type {
  public:
   BooleanType();
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
 
-  virtual bool CanBeArray() const;
+  bool CanBeArray() const override;
 
-  virtual void WriteArrayToParcel(StatementBlock* addTo, Variable* v,
-                                  Variable* parcel, int flags);
-  virtual void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                     Variable* parcel, Variable** cl);
-  virtual void ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                   Variable* parcel, Variable** cl);
+  void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                          int flags) const override;
+  void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
+                             Variable* parcel, Variable** cl) const override;
+  void ReadArrayFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                           Variable** cl) const override;
 };
 
 class CharType : public Type {
  public:
   CharType();
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
 
-  virtual bool CanBeArray() const;
+  bool CanBeArray() const override;
 
-  virtual void WriteArrayToParcel(StatementBlock* addTo, Variable* v,
-                                  Variable* parcel, int flags);
-  virtual void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                     Variable* parcel, Variable** cl);
-  virtual void ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                   Variable* parcel, Variable** cl);
+  void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                          int flags) const override;
+  void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
+                             Variable* parcel, Variable** cl) const override;
+  void ReadArrayFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                           Variable** cl) const override;
 };
 
 class StringType : public Type {
  public:
   StringType();
 
-  virtual string CreatorName() const;
+  string CreatorName() const override;
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
 
-  virtual bool CanBeArray() const;
+  bool CanBeArray() const override;
 
-  virtual void WriteArrayToParcel(StatementBlock* addTo, Variable* v,
-                                  Variable* parcel, int flags);
-  virtual void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                     Variable* parcel, Variable** cl);
-  virtual void ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                   Variable* parcel, Variable** cl);
+  void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                          int flags) const override;
+  void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
+                             Variable* parcel, Variable** cl) const override;
+  void ReadArrayFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                           Variable** cl) const override;
 };
 
 class CharSequenceType : public Type {
  public:
   CharSequenceType();
 
-  virtual string CreatorName() const;
+  string CreatorName() const override;
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
 };
 
 class RemoteExceptionType : public Type {
  public:
   RemoteExceptionType();
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
 };
 
 class RuntimeExceptionType : public Type {
  public:
   RuntimeExceptionType();
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
 };
 
 class IBinderType : public Type {
  public:
   IBinderType();
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
 
-  virtual void WriteArrayToParcel(StatementBlock* addTo, Variable* v,
-                                  Variable* parcel, int flags);
-  virtual void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                     Variable* parcel, Variable** cl);
-  virtual void ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                   Variable* parcel, Variable** cl);
+  void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                          int flags) const override;
+  void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
+                             Variable* parcel, Variable** cl) const override;
+  void ReadArrayFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                           Variable** cl) const override;
 };
 
 class IInterfaceType : public Type {
  public:
   IInterfaceType();
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
 };
 
 class BinderType : public Type {
  public:
   BinderType();
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
 };
 
 class BinderProxyType : public Type {
  public:
   BinderProxyType();
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
 };
 
 class ParcelType : public Type {
  public:
   ParcelType();
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
 };
 
 class ParcelableInterfaceType : public Type {
  public:
   ParcelableInterfaceType();
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
 };
 
 class MapType : public Type {
  public:
   MapType();
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
-  virtual void ReadFromParcel(StatementBlock* addTo, Variable* v,
-                              Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
+  void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                      Variable** cl) const override;
 };
 
 class ListType : public Type {
  public:
   ListType();
 
-  virtual string InstantiableName() const;
+  string InstantiableName() const override;
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
-  virtual void ReadFromParcel(StatementBlock* addTo, Variable* v,
-                              Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
+  void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                      Variable** cl) const override;
 };
 
 class UserDataType : public Type {
@@ -308,23 +308,23 @@ class UserDataType : public Type {
                bool canWriteToParcel, const string& declFile = "",
                int declLine = -1);
 
-  virtual string CreatorName() const;
+  string CreatorName() const override;
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
-  virtual void ReadFromParcel(StatementBlock* addTo, Variable* v,
-                              Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
+  void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                      Variable** cl) const override;
 
-  virtual bool CanBeArray() const;
+  bool CanBeArray() const override;
 
-  virtual void WriteArrayToParcel(StatementBlock* addTo, Variable* v,
-                                  Variable* parcel, int flags);
-  virtual void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                     Variable* parcel, Variable** cl);
-  virtual void ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                   Variable* parcel, Variable** cl);
+  void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                          int flags) const override;
+  void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
+                             Variable* parcel, Variable** cl) const override;
+  void ReadArrayFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                           Variable** cl) const override;
 };
 
 class InterfaceType : public Type {
@@ -334,10 +334,10 @@ class InterfaceType : public Type {
 
   bool OneWay() const;
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
 
  private:
   bool m_oneway;
@@ -351,14 +351,14 @@ class GenericType : public Type {
   const vector<Type*>& GenericArgumentTypes() const;
   string GenericArguments() const;
 
-  virtual string ImportType() const;
+  string ImportType() const override;
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
-  virtual void ReadFromParcel(StatementBlock* addTo, Variable* v,
-                              Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
+  void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                      Variable** cl) const override;
 
  private:
   string m_genericArguments;
@@ -376,15 +376,15 @@ class GenericListType : public GenericType {
   GenericListType(const string& package, const string& name,
                   const vector<Type*>& args);
 
-  virtual string CreatorName() const;
-  virtual string InstantiableName() const;
+  string CreatorName() const override;
+  string InstantiableName() const override;
 
-  virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, int flags);
-  virtual void CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, Variable** cl);
-  virtual void ReadFromParcel(StatementBlock* addTo, Variable* v,
-                              Variable* parcel, Variable** cl);
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
+  void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                      Variable** cl) const override;
 
  private:
   string m_creator;
