@@ -18,7 +18,7 @@ VariableFactory::VariableFactory(const string& base)
 }
 
 Variable*
-VariableFactory::Get(Type* type)
+VariableFactory::Get(const Type* type)
 {
     char name[100];
     sprintf(name, "%s%d", m_base.c_str(), m_index);

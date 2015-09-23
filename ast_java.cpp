@@ -93,7 +93,7 @@ Field::~Field()
 }
 
 void
-Field::GatherTypes(set<Type*>* types) const
+Field::GatherTypes(set<const Type*>* types) const
 {
     types->insert(this->variable->type);
 }
@@ -154,14 +154,14 @@ Variable::Variable()
 {
 }
 
-Variable::Variable(Type* t, const string& n)
+Variable::Variable(const Type* t, const string& n)
     :type(t),
      name(n),
      dimension(0)
 {
 }
 
-Variable::Variable(Type* t, const string& n, int d)
+Variable::Variable(const Type* t, const string& n, int d)
     :type(t),
      name(n),
      dimension(d)
@@ -173,7 +173,7 @@ Variable::~Variable()
 }
 
 void
-Variable::GatherTypes(set<Type*>* types) const
+Variable::GatherTypes(set<const Type*>* types) const
 {
     types->insert(this->type);
 }
@@ -202,7 +202,7 @@ FieldVariable::FieldVariable(Expression* o, const string& n)
 {
 }
 
-FieldVariable::FieldVariable(Type* c, const string& n)
+FieldVariable::FieldVariable(const Type* c, const string& n)
     :object(NULL),
      clazz(c),
      name(n)
@@ -331,7 +331,7 @@ MethodCall::MethodCall(Expression* o, const string& n)
 {
 }
 
-MethodCall::MethodCall(Type* t, const string& n)
+MethodCall::MethodCall(const Type* t, const string& n)
     :obj(NULL),
      clazz(t),
      name(n)
@@ -349,7 +349,7 @@ MethodCall::MethodCall(Expression* o, const string& n, int argc = 0, ...)
   va_end(args);
 }
 
-MethodCall::MethodCall(Type* t, const string& n, int argc = 0, ...)
+MethodCall::MethodCall(const Type* t, const string& n, int argc = 0, ...)
     :obj(NULL),
      clazz(t),
      name(n)
@@ -409,12 +409,12 @@ Comparison::Write(CodeWriter* to) const
     to->Write(")");
 }
 
-NewExpression::NewExpression(Type* t)
+NewExpression::NewExpression(const Type* t)
     :type(t)
 {
 }
 
-NewExpression::NewExpression(Type* t, int argc = 0, ...)
+NewExpression::NewExpression(const Type* t, int argc = 0, ...)
     :type(t)
 {
   va_list args;
@@ -444,7 +444,7 @@ NewExpression::Write(CodeWriter* to) const
     to->Write(")");
 }
 
-NewArrayExpression::NewArrayExpression(Type* t, Expression* s)
+NewArrayExpression::NewArrayExpression(const Type* t, Expression* s)
     :type(t),
      size(s)
 {
@@ -498,7 +498,7 @@ Cast::Cast()
 {
 }
 
-Cast::Cast(Type* t, Expression* e)
+Cast::Cast(const Type* t, Expression* e)
     :type(t),
      expression(e)
 {
@@ -516,7 +516,7 @@ Cast::Write(CodeWriter* to) const
     to->Write(")");
 }
 
-VariableDeclaration::VariableDeclaration(Variable* l, Expression* r, Type* c)
+VariableDeclaration::VariableDeclaration(Variable* l, Expression* r, const Type* c)
     :lvalue(l),
      cast(c),
      rvalue(r)
@@ -729,7 +729,7 @@ Method::~Method()
 }
 
 void
-Method::GatherTypes(set<Type*>* types) const
+Method::GatherTypes(set<const Type*>* types) const
 {
     size_t N, i;
 
@@ -811,7 +811,7 @@ Class::~Class()
 }
 
 void
-Class::GatherTypes(set<Type*>* types) const
+Class::GatherTypes(set<const Type*>* types) const
 {
     int N, i;
 

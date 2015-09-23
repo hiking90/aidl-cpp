@@ -57,7 +57,7 @@ struct ClassElement
     ClassElement();
     virtual ~ClassElement();
 
-    virtual void GatherTypes(set<Type*>* types) const = 0;
+    virtual void GatherTypes(set<const Type*>* types) const = 0;
     virtual void Write(CodeWriter* to) const = 0;
 };
 
@@ -88,16 +88,16 @@ struct StringLiteralExpression : public Expression
 
 struct Variable : public Expression
 {
-    Type* type;
+    const Type* type;
     string name;
     int dimension;
 
     Variable();
-    Variable(Type* type, const string& name);
-    Variable(Type* type, const string& name, int dimension);
+    Variable(const Type* type, const string& name);
+    Variable(const Type* type, const string& name, int dimension);
     virtual ~Variable();
 
-    virtual void GatherTypes(set<Type*>* types) const;
+    virtual void GatherTypes(set<const Type*>* types) const;
     void WriteDeclaration(CodeWriter* to) const;
     void Write(CodeWriter* to) const;
 };
@@ -105,11 +105,11 @@ struct Variable : public Expression
 struct FieldVariable : public Expression
 {
     Expression* object;
-    Type* clazz;
+    const Type* clazz;
     string name;
 
     FieldVariable(Expression* object, const string& name);
-    FieldVariable(Type* clazz, const string& name);
+    FieldVariable(const Type* clazz, const string& name);
     virtual ~FieldVariable();
 
     void Write(CodeWriter* to) const;
@@ -126,7 +126,7 @@ struct Field : public ClassElement
     Field(int modifiers, Variable* variable);
     virtual ~Field();
 
-    virtual void GatherTypes(set<Type*>* types) const;
+    virtual void GatherTypes(set<const Type*>* types) const;
     virtual void Write(CodeWriter* to) const;
 };
 
@@ -172,7 +172,7 @@ struct Assignment : public Expression
 struct MethodCall : public Expression
 {
     Expression* obj;
-    Type* clazz;
+    const Type* clazz;
     string name;
     vector<Expression*> arguments;
     vector<string> exceptions;
@@ -180,9 +180,9 @@ struct MethodCall : public Expression
     MethodCall(const string& name);
     MethodCall(const string& name, int argc, ...);
     MethodCall(Expression* obj, const string& name);
-    MethodCall(Type* clazz, const string& name);
+    MethodCall(const Type* clazz, const string& name);
     MethodCall(Expression* obj, const string& name, int argc, ...);
-    MethodCall(Type* clazz, const string& name, int argc, ...);
+    MethodCall(const Type* clazz, const string& name, int argc, ...);
     virtual ~MethodCall();
     virtual void Write(CodeWriter* to) const;
 
@@ -203,11 +203,11 @@ struct Comparison : public Expression
 
 struct NewExpression : public Expression
 {
-    Type* type;
+    const Type* type;
     vector<Expression*> arguments;
 
-    NewExpression(Type* type);
-    NewExpression(Type* type, int argc, ...);
+    NewExpression(const Type* type);
+    NewExpression(const Type* type, int argc, ...);
     virtual ~NewExpression();
     virtual void Write(CodeWriter* to) const;
 
@@ -217,10 +217,10 @@ private:
 
 struct NewArrayExpression : public Expression
 {
-    Type* type;
+    const Type* type;
     Expression* size;
 
-    NewArrayExpression(Type* type, Expression* size);
+    NewArrayExpression(const Type* type, Expression* size);
     virtual ~NewArrayExpression();
     virtual void Write(CodeWriter* to) const;
 };
@@ -239,11 +239,11 @@ struct Ternary : public Expression
 
 struct Cast : public Expression
 {
-    Type* type;
+    const Type* type;
     Expression* expression;
 
     Cast();
-    Cast(Type* type, Expression* expression);
+    Cast(const Type* type, Expression* expression);
     virtual ~Cast();
     virtual void Write(CodeWriter* to) const;
 };
@@ -251,11 +251,11 @@ struct Cast : public Expression
 struct VariableDeclaration : public Statement
 {
     Variable* lvalue;
-    Type* cast;
+    const Type* cast;
     Expression* rvalue;
 
     VariableDeclaration(Variable* lvalue);
-    VariableDeclaration(Variable* lvalue, Expression* rvalue, Type* cast = NULL);
+    VariableDeclaration(Variable* lvalue, Expression* rvalue, const Type* cast = NULL);
     virtual ~VariableDeclaration();
     virtual void Write(CodeWriter* to) const;
 };
@@ -340,17 +340,17 @@ struct Method : public ClassElement
 {
     string comment;
     int modifiers;
-    Type* returnType;
+    const Type* returnType;
     size_t returnTypeDimension;
     string name;
     vector<Variable*> parameters;
-    vector<Type*> exceptions;
+    vector<const Type*> exceptions;
     StatementBlock* statements;
 
     Method();
     virtual ~Method();
 
-    virtual void GatherTypes(set<Type*>* types) const;
+    virtual void GatherTypes(set<const Type*>* types) const;
     virtual void Write(CodeWriter* to) const;
 };
 
@@ -364,15 +364,15 @@ struct Class : public ClassElement
     string comment;
     int modifiers;
     int what;               // CLASS or INTERFACE
-    Type* type;
-    Type* extends;
-    vector<Type*> interfaces;
+    const Type* type;
+    const Type* extends;
+    vector<const Type*> interfaces;
     vector<ClassElement*> elements;
 
     Class();
     virtual ~Class();
 
-    virtual void GatherTypes(set<Type*>* types) const;
+    virtual void GatherTypes(set<const Type*>* types) const;
     virtual void Write(CodeWriter* to) const;
 };
 
@@ -381,7 +381,7 @@ struct Document
     string comment;
     string package;
     string originalSrc;
-    set<Type*> imports;
+    set<const Type*> imports;
     vector<Class*> classes;
 
     Document();

@@ -147,7 +147,7 @@ void register_base_types() {
 }
 
 static Type* make_generic_type(const string& package, const string& name,
-                               const vector<Type*>& args) {
+                               const vector<const Type*>& args) {
   if (package == "java.util" && name == "List") {
     return new GenericListType("java.util", "List", args);
   }
@@ -780,7 +780,7 @@ void InterfaceType::CreateFromParcel(StatementBlock* addTo, Variable* v,
 // ================================================================
 
 GenericType::GenericType(const string& package, const string& name,
-                         const vector<Type*>& args)
+                         const vector<const Type*>& args)
     : Type(package, name, BUILT_IN, true, true) {
   m_args = args;
 
@@ -789,7 +789,7 @@ GenericType::GenericType(const string& package, const string& name,
   string gen = "<";
   int N = args.size();
   for (int i = 0; i < N; i++) {
-    Type* t = args[i];
+    const Type* t = args[i];
     gen += t->QualifiedName();
     if (i != N - 1) {
       gen += ',';
@@ -800,7 +800,7 @@ GenericType::GenericType(const string& package, const string& name,
   SetQualifiedName(m_importName + gen);
 }
 
-const vector<Type*>& GenericType::GenericArgumentTypes() const {
+const vector<const Type*>& GenericType::GenericArgumentTypes() const {
   return m_args;
 }
 
@@ -826,7 +826,7 @@ void GenericType::ReadFromParcel(StatementBlock* addTo, Variable* v,
 // ================================================================
 
 GenericListType::GenericListType(const string& package, const string& name,
-                                 const vector<Type*>& args)
+                                 const vector<const Type*>& args)
     : GenericType(package, name, args), m_creator(args[0]->CreatorName()) {}
 
 string GenericListType::CreatorName() const {
@@ -894,8 +894,8 @@ Namespace::~Namespace() {
   }
 }
 
-void Namespace::Add(Type* type) {
-  Type* t = Find(type->QualifiedName());
+void Namespace::Add(const Type* type) {
+  const Type* t = Find(type->QualifiedName());
   if (t == NULL) {
     m_types.push_back(type);
   }
@@ -911,7 +911,7 @@ void Namespace::AddGenericType(const string& package, const string& name,
   m_generics.push_back(g);
 }
 
-Type* Namespace::Find(const string& name) const {
+const Type* Namespace::Find(const string& name) const {
   int N = m_types.size();
   for (int i = 0; i < N; i++) {
     if (m_types[i]->QualifiedName() == name) {
@@ -921,7 +921,7 @@ Type* Namespace::Find(const string& name) const {
   return NULL;
 }
 
-Type* Namespace::Find(const char* package, const char* name) const {
+const Type* Namespace::Find(const char* package, const char* name) const {
   string s;
   if (package != nullptr && *package != '\0') {
     s += package;
@@ -943,9 +943,9 @@ static string normalize_generic(const string& s) {
   return r;
 }
 
-Type* Namespace::Search(const string& name) {
+const Type* Namespace::Search(const string& name) {
   // an exact match wins
-  Type* result = Find(name);
+  const Type* result = Find(name);
   if (result != NULL) {
     return result;
   }
@@ -982,7 +982,7 @@ Type* Namespace::Search(const string& name) {
   // generics within generics like Java does, because we're really limiting
   // them to just built-in container classes, at least for now.  Our syntax
   // ensures this right now as well.
-  vector<Type*> args;
+  vector<const Type*> args;
   size_t start = baseIndex + 1;
   size_t end = start;
   while (normalized[start] != '\0') {
@@ -991,7 +991,7 @@ Type* Namespace::Search(const string& name) {
       end = normalized.find('>', start);
     }
     string s(normalized.c_str() + start, end - start);
-    Type* t = this->Search(s);
+    const Type* t = this->Search(s);
     if (t == NULL) {
       // maybe we should print a warning here?
       return NULL;
@@ -1036,7 +1036,7 @@ const Namespace::Generic* Namespace::search_generic(const string& name) const {
 void Namespace::Dump() const {
   int n = m_types.size();
   for (int i = 0; i < n; i++) {
-    Type* t = m_types[i];
+    const Type* t = m_types[i];
     printf("type: package=%s name=%s qualifiedName=%s\n", t->Package().c_str(),
            t->Name().c_str(), t->QualifiedName().c_str());
   }

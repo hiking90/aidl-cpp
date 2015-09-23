@@ -15,7 +15,7 @@ namespace aidl {
 class StubClass : public Class
 {
 public:
-    StubClass(Type* type, Type* interfaceType);
+    StubClass(const Type* type, const Type* interfaceType);
     virtual ~StubClass();
 
     Variable* transact_code;
@@ -24,10 +24,10 @@ public:
     Variable* transact_flags;
     SwitchStatement* transact_switch;
 private:
-    void make_as_interface(Type* interfaceType);
+    void make_as_interface(const Type* interfaceType);
 };
 
-StubClass::StubClass(Type* type, Type* interfaceType)
+StubClass::StubClass(const Type* type, const Type* interfaceType)
     :Class()
 {
     this->comment = "/** Local-side IPC implementation stub class. */";
@@ -97,7 +97,7 @@ StubClass::~StubClass()
 }
 
 void
-StubClass::make_as_interface(Type *interfaceType)
+StubClass::make_as_interface(const Type *interfaceType)
 {
     Variable* obj = new Variable(IBINDER_TYPE, "obj");
 
@@ -155,14 +155,14 @@ StubClass::make_as_interface(Type *interfaceType)
 class ProxyClass : public Class
 {
 public:
-    ProxyClass(Type* type, InterfaceType* interfaceType);
+    ProxyClass(const Type* type, const InterfaceType* interfaceType);
     virtual ~ProxyClass();
 
     Variable* mRemote;
     bool mOneWay;
 };
 
-ProxyClass::ProxyClass(Type* type, InterfaceType* interfaceType)
+ProxyClass::ProxyClass(const Type* type, const InterfaceType* interfaceType)
     :Class()
 {
     this->modifiers = PRIVATE | STATIC;
@@ -201,7 +201,7 @@ ProxyClass::~ProxyClass()
 
 // =================================================
 static void
-generate_new_array(Type* t, StatementBlock* addTo, Variable* v,
+generate_new_array(const Type* t, StatementBlock* addTo, Variable* v,
                             Variable* parcel)
 {
     Variable* len = new Variable(INT_TYPE, v->name + "_length");
@@ -216,7 +216,7 @@ generate_new_array(Type* t, StatementBlock* addTo, Variable* v,
 }
 
 static void
-generate_write_to_parcel(Type* t, StatementBlock* addTo, Variable* v,
+generate_write_to_parcel(const Type* t, StatementBlock* addTo, Variable* v,
                             Variable* parcel, int flags)
 {
     if (v->dimension == 0) {
@@ -228,7 +228,7 @@ generate_write_to_parcel(Type* t, StatementBlock* addTo, Variable* v,
 }
 
 static void
-generate_create_from_parcel(Type* t, StatementBlock* addTo, Variable* v,
+generate_create_from_parcel(const Type* t, StatementBlock* addTo, Variable* v,
                             Variable* parcel, Variable** cl)
 {
     if (v->dimension == 0) {
@@ -240,7 +240,7 @@ generate_create_from_parcel(Type* t, StatementBlock* addTo, Variable* v,
 }
 
 static void
-generate_read_from_parcel(Type* t, StatementBlock* addTo, Variable* v,
+generate_read_from_parcel(const Type* t, StatementBlock* addTo, Variable* v,
                             Variable* parcel, Variable** cl)
 {
     if (v->dimension == 0) {
@@ -309,7 +309,7 @@ generate_method(const method_type* method, Class* interface,
     VariableFactory stubArgs("_arg");
     arg = method->args;
     while (arg != NULL) {
-        Type* t = NAMES.Search(arg->type.type.data);
+        const Type* t = NAMES.Search(arg->type.type.data);
         Variable* v = stubArgs.Get(t);
         v->dimension = arg->type.dimension;
 
@@ -370,7 +370,7 @@ generate_method(const method_type* method, Class* interface,
     i = 0;
     arg = method->args;
     while (arg != NULL) {
-        Type* t = NAMES.Search(arg->type.type.data);
+        const Type* t = NAMES.Search(arg->type.type.data);
         Variable* v = stubArgs.Get(i++);
 
         if (convert_direction(arg->direction.data) & OUT_PARAMETER) {
@@ -437,7 +437,7 @@ generate_method(const method_type* method, Class* interface,
     // the parameters
     arg = method->args;
     while (arg != NULL) {
-        Type* t = NAMES.Search(arg->type.type.data);
+        const Type* t = NAMES.Search(arg->type.type.data);
         Variable* v = new Variable(t, arg->name.data, arg->type.dimension);
         int dir = convert_direction(arg->direction.data);
         if (dir == OUT_PARAMETER && arg->type.dimension != 0) {
@@ -480,7 +480,7 @@ generate_method(const method_type* method, Class* interface,
         // the out/inout parameters
         arg = method->args;
         while (arg != NULL) {
-            Type* t = NAMES.Search(arg->type.type.data);
+            const Type* t = NAMES.Search(arg->type.type.data);
             Variable* v = new Variable(t, arg->name.data, arg->type.dimension);
             if (convert_direction(arg->direction.data) & OUT_PARAMETER) {
                 generate_read_from_parcel(t, tryStatement->statements,
@@ -522,7 +522,7 @@ generate_interface_descriptors(StubClass* stub, ProxyClass* proxy)
 Class*
 generate_binder_interface_class(const interface_type* iface)
 {
-    InterfaceType* interfaceType = static_cast<InterfaceType*>(
+    const InterfaceType* interfaceType = static_cast<const InterfaceType*>(
         NAMES.Find(iface->package, iface->name.data));
 
     // the interface class

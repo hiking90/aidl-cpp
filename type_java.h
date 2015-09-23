@@ -346,9 +346,9 @@ class InterfaceType : public Type {
 class GenericType : public Type {
  public:
   GenericType(const string& package, const string& name,
-              const vector<Type*>& args);
+              const vector<const Type*>& args);
 
-  const vector<Type*>& GenericArgumentTypes() const;
+  const vector<const Type*>& GenericArgumentTypes() const;
   string GenericArguments() const;
 
   string ImportType() const override;
@@ -363,7 +363,7 @@ class GenericType : public Type {
  private:
   string m_genericArguments;
   string m_importName;
-  vector<Type*> m_args;
+  vector<const Type*> m_args;
 };
 
 class ClassLoaderType : public Type {
@@ -374,7 +374,7 @@ class ClassLoaderType : public Type {
 class GenericListType : public GenericType {
  public:
   GenericListType(const string& package, const string& name,
-                  const vector<Type*>& args);
+                  const vector<const Type*>& args);
 
   string CreatorName() const override;
   string InstantiableName() const override;
@@ -394,17 +394,17 @@ class Namespace {
  public:
   Namespace();
   ~Namespace();
-  void Add(Type* type);
+  void Add(const Type* type);
 
   // args is the number of template types (what is this called?)
   void AddGenericType(const string& package, const string& name, int args);
 
   // lookup a specific class name
-  Type* Find(const string& name) const;
-  Type* Find(const char* package, const char* name) const;
+  const Type* Find(const string& name) const;
+  const Type* Find(const char* package, const char* name) const;
 
   // try to search by either a full name or a partial name
-  Type* Search(const string& name);
+  const Type* Search(const string& name);
 
   void Dump() const;
 
@@ -418,7 +418,7 @@ class Namespace {
 
   const Generic* search_generic(const string& name) const;
 
-  vector<Type*> m_types;
+  vector<const Type*> m_types;
   vector<Generic> m_generics;
 };
 

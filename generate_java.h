@@ -28,7 +28,7 @@ public:
     using Type = android::aidl::Type;
 
     VariableFactory(const string& base); // base must be short
-    Variable* Get(Type* type);
+    Variable* Get(const Type* type);
     Variable* Get(int index);
 private:
     vector<Variable*> m_vars;

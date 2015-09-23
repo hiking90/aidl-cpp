@@ -195,7 +195,7 @@ int gather_types(const char* filename, document_item_type* items) {
             return 1;
         }
 
-        Type* old = NAMES.Find(type->QualifiedName());
+        const Type* old = NAMES.Find(type->QualifiedName());
         if (old == NULL) {
             NAMES.Add(type);
 
@@ -247,7 +247,7 @@ int check_method(const char* filename, method_type* m) {
     int err = 0;
 
     // return type
-    Type* returnType = NAMES.Search(m->type.type.data);
+    const Type* returnType = NAMES.Search(m->type.type.data);
     if (returnType == NULL) {
         fprintf(stderr, "%s:%d unknown return type %s\n", filename,
                     m->type.type.lineno, m->type.type.data);
@@ -280,7 +280,7 @@ int check_method(const char* filename, method_type* m) {
 
     arg_type* arg = m->args;
     while (arg) {
-        Type* t = NAMES.Search(arg->type.type.data);
+        const Type* t = NAMES.Search(arg->type.type.data);
 
         // check the arg type
         if (t == NULL) {
