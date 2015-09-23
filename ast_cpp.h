@@ -32,6 +32,7 @@ class CppNode {
  public:
   CppNode() = default;
   virtual ~CppNode() = default;
+
   virtual void Write(CodeWriter* to) const = 0;
 
  private:
@@ -51,17 +52,17 @@ class CppClassDeclaration : public CppDeclaration {
  public:
   CppClassDeclaration(const std::string& name,
                       const std::string& parent,
-                      std::vector<CppDeclaration*> public_members,
-                      std::vector<CppDeclaration*> private_members);
-  virtual ~CppClassDeclaration();
+                      std::vector<std::unique_ptr<CppDeclaration>> public_members,
+                      std::vector<std::unique_ptr<CppDeclaration>> private_members);
+  virtual ~CppClassDeclaration() = default;
 
   void Write(CodeWriter* to) const override;
 
  private:
   std::string name_;
   std::string parent_;
-  std::vector<CppDeclaration*> public_members_;
-  std::vector<CppDeclaration*> private_members_;
+  std::vector<std::unique_ptr<CppDeclaration>> public_members_;
+  std::vector<std::unique_ptr<CppDeclaration>> private_members_;
 
   DISALLOW_COPY_AND_ASSIGN(CppClassDeclaration);
 };  // class CppClassDeclaration
@@ -73,7 +74,6 @@ class CppMethodDeclaration : public CppDeclaration {
                        std::vector<std::string> arguments,
                        bool is_const = false,
                        bool is_virtual = false);
-
   virtual ~CppMethodDeclaration() = default;
 
   void Write(CodeWriter* to) const override;
@@ -91,13 +91,13 @@ class CppMethodDeclaration : public CppDeclaration {
 class CppNamespace : public CppDeclaration {
  public:
   CppNamespace(const std::string& name,
-               std::vector<CppDeclaration*> declarations);
-  virtual ~CppNamespace();
+               std::vector<std::unique_ptr<CppDeclaration>> declarations);
+  virtual ~CppNamespace() = default;
 
   void Write(CodeWriter* to) const override;
 
  private:
-  std::vector<CppDeclaration*> declarations_;
+  std::vector<std::unique_ptr<CppDeclaration>> declarations_;
   std::string name_;
 
   DISALLOW_COPY_AND_ASSIGN(CppNamespace);
@@ -106,7 +106,7 @@ class CppNamespace : public CppDeclaration {
 class CppDocument : public CppNode {
  public:
   CppDocument(const std::vector<std::string>& include_list,
-              CppNamespace* a_namespace);
+              std::unique_ptr<CppNamespace> a_namespace);
 
   void Write(CodeWriter* to) const override;
 
@@ -121,7 +121,7 @@ class CppHeader final : public CppDocument {
  public:
   CppHeader(const std::string& include_guard,
             const std::vector<std::string>& include_list,
-            CppNamespace* a_namespace);
+            std::unique_ptr<CppNamespace> a_namespace);
   void Write(CodeWriter* to) const override;
 
  private:
@@ -133,7 +133,7 @@ class CppHeader final : public CppDocument {
 class CppSource final : public CppDocument {
  public:
   CppSource(const std::vector<std::string>& include_list,
-            CppNamespace* a_namespace);
+            std::unique_ptr<CppNamespace> a_namespace);
 
  private:
   DISALLOW_COPY_AND_ASSIGN(CppSource);

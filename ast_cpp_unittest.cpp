@@ -22,6 +22,8 @@
 #include "code_writer.h"
 
 using std::string;
+using std::vector;
+using std::unique_ptr;
 
 namespace android {
 namespace aidl {
@@ -58,26 +60,47 @@ virtual void SubMethod(int subarg) const;
 }  // namespace
 
 TEST(AstCppTests, GeneratesHeader) {
-  CppHeader cpp_header{"HEADER_INCLUDE_GUARD_H_",
-    {"string", "memory"},
-    new CppNamespace {"android", {
-      new CppNamespace {"test", {
-        new CppClassDeclaration { "TestClass", "",
-          {
-            new CppMethodDeclaration("void", "NormalMethod", { "int normalarg", "float normal2" }),
-            new CppMethodDeclaration("void", "SubMethod", { "int subarg" }, true, true)
-          },
-          {}
-        },
-        new CppClassDeclaration { "TestSubClass", "TestClass",
-          {
-            new CppMethodDeclaration("void", "SubMethod", { "int subarg" }, true, true)
-          },
-          {}
-        }
-      }}
-    }}
-  };
+  unique_ptr<CppMethodDeclaration> norm{new CppMethodDeclaration("void",
+                                                                "NormalMethod",
+                                                                { "int normalarg",
+                                                                "float normal2" })};
+  unique_ptr<CppMethodDeclaration> sub{new CppMethodDeclaration("void",
+                                                                "SubMethod",
+                                                                { "int subarg" },
+                                                                true,
+                                                                true)};
+  unique_ptr<CppMethodDeclaration> sub2{new CppMethodDeclaration("void",
+                                                                 "SubMethod",
+                                                                 { "int subarg" },
+                                                                 true,
+                                                                 true)};
+  vector<unique_ptr<CppDeclaration>> test_methods;
+  test_methods.push_back(std::move(norm));
+  test_methods.push_back(std::move(sub));
+
+  vector<unique_ptr<CppDeclaration>> test_sub_methods;
+  test_sub_methods.push_back(std::move(sub2));
+
+  unique_ptr<CppDeclaration> test{new CppClassDeclaration { "TestClass", "",
+      std::move(test_methods), {} }};
+
+  unique_ptr<CppDeclaration> test_sub{new CppClassDeclaration { "TestSubClass",
+      "TestClass", std::move(test_sub_methods), {} }};
+
+  vector<unique_ptr<CppDeclaration>> classes;
+  classes.push_back(std::move(test));
+  classes.push_back(std::move(test_sub));
+
+  unique_ptr<CppNamespace> test_ns{new CppNamespace {"test",
+      std::move(classes)}};
+
+  vector<unique_ptr<CppDeclaration>> test_ns_vec;
+  test_ns_vec.push_back(std::move(test_ns));
+
+  unique_ptr<CppNamespace> android_ns{new CppNamespace {"android", std::move(test_ns_vec) }};
+
+  CppHeader cpp_header{"HEADER_INCLUDE_GUARD_H_", {"string", "memory"},
+      std::move(android_ns) };
   string actual_output;
   CodeWriterPtr writer = GetStringWriter(&actual_output);
   cpp_header.Write(writer.get());

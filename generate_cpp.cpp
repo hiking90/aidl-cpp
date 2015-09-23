@@ -47,44 +47,23 @@ string RandomGuardString() {
 }
 
 unique_ptr<CppDocument> BuildClientSource(interface_type* parsed_doc) {
-  return unique_ptr<CppDocument>{new CppSource{
-      {},
-      new CppNamespace{
-          "android",
-          {}
-      }
-  }};
+  unique_ptr<CppNamespace> ns{new CppNamespace{"android", {}}};
+  return unique_ptr<CppDocument>{new CppSource{ {}, std::move(ns)}};
 }
 
 unique_ptr<CppDocument> BuildServerSource(interface_type* parsed_doc) {
-  return unique_ptr<CppDocument>{new CppSource{
-      {},
-      new CppNamespace{
-          "android",
-          {}
-      }
-  }};
+  unique_ptr<CppNamespace> ns{new CppNamespace{"android", {}}};
+  return unique_ptr<CppDocument>{new CppSource{ {}, std::move(ns)}};
 }
 
 unique_ptr<CppDocument> BuildInterfaceSource(interface_type* parsed_doc) {
-  return unique_ptr<CppDocument>{new CppSource{
-      {},
-      new CppNamespace{
-          "android",
-          {}
-      }
-  }};
+  unique_ptr<CppNamespace> ns{new CppNamespace{"android", {}}};
+  return unique_ptr<CppDocument>{new CppSource{ {}, std::move(ns)}};
 }
 
 unique_ptr<CppDocument> BuildClientHeader(interface_type* parsed_doc) {
-  return unique_ptr<CppDocument>{new CppHeader{
-      "FILL_ME_IN",
-      {},
-      new CppNamespace{
-          "android",
-          {}
-      }
-  }};
+  unique_ptr<CppNamespace> ns{new CppNamespace{"android", {}}};
+  return unique_ptr<CppDocument>{new CppSource{ {}, std::move(ns)}};
 }
 
 unique_ptr<CppDocument> BuildServerHeader(interface_type* parsed_doc) {
@@ -98,40 +77,40 @@ unique_ptr<CppDocument> BuildServerHeader(interface_type* parsed_doc) {
 
   string bn_name = "Bn" + c_name;
 
-  CppDeclaration* on_transact =
+  unique_ptr<CppDeclaration> on_transact{
       new CppMethodDeclaration("android::status_t", "onTransact",
                                { "uint32_t code",
                                  "const android::Parcel& data",
                                  "android::Parcel* reply",
                                  "uint32_t flags = 0"
-                               });
+                               })};
 
-  CppClassDeclaration* bn_class =
+  std::vector<unique_ptr<CppDeclaration>> publics;
+  publics.push_back(std::move(on_transact));
+
+  unique_ptr<CppClassDeclaration> bn_class{
       new CppClassDeclaration{bn_name,
                               "public android::BnInterface<" + i_name + ">",
-                              { on_transact },
+                              std::move(publics),
                               {}
-      };
+      }};
 
-  CppNamespace* ns = new CppNamespace{"android", {bn_class}};
+  std::vector<unique_ptr<CppDeclaration>> declarations;
+  declarations.push_back(std::move(bn_class));
+
+  unique_ptr<CppNamespace> ns{new CppNamespace{"android", std::move(declarations)}};
 
   unique_ptr<CppDocument> bn_header{new CppHeader{RandomGuardString(),
                                                   {"binder/IInterface.h",
                                                    i_name + ".h"},
-                                                  ns }};
+                                                  std::move(ns) }};
 
   return bn_header;
 }
 
 unique_ptr<CppDocument> BuildInterfaceHeader(interface_type* parsed_doc) {
-  return unique_ptr<CppDocument>{new CppHeader{
-      "FILL_ME_IN",
-      {},
-      new CppNamespace{
-          "android",
-          {}
-      }
-  }};
+  unique_ptr<CppNamespace> ns{new CppNamespace{"android", {}}};
+  return unique_ptr<CppDocument>{new CppSource{ {}, std::move(ns)}};
 }
 
 bool GenerateCppForFile(const std::string& name, unique_ptr<CppDocument> doc) {

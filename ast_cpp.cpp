@@ -2,24 +2,18 @@
 
 #include "code_writer.h"
 
+using std::unique_ptr;
+
 namespace android {
 namespace aidl {
 
 CppClassDeclaration::CppClassDeclaration(const std::string& name, const std::string& parent,
-                                         std::vector<CppDeclaration*> public_members,
-                                         std::vector<CppDeclaration*> private_members)
+                                         std::vector<unique_ptr<CppDeclaration>> public_members,
+                                         std::vector<unique_ptr<CppDeclaration>> private_members)
     : name_(name),
       parent_(parent),
-      public_members_(public_members),
-      private_members_(private_members) {}
-
-CppClassDeclaration::~CppClassDeclaration() {
-  for (auto dec : public_members_)
-    delete dec;
-
-  for (auto dec : private_members_)
-    delete dec;
-}
+      public_members_(std::move(public_members)),
+      private_members_(std::move(private_members)) {}
 
 void CppClassDeclaration::Write(CodeWriter* to) const {
   to->Write("class %s ", name_.c_str());
@@ -79,14 +73,9 @@ void CppMethodDeclaration::Write(CodeWriter* to) const {
 }
 
 CppNamespace::CppNamespace(const std::string& name,
-                           std::vector<CppDeclaration*> declarations)
-    : declarations_(declarations),
+                           std::vector<unique_ptr<CppDeclaration>> declarations)
+    : declarations_(std::move(declarations)),
       name_(name) {}
-
-CppNamespace::~CppNamespace() {
-  for (auto dec : declarations_)
-    delete dec;
-}
 
 void CppNamespace::Write(CodeWriter* to) const {
   to->Write("namespace %s {\n\n", name_.c_str());
@@ -100,9 +89,9 @@ void CppNamespace::Write(CodeWriter* to) const {
 }
 
 CppDocument::CppDocument(const std::vector<std::string>& include_list,
-                         CppNamespace* a_namespace)
+                         unique_ptr<CppNamespace> a_namespace)
     : include_list_(include_list),
-      namespace_(a_namespace) {}
+      namespace_(std::move(a_namespace)) {}
 
 void CppDocument::Write(CodeWriter* to) const {
   for (const auto& include : include_list_) {
@@ -115,8 +104,8 @@ void CppDocument::Write(CodeWriter* to) const {
 
 CppHeader::CppHeader(const std::string& include_guard,
                      const std::vector<std::string>& include_list,
-                     CppNamespace* a_namespace)
-    : CppDocument(include_list, a_namespace),
+                     unique_ptr<CppNamespace> a_namespace)
+    : CppDocument(include_list, std::move(a_namespace)),
       include_guard_(include_guard) {}
 
 void CppHeader::Write(CodeWriter* to) const {
@@ -130,8 +119,8 @@ void CppHeader::Write(CodeWriter* to) const {
 }
 
 CppSource::CppSource(const std::vector<std::string>& include_list,
-                     CppNamespace* a_namespace)
-    : CppDocument(include_list, a_namespace) {}
+                     unique_ptr<CppNamespace> a_namespace)
+    : CppDocument(include_list, std::move(a_namespace)) {}
 
 }  // namespace aidl
 }  // namespace android
