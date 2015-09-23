@@ -27,6 +27,7 @@ namespace android {
 namespace aidl {
 
 class JavaTypeNamespace;
+
 using std::string;
 using std::vector;
 
@@ -417,7 +418,22 @@ class JavaTypeNamespace : public TypeNamespace {
 
   void Dump() const;
 
-  const Type* IntType() const;
+  const Type* BoolType() const { return m_bool_type; }
+  const Type* IntType() const { return m_int_type; }
+  const Type* StringType() const { return m_string_type; }
+  const Type* TextUtilsType() const { return m_text_utils_type; }
+  const Type* RemoteExceptionType() const { return m_remote_exception_type; }
+  const Type* RuntimeExceptionType() const { return m_runtime_exception_type; }
+  const Type* IBinderType() const { return m_ibinder_type; }
+  const Type* IInterfaceType() const { return m_iinterface_type; }
+  const Type* BinderNativeType() const { return m_binder_native_type; }
+  const Type* BinderProxyType() const { return m_binder_proxy_type; }
+  const Type* ParcelType() const { return m_parcel_type; }
+  const Type* ParcelableInterfaceType() const {
+    return m_parcelable_interface_type;
+  }
+  const Type* ContextType() const { return m_context_type; }
+  const Type* ClassLoaderType() const { return m_classloader_type; }
 
  private:
   struct Generic {
@@ -432,33 +448,23 @@ class JavaTypeNamespace : public TypeNamespace {
   vector<const Type*> m_types;
   vector<Generic> m_generics;
 
-  const Type* m_int_type;
+  const Type* m_bool_type{nullptr};
+  const Type* m_int_type{nullptr};
+  const Type* m_string_type{nullptr};
+  const Type* m_text_utils_type{nullptr};
+  const Type* m_remote_exception_type{nullptr};
+  const Type* m_runtime_exception_type{nullptr};
+  const Type* m_ibinder_type{nullptr};
+  const Type* m_iinterface_type{nullptr};
+  const Type* m_binder_native_type{nullptr};
+  const Type* m_binder_proxy_type{nullptr};
+  const Type* m_parcel_type{nullptr};
+  const Type* m_parcelable_interface_type{nullptr};
+  const Type* m_context_type{nullptr};
+  const Type* m_classloader_type{nullptr};
 
   DISALLOW_COPY_AND_ASSIGN(JavaTypeNamespace);
 };
-
-extern Type* VOID_TYPE;
-extern Type* BOOLEAN_TYPE;
-extern Type* BYTE_TYPE;
-extern Type* CHAR_TYPE;
-extern Type* INT_TYPE;
-extern Type* LONG_TYPE;
-extern Type* FLOAT_TYPE;
-extern Type* DOUBLE_TYPE;
-extern Type* OBJECT_TYPE;
-extern Type* STRING_TYPE;
-extern Type* CHAR_SEQUENCE_TYPE;
-extern Type* TEXT_UTILS_TYPE;
-extern Type* REMOTE_EXCEPTION_TYPE;
-extern Type* RUNTIME_EXCEPTION_TYPE;
-extern Type* IBINDER_TYPE;
-extern Type* IINTERFACE_TYPE;
-extern Type* BINDER_NATIVE_TYPE;
-extern Type* BINDER_PROXY_TYPE;
-extern Type* PARCEL_TYPE;
-extern Type* PARCELABLE_INTERFACE_TYPE;
-
-extern Type* CONTEXT_TYPE;
 
 extern Expression* NULL_VALUE;
 extern Expression* THIS_VALUE;

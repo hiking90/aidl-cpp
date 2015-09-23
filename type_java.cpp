@@ -24,31 +24,6 @@
 namespace android {
 namespace aidl {
 
-Type* VOID_TYPE;
-Type* BOOLEAN_TYPE;
-Type* BYTE_TYPE;
-Type* CHAR_TYPE;
-Type* INT_TYPE;
-Type* LONG_TYPE;
-Type* FLOAT_TYPE;
-Type* DOUBLE_TYPE;
-Type* STRING_TYPE;
-Type* OBJECT_TYPE;
-Type* CHAR_SEQUENCE_TYPE;
-Type* TEXT_UTILS_TYPE;
-Type* REMOTE_EXCEPTION_TYPE;
-Type* RUNTIME_EXCEPTION_TYPE;
-Type* IBINDER_TYPE;
-Type* IINTERFACE_TYPE;
-Type* BINDER_NATIVE_TYPE;
-Type* BINDER_PROXY_TYPE;
-Type* PARCEL_TYPE;
-Type* PARCELABLE_INTERFACE_TYPE;
-Type* CONTEXT_TYPE;
-Type* MAP_TYPE;
-Type* LIST_TYPE;
-Type* CLASSLOADER_TYPE;
-
 Expression* NULL_VALUE;
 Expression* THIS_VALUE;
 Expression* SUPER_VALUE;
@@ -176,7 +151,7 @@ Expression* Type::BuildWriteToParcelFlags(int flags) const {
     return new LiteralExpression("0");
   }
   if ((flags & PARCELABLE_WRITE_RETURN_VALUE) != 0) {
-    return new FieldVariable(PARCELABLE_INTERFACE_TYPE,
+    return new FieldVariable(m_types->ParcelableInterfaceType(),
                              "PARCELABLE_WRITE_RETURN_VALUE");
   }
   return new LiteralExpression("0");
@@ -354,8 +329,8 @@ void CharSequenceType::WriteToParcel(StatementBlock* addTo, Variable* v,
   ifpart->elseif = elsepart;
   ifpart->statements->Add(
       new MethodCall(parcel, "writeInt", 1, new LiteralExpression("1")));
-  ifpart->statements->Add(new MethodCall(TEXT_UTILS_TYPE, "writeToParcel", 3, v,
-                                         parcel,
+  ifpart->statements->Add(new MethodCall(m_types->TextUtilsType(),
+                                         "writeToParcel", 3, v, parcel,
                                          BuildWriteToParcelFlags(flags)));
 
   addTo->Add(ifpart);
@@ -376,7 +351,7 @@ void CharSequenceType::CreateFromParcel(StatementBlock* addTo, Variable* v,
                                       new MethodCall(parcel, "readInt"));
   ifpart->elseif = elsepart;
   ifpart->statements->Add(new Assignment(
-      v, new MethodCall(TEXT_UTILS_TYPE,
+      v, new MethodCall(m_types->TextUtilsType(),
                         "CHAR_SEQUENCE_CREATOR.createFromParcel", 1, parcel)));
 
   addTo->Add(ifpart);
@@ -529,26 +504,27 @@ void MapType::WriteToParcel(StatementBlock* addTo, Variable* v,
   addTo->Add(new MethodCall(parcel, "writeMap", 1, v));
 }
 
-static void EnsureClassLoader(StatementBlock* addTo, Variable** cl) {
+static void EnsureClassLoader(StatementBlock* addTo, Variable** cl,
+                              const JavaTypeNamespace* types) {
   // We don't want to look up the class loader once for every
   // collection argument, so ensure we do it at most once per method.
   if (*cl == NULL) {
-    *cl = new Variable(CLASSLOADER_TYPE, "cl");
+    *cl = new Variable(types->ClassLoaderType(), "cl");
     addTo->Add(new VariableDeclaration(
         *cl, new LiteralExpression("this.getClass().getClassLoader()"),
-        CLASSLOADER_TYPE));
+        types->ClassLoaderType()));
   }
 }
 
 void MapType::CreateFromParcel(StatementBlock* addTo, Variable* v,
                                Variable* parcel, Variable** cl) const {
-  EnsureClassLoader(addTo, cl);
+  EnsureClassLoader(addTo, cl, m_types);
   addTo->Add(new Assignment(v, new MethodCall(parcel, "readHashMap", 1, *cl)));
 }
 
 void MapType::ReadFromParcel(StatementBlock* addTo, Variable* v,
                              Variable* parcel, Variable** cl) const {
-  EnsureClassLoader(addTo, cl);
+  EnsureClassLoader(addTo, cl, m_types);
   addTo->Add(new MethodCall(parcel, "readMap", 2, v, *cl));
 }
 
@@ -566,14 +542,14 @@ void ListType::WriteToParcel(StatementBlock* addTo, Variable* v,
 
 void ListType::CreateFromParcel(StatementBlock* addTo, Variable* v,
                                 Variable* parcel, Variable** cl) const {
-  EnsureClassLoader(addTo, cl);
+  EnsureClassLoader(addTo, cl, m_types);
   addTo->Add(
       new Assignment(v, new MethodCall(parcel, "readArrayList", 1, *cl)));
 }
 
 void ListType::ReadFromParcel(StatementBlock* addTo, Variable* v,
                               Variable* parcel, Variable** cl) const {
-  EnsureClassLoader(addTo, cl);
+  EnsureClassLoader(addTo, cl, m_types);
   addTo->Add(new MethodCall(parcel, "readList", 2, v, *cl));
 }
 
@@ -762,9 +738,9 @@ string GenericListType::InstantiableName() const {
 
 void GenericListType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                     Variable* parcel, int flags) const {
-  if (m_creator == STRING_TYPE->CreatorName()) {
+  if (m_creator == m_types->StringType()->CreatorName()) {
     addTo->Add(new MethodCall(parcel, "writeStringList", 1, v));
-  } else if (m_creator == IBINDER_TYPE->CreatorName()) {
+  } else if (m_creator == m_types->IBinderType()->CreatorName()) {
     addTo->Add(new MethodCall(parcel, "writeBinderList", 1, v));
   } else {
     // parcel.writeTypedListXX(arg);
@@ -774,10 +750,10 @@ void GenericListType::WriteToParcel(StatementBlock* addTo, Variable* v,
 
 void GenericListType::CreateFromParcel(StatementBlock* addTo, Variable* v,
                                        Variable* parcel, Variable**) const {
-  if (m_creator == STRING_TYPE->CreatorName()) {
+  if (m_creator == m_types->StringType()->CreatorName()) {
     addTo->Add(
         new Assignment(v, new MethodCall(parcel, "createStringArrayList", 0)));
-  } else if (m_creator == IBINDER_TYPE->CreatorName()) {
+  } else if (m_creator == m_types->IBinderType()->CreatorName()) {
     addTo->Add(
         new Assignment(v, new MethodCall(parcel, "createBinderArrayList", 0)));
   } else {
@@ -790,9 +766,9 @@ void GenericListType::CreateFromParcel(StatementBlock* addTo, Variable* v,
 
 void GenericListType::ReadFromParcel(StatementBlock* addTo, Variable* v,
                                      Variable* parcel, Variable**) const {
-  if (m_creator == STRING_TYPE->CreatorName()) {
+  if (m_creator == m_types->StringType()->CreatorName()) {
     addTo->Add(new MethodCall(parcel, "readStringList", 1, v));
-  } else if (m_creator == IBINDER_TYPE->CreatorName()) {
+  } else if (m_creator == m_types->IBinderType()->CreatorName()) {
     addTo->Add(new MethodCall(parcel, "readBinderList", 1, v));
   } else {
     // v = _data.readTypedList(v, XXX.creator);
@@ -809,90 +785,75 @@ ClassLoaderType::ClassLoaderType(const JavaTypeNamespace* types)
 // ================================================================
 
 JavaTypeNamespace::JavaTypeNamespace() {
-  VOID_TYPE = new BasicType(this, "void", "XXX", "XXX", "XXX", "XXX", "XXX");
-  Add(VOID_TYPE);
+  Add(new BasicType(this, "void", "XXX", "XXX", "XXX", "XXX", "XXX"));
 
-  BOOLEAN_TYPE = new BooleanType(this);
-  Add(BOOLEAN_TYPE);
+  m_bool_type = new BooleanType(this);
+  Add(m_bool_type);
 
-  BYTE_TYPE =
-      new BasicType(this, "byte", "writeByte", "readByte", "writeByteArray",
-                    "createByteArray", "readByteArray");
-  Add(BYTE_TYPE);
+  Add(new BasicType(this, "byte", "writeByte", "readByte", "writeByteArray",
+                    "createByteArray", "readByteArray"));
 
-  CHAR_TYPE = new CharType(this);
-  Add(CHAR_TYPE);
+  Add(new CharType(this));
 
-  INT_TYPE = new BasicType(this, "int", "writeInt", "readInt", "writeIntArray",
-                           "createIntArray", "readIntArray");
-  Add(INT_TYPE);
-  m_int_type = INT_TYPE;
+  m_int_type = new BasicType(this, "int", "writeInt", "readInt",
+                             "writeIntArray", "createIntArray", "readIntArray");
+  Add(m_int_type);
 
-  LONG_TYPE =
-      new BasicType(this, "long", "writeLong", "readLong", "writeLongArray",
-                    "createLongArray", "readLongArray");
-  Add(LONG_TYPE);
+  Add(new BasicType(this, "long", "writeLong", "readLong", "writeLongArray",
+                    "createLongArray", "readLongArray"));
 
-  FLOAT_TYPE =
-      new BasicType(this, "float", "writeFloat", "readFloat", "writeFloatArray",
-                    "createFloatArray", "readFloatArray");
-  Add(FLOAT_TYPE);
+  Add(new BasicType(this, "float", "writeFloat", "readFloat", "writeFloatArray",
+                    "createFloatArray", "readFloatArray"));
 
-  DOUBLE_TYPE =
-      new BasicType(this, "double", "writeDouble", "readDouble",
-                    "writeDoubleArray", "createDoubleArray", "readDoubleArray");
-  Add(DOUBLE_TYPE);
+  Add(new BasicType(this, "double", "writeDouble", "readDouble",
+                    "writeDoubleArray", "createDoubleArray",
+                    "readDoubleArray"));
 
-  STRING_TYPE = new StringType(this);
-  Add(STRING_TYPE);
+  m_string_type = new class StringType(this);
+  Add(m_string_type);
 
-  OBJECT_TYPE =
-      new Type(this, "java.lang", "Object", Type::BUILT_IN, false, false);
-  Add(OBJECT_TYPE);
+  Add(new Type(this, "java.lang", "Object", Type::BUILT_IN, false, false));
 
-  CHAR_SEQUENCE_TYPE = new CharSequenceType(this);
-  Add(CHAR_SEQUENCE_TYPE);
+  Add(new CharSequenceType(this));
 
-  MAP_TYPE = new MapType(this);
-  Add(MAP_TYPE);
+  Add(new MapType(this));
 
-  LIST_TYPE = new ListType(this);
-  Add(LIST_TYPE);
+  Add(new ListType(this));
 
-  TEXT_UTILS_TYPE =
+  m_text_utils_type =
       new Type(this, "android.text", "TextUtils", Type::BUILT_IN, false, false);
-  Add(TEXT_UTILS_TYPE);
+  Add(m_text_utils_type);
 
-  REMOTE_EXCEPTION_TYPE = new RemoteExceptionType(this);
-  Add(REMOTE_EXCEPTION_TYPE);
+  m_remote_exception_type = new class RemoteExceptionType(this);
+  Add(m_remote_exception_type);
 
-  RUNTIME_EXCEPTION_TYPE = new RuntimeExceptionType(this);
-  Add(RUNTIME_EXCEPTION_TYPE);
+  m_runtime_exception_type = new class RuntimeExceptionType(this);
+  Add(m_runtime_exception_type);
 
-  IBINDER_TYPE = new IBinderType(this);
-  Add(IBINDER_TYPE);
+  m_ibinder_type = new class IBinderType(this);
+  Add(m_ibinder_type);
 
-  IINTERFACE_TYPE = new IInterfaceType(this);
-  Add(IINTERFACE_TYPE);
+  m_iinterface_type = new class IInterfaceType(this);
+  Add(m_iinterface_type);
 
-  BINDER_NATIVE_TYPE = new BinderType(this);
-  Add(BINDER_NATIVE_TYPE);
+  m_binder_native_type = new class BinderType(this);
+  Add(m_binder_native_type);
 
-  BINDER_PROXY_TYPE = new BinderProxyType(this);
-  Add(BINDER_PROXY_TYPE);
+  m_binder_proxy_type = new class BinderProxyType(this);
+  Add(m_binder_proxy_type);
 
-  PARCEL_TYPE = new ParcelType(this);
-  Add(PARCEL_TYPE);
+  m_parcel_type = new class ParcelType(this);
+  Add(m_parcel_type);
 
-  PARCELABLE_INTERFACE_TYPE = new ParcelableInterfaceType(this);
-  Add(PARCELABLE_INTERFACE_TYPE);
+  m_parcelable_interface_type = new class ParcelableInterfaceType(this);
+  Add(m_parcelable_interface_type);
 
-  CONTEXT_TYPE = new Type(this, "android.content", "Context", Type::BUILT_IN,
-                          false, false);
-  Add(CONTEXT_TYPE);
+  m_context_type = new class Type(this, "android.content", "Context",
+                                  Type::BUILT_IN, false, false);
+  Add(m_context_type);
 
-  CLASSLOADER_TYPE = new ClassLoaderType(this);
-  Add(CLASSLOADER_TYPE);
+  m_classloader_type = new class ClassLoaderType(this);
+  Add(m_classloader_type);
 
   NULL_VALUE = new LiteralExpression("null");
   THIS_VALUE = new LiteralExpression("this");
@@ -1074,8 +1035,8 @@ const Type* JavaTypeNamespace::Search(const string& name) {
     return NULL;
   }
 
-  this->Add(result);
-  return this->Find(result->QualifiedName());
+  Add(result);
+  return Find(result->QualifiedName());
 }
 
 const JavaTypeNamespace::Generic* JavaTypeNamespace::search_generic(
@@ -1109,8 +1070,6 @@ void JavaTypeNamespace::Dump() const {
            t->Name().c_str(), t->QualifiedName().c_str());
   }
 }
-
-const Type* JavaTypeNamespace::IntType() const { return m_int_type; }
 
 }  // namespace aidl
 }  // namespace android

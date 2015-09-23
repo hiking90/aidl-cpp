@@ -40,12 +40,12 @@ StubClass::StubClass(const Type* type, const Type* interfaceType,
     this->modifiers = PUBLIC | ABSTRACT | STATIC;
     this->what = Class::CLASS;
     this->type = type;
-    this->extends = BINDER_NATIVE_TYPE;
+    this->extends = types->BinderNativeType();
     this->interfaces.push_back(interfaceType);
 
     // descriptor
     Field* descriptor = new Field(STATIC | FINAL | PRIVATE,
-                            new Variable(STRING_TYPE, "DESCRIPTOR"));
+                            new Variable(types->StringType(), "DESCRIPTOR"));
     descriptor->value = "\"" + interfaceType->QualifiedName() + "\"";
     this->elements.push_back(descriptor);
 
@@ -67,7 +67,7 @@ StubClass::StubClass(const Type* type, const Type* interfaceType,
     // asBinder
     Method* asBinder = new Method;
         asBinder->modifiers = PUBLIC | OVERRIDE;
-        asBinder->returnType = IBINDER_TYPE;
+        asBinder->returnType = types->IBinderType();
         asBinder->name = "asBinder";
         asBinder->statements = new StatementBlock;
     asBinder->statements->Add(new ReturnStatement(THIS_VALUE));
@@ -75,19 +75,19 @@ StubClass::StubClass(const Type* type, const Type* interfaceType,
 
     // onTransact
     this->transact_code = new Variable(types->IntType(), "code");
-    this->transact_data = new Variable(PARCEL_TYPE, "data");
-    this->transact_reply = new Variable(PARCEL_TYPE, "reply");
+    this->transact_data = new Variable(types->ParcelType(), "data");
+    this->transact_reply = new Variable(types->ParcelType(), "reply");
     this->transact_flags = new Variable(types->IntType(), "flags");
     Method* onTransact = new Method;
         onTransact->modifiers = PUBLIC | OVERRIDE;
-        onTransact->returnType = BOOLEAN_TYPE;
+        onTransact->returnType = types->BoolType();
         onTransact->name = "onTransact";
         onTransact->parameters.push_back(this->transact_code);
         onTransact->parameters.push_back(this->transact_data);
         onTransact->parameters.push_back(this->transact_reply);
         onTransact->parameters.push_back(this->transact_flags);
         onTransact->statements = new StatementBlock;
-        onTransact->exceptions.push_back(REMOTE_EXCEPTION_TYPE);
+        onTransact->exceptions.push_back(types->RemoteExceptionType());
     this->elements.push_back(onTransact);
     this->transact_switch = new SwitchStatement(this->transact_code);
 
@@ -106,7 +106,7 @@ void
 StubClass::make_as_interface(const Type *interfaceType,
                              JavaTypeNamespace* types)
 {
-    Variable* obj = new Variable(IBINDER_TYPE, "obj");
+    Variable* obj = new Variable(types->IBinderType(), "obj");
 
     Method* m = new Method;
         m->comment = "/**\n * Cast an IBinder object into an ";
@@ -162,14 +162,16 @@ StubClass::make_as_interface(const Type *interfaceType,
 class ProxyClass : public Class
 {
 public:
-    ProxyClass(const Type* type, const InterfaceType* interfaceType);
+    ProxyClass(const JavaTypeNamespace* types, const Type* type,
+               const InterfaceType* interfaceType);
     virtual ~ProxyClass();
 
     Variable* mRemote;
     bool mOneWay;
 };
 
-ProxyClass::ProxyClass(const Type* type, const InterfaceType* interfaceType)
+ProxyClass::ProxyClass(const JavaTypeNamespace* types,
+                       const Type* type, const InterfaceType* interfaceType)
     :Class()
 {
     this->modifiers = PRIVATE | STATIC;
@@ -180,11 +182,11 @@ ProxyClass::ProxyClass(const Type* type, const InterfaceType* interfaceType)
     mOneWay = interfaceType->OneWay();
 
     // IBinder mRemote
-    mRemote = new Variable(IBINDER_TYPE, "mRemote");
+    mRemote = new Variable(types->IBinderType(), "mRemote");
     this->elements.push_back(new Field(PRIVATE, mRemote));
 
     // Proxy()
-    Variable* remote = new Variable(IBINDER_TYPE, "remote");
+    Variable* remote = new Variable(types->IBinderType(), "remote");
     Method* ctor = new Method;
         ctor->name = "Proxy";
         ctor->statements = new StatementBlock;
@@ -195,7 +197,7 @@ ProxyClass::ProxyClass(const Type* type, const InterfaceType* interfaceType)
     // IBinder asBinder()
     Method* asBinder = new Method;
         asBinder->modifiers = PUBLIC | OVERRIDE;
-        asBinder->returnType = IBINDER_TYPE;
+        asBinder->returnType = types->IBinderType();
         asBinder->name = "asBinder";
         asBinder->statements = new StatementBlock;
     asBinder->statements->Add(new ReturnStatement(mRemote));
@@ -298,7 +300,7 @@ generate_method(const method_type* method, Class* interface,
         arg = arg->next;
     }
 
-    decl->exceptions.push_back(REMOTE_EXCEPTION_TYPE);
+    decl->exceptions.push_back(types->RemoteExceptionType());
 
     interface->elements.push_back(decl);
 
@@ -410,18 +412,20 @@ generate_method(const method_type* method, Class* interface,
                             arg->type.dimension));
             arg = arg->next;
         }
-        proxy->exceptions.push_back(REMOTE_EXCEPTION_TYPE);
+        proxy->exceptions.push_back(types->RemoteExceptionType());
     proxyClass->elements.push_back(proxy);
 
     // the parcels
-    Variable* _data = new Variable(PARCEL_TYPE, "_data");
+    Variable* _data = new Variable(types->ParcelType(), "_data");
     proxy->statements->Add(new VariableDeclaration(_data,
-                                new MethodCall(PARCEL_TYPE, "obtain")));
+                                new MethodCall(types->ParcelType(), "obtain")));
     Variable* _reply = NULL;
     if (!oneway) {
-        _reply = new Variable(PARCEL_TYPE, "_reply");
-        proxy->statements->Add(new VariableDeclaration(_reply,
-                                    new MethodCall(PARCEL_TYPE, "obtain")));
+        _reply = new Variable(types->ParcelType(), "_reply");
+        proxy->statements->Add(
+            new VariableDeclaration(
+                _reply,
+                new MethodCall(types->ParcelType(), "obtain")));
     }
 
     // the return value
@@ -507,7 +511,8 @@ generate_method(const method_type* method, Class* interface,
 }
 
 static void
-generate_interface_descriptors(StubClass* stub, ProxyClass* proxy)
+generate_interface_descriptors(StubClass* stub, ProxyClass* proxy,
+                               const JavaTypeNamespace* types)
 {
     // the interface descriptor transaction handler
     Case* c = new Case("INTERFACE_TRANSACTION");
@@ -519,7 +524,7 @@ generate_interface_descriptors(StubClass* stub, ProxyClass* proxy)
     // and the proxy-side method returning the descriptor directly
     Method* getDesc = new Method;
     getDesc->modifiers = PUBLIC;
-    getDesc->returnType = STRING_TYPE;
+    getDesc->returnType = types->StringType();
     getDesc->returnTypeDimension = 0;
     getDesc->name = "getInterfaceDescriptor";
     getDesc->statements = new StatementBlock;
@@ -540,7 +545,7 @@ generate_binder_interface_class(const interface_type* iface,
         interface->modifiers = PUBLIC;
         interface->what = Class::INTERFACE;
         interface->type = interfaceType;
-        interface->interfaces.push_back(IINTERFACE_TYPE);
+        interface->interfaces.push_back(types->IInterfaceType());
 
     // the stub inner class
     StubClass* stub = new StubClass(
@@ -550,13 +555,14 @@ generate_binder_interface_class(const interface_type* iface,
 
     // the proxy inner class
     ProxyClass* proxy = new ProxyClass(
+        types,
         types->Find(iface->package,
                          append(iface->name.data, ".Stub.Proxy").c_str()),
         interfaceType);
     stub->elements.push_back(proxy);
 
     // stub and proxy support for getInterfaceDescriptor()
-    generate_interface_descriptors(stub, proxy);
+    generate_interface_descriptors(stub, proxy, types);
 
     // all the declared methods of the interface
     int index = 0;
