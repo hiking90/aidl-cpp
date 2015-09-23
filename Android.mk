@@ -81,6 +81,7 @@ LOCAL_CLANG_CFLAGS := -Wno-unused-parameter
 LOCAL_SRC_FILES := \
     ast_cpp_unittest.cpp \
     ast_java_unittest.cpp \
+    generate_cpp_unittest.cpp \
     options_unittest.cpp \
     parse_helpers_unittest.cpp \
     test_main.cpp \

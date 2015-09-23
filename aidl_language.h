@@ -31,7 +31,7 @@ typedef struct buffer_type {
   extra_text_type* extra;
 
   std::string Literal() const {
-    return std::string(data);
+    return data ? std::string(data) : "";
   }
 } buffer_type;
 
@@ -43,13 +43,13 @@ typedef struct type_type {
   std::string Brackets() const;
 } type_type;
 
-typedef struct arg_type {
-    buffer_type comma_token; // empty in the first one in the list
-    buffer_type direction;
-    type_type type;
-    buffer_type name;
-    struct arg_type *next;
-} arg_type;
+struct arg_type {
+  buffer_type comma_token; // empty in the first one in the list
+  buffer_type direction;
+  type_type type;
+  buffer_type name;
+  struct arg_type *next;
+};
 
 enum {
     METHOD_TYPE

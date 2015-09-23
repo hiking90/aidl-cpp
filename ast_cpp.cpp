@@ -38,6 +38,39 @@ void CppClassDeclaration::Write(CodeWriter* to) const {
   to->Write("};  // class %s\n", name_.c_str());
 }
 
+CppMacroOrConstructorDeclaration::CppMacroOrConstructorDeclaration(
+    const std::string& name,
+    std::vector<std::string> arguments,
+    bool is_const,
+    bool is_virtual)
+    : name_(name),
+      arguments_(arguments),
+      is_const_(is_const),
+      is_virtual_(is_virtual) {}
+
+void CppMacroOrConstructorDeclaration::Write(CodeWriter* to) const {
+  if (is_virtual_)
+    to->Write("virtual ");
+
+  to->Write("%s(", name_.c_str());
+
+  bool not_first = false;
+
+  for (const auto& arg : arguments_) {
+    if (not_first)
+      to->Write(", ");
+    not_first = true;
+    to->Write("%s", arg.c_str());
+  }
+
+  to->Write(")");
+
+  if (is_const_)
+    to->Write(" const");
+
+  to->Write(";\n");
+}
+
 CppMethodDeclaration::CppMethodDeclaration(const std::string& return_type,
                                            const std::string& name,
                                            std::vector<std::string> arguments,
