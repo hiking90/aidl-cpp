@@ -520,7 +520,8 @@ generate_interface_descriptors(StubClass* stub, ProxyClass* proxy)
 }
 
 Class*
-generate_binder_interface_class(const interface_type* iface)
+generate_binder_interface_class(const interface_type* iface,
+                                JavaTypeNamespace* types)
 {
     const InterfaceType* interfaceType = static_cast<const InterfaceType*>(
         NAMES.Find(iface->package, iface->name.data));
