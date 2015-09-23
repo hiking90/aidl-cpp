@@ -18,10 +18,12 @@
 
 #include <sys/types.h>
 
+#include "aidl_language.h"
+
 namespace android {
 namespace aidl {
 
-Namespace NAMES;
+JavaTypeNamespace NAMES;
 
 Type* VOID_TYPE;
 Type* BOOLEAN_TYPE;
@@ -885,24 +887,46 @@ ClassLoaderType::ClassLoaderType()
 
 // ================================================================
 
-Namespace::Namespace() {}
+JavaTypeNamespace::JavaTypeNamespace() {}
 
-Namespace::~Namespace() {
+JavaTypeNamespace::~JavaTypeNamespace() {
   int N = m_types.size();
   for (int i = 0; i < N; i++) {
     delete m_types[i];
   }
 }
 
-void Namespace::Add(const Type* type) {
-  const Type* t = Find(type->QualifiedName());
-  if (t == NULL) {
+bool JavaTypeNamespace::Add(const Type* type) {
+  const Type* existing = Find(type->QualifiedName());
+  if (!existing) {
     m_types.push_back(type);
+    return true;
   }
+
+  if (existing->Kind() == Type::BUILT_IN) {
+    fprintf(stderr, "%s:%d attempt to redefine built in class %s\n",
+            type->DeclFile().c_str(), type->DeclLine(),
+            type->QualifiedName().c_str());
+    return false;
+  }
+
+  if (type->Kind() != existing->Kind()) {
+    fprintf(stderr, "%s:%d attempt to redefine %s as %s,\n",
+            type->DeclFile().c_str(), type->DeclLine(),
+            type->QualifiedName().c_str(),
+            type->HumanReadableKind().c_str());
+    fprintf(stderr, "%s:%d previously defined here as %s.\n",
+            existing->DeclFile().c_str(), existing->DeclLine(),
+            existing->HumanReadableKind().c_str());
+    return false;
+  }
+
+  return true;
 }
 
-void Namespace::AddGenericType(const string& package, const string& name,
-                               int args) {
+void JavaTypeNamespace::AddGenericType(const string& package,
+                                       const string& name,
+                                       int args) {
   Generic g;
   g.package = package;
   g.name = name;
@@ -911,7 +935,7 @@ void Namespace::AddGenericType(const string& package, const string& name,
   m_generics.push_back(g);
 }
 
-const Type* Namespace::Find(const string& name) const {
+const Type* JavaTypeNamespace::Find(const string& name) const {
   int N = m_types.size();
   for (int i = 0; i < N; i++) {
     if (m_types[i]->QualifiedName() == name) {
@@ -921,7 +945,8 @@ const Type* Namespace::Find(const string& name) const {
   return NULL;
 }
 
-const Type* Namespace::Find(const char* package, const char* name) const {
+const Type* JavaTypeNamespace::Find(const char* package,
+                                    const char* name) const {
   string s;
   if (package != nullptr && *package != '\0') {
     s += package;
@@ -943,7 +968,36 @@ static string normalize_generic(const string& s) {
   return r;
 }
 
-const Type* Namespace::Search(const string& name) {
+bool JavaTypeNamespace::AddParcelableType(user_data_type* p,
+                                          const std::string& filename) {
+  Type* type = new UserDataType(p->package ? p->package : "", p->name.data,
+                                false, p->parcelable, filename, p->name.lineno);
+  return Add(type);
+}
+
+bool JavaTypeNamespace::AddBinderType(interface_type* b,
+                                      const std::string& filename) {
+  Type* type = new InterfaceType(b->package ? b->package : "",
+                                 b->name.data, false, b->oneway,
+                                 filename, b->name.lineno);
+  // for interfaces, also add the stub and proxy types
+  Type* stub = new Type(b->package ? b->package : "",
+                        string{b->name.data} + ".Stub",
+                        Type::GENERATED, false, false,
+                        filename, b->name.lineno);
+  Type* proxy = new Type(b->package ? b->package : "",
+                         string{b->name.data} + ".Stub.Proxy",
+                         Type::GENERATED, false, false,
+                         filename, b->name.lineno);
+
+  bool success = true;
+  success &= Add(type);
+  success &= Add(stub);
+  success &= Add(proxy);
+  return success;
+}
+
+const Type* JavaTypeNamespace::Search(const string& name) {
   // an exact match wins
   const Type* result = Find(name);
   if (result != NULL) {
@@ -1011,7 +1065,8 @@ const Type* Namespace::Search(const string& name) {
   return this->Find(result->QualifiedName());
 }
 
-const Namespace::Generic* Namespace::search_generic(const string& name) const {
+const JavaTypeNamespace::Generic* JavaTypeNamespace::search_generic(
+    const string& name) const {
   int N = m_generics.size();
 
   // first exact match
@@ -1033,7 +1088,7 @@ const Namespace::Generic* Namespace::search_generic(const string& name) const {
   return NULL;
 }
 
-void Namespace::Dump() const {
+void JavaTypeNamespace::Dump() const {
   int n = m_types.size();
   for (int i = 0; i < n; i++) {
     const Type* t = m_types[i];

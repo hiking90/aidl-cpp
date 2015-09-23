@@ -42,6 +42,7 @@
 #include "parse_helpers.h"
 #include "search_path.h"
 #include "type_java.h"
+#include "type_namespace.h"
 
 #ifndef O_BINARY
 #  define O_BINARY  0
@@ -52,6 +53,7 @@ using std::endl;
 using std::map;
 using std::set;
 using std::string;
+using std::unique_ptr;
 using std::vector;
 
 namespace android {
@@ -175,79 +177,34 @@ char* rfind(char* str, char c) {
     return NULL;
 }
 
-int gather_types(const char* filename, document_item_type* items) {
-    int err = 0;
-    while (items) {
-        Type* type;
-        if (items->item_type == USER_DATA_TYPE) {
-            user_data_type* p = (user_data_type*)items;
-            type = new UserDataType(p->package ? p->package : "", p->name.data,
-                    false, p->parcelable, filename, p->name.lineno);
-        }
-        else if (items->item_type == INTERFACE_TYPE_BINDER) {
-            interface_type* c = (interface_type*)items;
-            type = new InterfaceType(c->package ? c->package : "",
-                            c->name.data, false, c->oneway,
-                            filename, c->name.lineno);
-        }
-        else {
-            fprintf(stderr, "aidl: internal error %s:%d\n", __FILE__, __LINE__);
-            return 1;
-        }
+bool gather_types(const char* raw_filename,
+                  document_item_type* items,
+                  TypeNamespace* types) {
+  bool success = true;
+  if (raw_filename == nullptr)
+    raw_filename = "";
+  const std::string filename{raw_filename};
 
-        const Type* old = NAMES.Find(type->QualifiedName());
-        if (old == NULL) {
-            NAMES.Add(type);
-
-            if (items->item_type == INTERFACE_TYPE_BINDER) {
-                // for interfaces, also add the stub and proxy types, we don't
-                // bother checking these for duplicates, because the parser
-                // won't let us do it.
-                interface_type* c = (interface_type*)items;
-
-                string name = c->name.data;
-                name += ".Stub";
-                Type* stub = new Type(c->package ? c->package : "",
-                                        name, Type::GENERATED, false, false,
-                                        filename, c->name.lineno);
-                NAMES.Add(stub);
-
-                name = c->name.data;
-                name += ".Stub.Proxy";
-                Type* proxy = new Type(c->package ? c->package : "",
-                                        name, Type::GENERATED, false, false,
-                                        filename, c->name.lineno);
-                NAMES.Add(proxy);
-            }
-        } else {
-            if (old->Kind() == Type::BUILT_IN) {
-                fprintf(stderr, "%s:%d attempt to redefine built in class %s\n",
-                            filename, type->DeclLine(),
-                            type->QualifiedName().c_str());
-                err = 1;
-            }
-            else if (type->Kind() != old->Kind()) {
-                fprintf(stderr, "%s:%d attempt to redefine %s as %s,\n",
-                            filename, type->DeclLine(),
-                            type->QualifiedName().c_str(),
-                            type->HumanReadableKind().c_str());
-                fprintf(stderr, "%s:%d    previously defined here as %s.\n",
-                            old->DeclFile().c_str(), old->DeclLine(),
-                            old->HumanReadableKind().c_str());
-                err = 1;
-            }
-        }
-
-        items = items->next;
+  for (document_item_type* item = items; item; item = item->next) {
+    if (items->item_type == USER_DATA_TYPE) {
+      user_data_type* p = (user_data_type*)items;
+      success &= types->AddParcelableType(p, filename);
     }
-    return err;
+    else if (items->item_type == INTERFACE_TYPE_BINDER) {
+      interface_type* c = (interface_type*)items;
+      success &= types->AddBinderType(c, filename);
+    } else {
+      LOG(FATAL) << "internal error";
+    }
+  }
+  return success;
 }
 
-int check_method(const char* filename, method_type* m) {
+int check_method(const char* filename, method_type* m, TypeNamespace* types) {
     int err = 0;
 
     // return type
-    const Type* returnType = NAMES.Search(m->type.type.data);
+    const Type* returnType = types->Search(m->type.type.data);
     if (returnType == NULL) {
         fprintf(stderr, "%s:%d unknown return type %s\n", filename,
                     m->type.type.lineno, m->type.type.data);
@@ -280,7 +237,7 @@ int check_method(const char* filename, method_type* m) {
 
     arg_type* arg = m->args;
     while (arg) {
-        const Type* t = NAMES.Search(arg->type.type.data);
+        const Type* t = types->Search(arg->type.type.data);
 
         // check the arg type
         if (t == NULL) {
@@ -353,7 +310,9 @@ next:
     return err;
 }
 
-int check_types(const char* filename, document_item_type* items) {
+int check_types(const char* filename,
+                document_item_type* items,
+                TypeNamespace* types) {
     int err = 0;
     while (items) {
         // (nothing to check for USER_DATA_TYPE)
@@ -366,7 +325,7 @@ int check_types(const char* filename, document_item_type* items) {
                 if (member->item_type == METHOD_TYPE) {
                     method_type* m = (method_type*)member;
 
-                    err |= check_method(filename, m);
+                    err |= check_method(filename, m, types);
 
                     // prevent duplicate methods
                     if (methodNames.find(m->name.data) == methodNames.end()) {
@@ -516,7 +475,7 @@ void check_outputFilePath(const string& path) {
 }
 
 
-int parse_preprocessed_file(const string& filename) {
+int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
     int err;
 
     FILE* f = fopen(filename.c_str(), "rb");
@@ -590,7 +549,9 @@ int parse_preprocessed_file(const string& filename) {
             fclose(f);
             return 1;
         }
-        err = gather_types(filename.c_str(), doc);
+        if (!gather_types(filename.c_str(), doc, types)) {
+          err = 1;
+        }
         lineno++;
     }
 
@@ -672,17 +633,16 @@ int check_and_assign_method_ids(const char * filename,
 int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
                            const std::vector<std::string> import_paths,
                            const std::string& input_file_name,
+                           TypeNamespace* types,
                            interface_type** returned_interface,
                            import_info** returned_imports) {
   int err = 0;
 
   set_import_paths(import_paths);
 
-  register_base_types();
-
   // import the preprocessed file
   for (const string& s : preprocessed_files) {
-    err |= parse_preprocessed_file(s);
+    err |= parse_preprocessed_file(s, types);
   }
   if (err != 0) {
     return err;
@@ -712,7 +672,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
 
   // parse the imports of the input file
   for (import_info* import = p.GetImports(); import; import = import->next) {
-    if (NAMES.Find(import->neededClass) != NULL) {
+    if (types->Find(import->neededClass) != NULL) {
       continue;
     }
     import->filename = find_import_file(import->neededClass);
@@ -738,13 +698,17 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
   }
 
   // gather the types that have been declared
-  err |= gather_types(input_file_name.c_str(), parsed_doc);
+  if (!gather_types(input_file_name.c_str(), parsed_doc, types)) {
+    err |= 1;
+  }
   for (import_info* import = p.GetImports(); import; import = import->next) {
-    err |= gather_types(import->filename, import->doc);
+    if (!gather_types(import->filename, import->doc, types)) {
+      err |= 1;
+    }
   }
 
   // check the referenced types in parsed_doc to make sure we've imported them
-  err |= check_types(input_file_name.c_str(), parsed_doc);
+  err |= check_types(input_file_name.c_str(), parsed_doc, types);
 
 
   // assign method ids and validate.
@@ -767,9 +731,12 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
 int compile_aidl_to_cpp(const CppOptions& options) {
   interface_type* interface = nullptr;
   import_info* imports = nullptr;
+  register_base_types();
+  JavaTypeNamespace* types = &NAMES;
   int err = load_and_validate_aidl(std::vector<std::string>{},
                                    options.ImportPaths(),
                                    options.InputFileName(),
+                                   types,
                                    &interface,
                                    &imports);
   if (err != 0) {
@@ -784,9 +751,12 @@ int compile_aidl_to_cpp(const CppOptions& options) {
 int compile_aidl_to_java(const JavaOptions& options) {
   interface_type* interface = nullptr;
   import_info* imports = nullptr;
+  register_base_types();
+  JavaTypeNamespace* types = &NAMES;
   int err = load_and_validate_aidl(options.preprocessed_files_,
                                    options.import_paths_,
                                    options.input_file_name_,
+                                   types,
                                    &interface,
                                    &imports);
   if (err != 0) {
@@ -813,7 +783,7 @@ int compile_aidl_to_java(const JavaOptions& options) {
   check_outputFilePath(output_file_name);
 
   err = generate_java(output_file_name, options.input_file_name_.c_str(),
-                      interface);
+                      interface, types);
 
   return err;
 }

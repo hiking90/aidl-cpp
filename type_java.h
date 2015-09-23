@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "ast_java.h"
+#include "type_namespace.h"
 
 namespace android {
 namespace aidl {
@@ -390,21 +391,23 @@ class GenericListType : public GenericType {
   string m_creator;
 };
 
-class Namespace {
+class JavaTypeNamespace : public TypeNamespace {
  public:
-  Namespace();
-  ~Namespace();
-  void Add(const Type* type);
+  JavaTypeNamespace();
+  virtual ~JavaTypeNamespace();
+
+  bool AddParcelableType(user_data_type* p, const string& filename) override;
+  bool AddBinderType(interface_type* b, const string& filename) override;
+  const Type* Search(const string& name) override;
+  const Type* Find(const string& name) const override;
+
+  bool Add(const Type* type);
 
   // args is the number of template types (what is this called?)
   void AddGenericType(const string& package, const string& name, int args);
 
-  // lookup a specific class name
-  const Type* Find(const string& name) const;
+  // helper alias for Find(name);
   const Type* Find(const char* package, const char* name) const;
-
-  // try to search by either a full name or a partial name
-  const Type* Search(const string& name);
 
   void Dump() const;
 
@@ -420,9 +423,11 @@ class Namespace {
 
   vector<const Type*> m_types;
   vector<Generic> m_generics;
+
+  DISALLOW_COPY_AND_ASSIGN(JavaTypeNamespace);
 };
 
-extern Namespace NAMES;
+extern JavaTypeNamespace NAMES;
 
 extern Type* VOID_TYPE;
 extern Type* BOOLEAN_TYPE;
