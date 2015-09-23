@@ -738,12 +738,11 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
 int compile_aidl_to_cpp(const CppOptions& options) {
   interface_type* interface = nullptr;
   import_info* imports = nullptr;
-  register_base_types();
-  JavaTypeNamespace* types = &NAMES;
+  unique_ptr<JavaTypeNamespace> types(new JavaTypeNamespace());
   int err = load_and_validate_aidl(std::vector<std::string>{},
                                    options.ImportPaths(),
                                    options.InputFileName(),
-                                   types,
+                                   types.get(),
                                    &interface,
                                    &imports);
   if (err != 0) {
@@ -758,12 +757,11 @@ int compile_aidl_to_cpp(const CppOptions& options) {
 int compile_aidl_to_java(const JavaOptions& options) {
   interface_type* interface = nullptr;
   import_info* imports = nullptr;
-  register_base_types();
-  JavaTypeNamespace* types = &NAMES;
+  unique_ptr<JavaTypeNamespace> types(new JavaTypeNamespace());
   int err = load_and_validate_aidl(options.preprocessed_files_,
                                    options.import_paths_,
                                    options.input_file_name_,
-                                   types,
+                                   types.get(),
                                    &interface,
                                    &imports);
   if (err != 0) {
@@ -790,7 +788,7 @@ int compile_aidl_to_java(const JavaOptions& options) {
   check_outputFilePath(output_file_name);
 
   err = generate_java(output_file_name, options.input_file_name_.c_str(),
-                      interface, types);
+                      interface, types.get());
 
   return err;
 }

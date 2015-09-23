@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <base/macros.h>
+
 #include "parse_helpers.h"
 #include "type_java.h"
 
@@ -15,7 +17,8 @@ namespace aidl {
 class StubClass : public Class
 {
 public:
-    StubClass(const Type* type, const Type* interfaceType);
+    StubClass(const Type* type, const Type* interfaceType,
+              JavaTypeNamespace* types);
     virtual ~StubClass();
 
     Variable* transact_code;
@@ -24,10 +27,13 @@ public:
     Variable* transact_flags;
     SwitchStatement* transact_switch;
 private:
-    void make_as_interface(const Type* interfaceType);
+    void make_as_interface(const Type* interfaceType, JavaTypeNamespace* types);
+
+    DISALLOW_COPY_AND_ASSIGN(StubClass);
 };
 
-StubClass::StubClass(const Type* type, const Type* interfaceType)
+StubClass::StubClass(const Type* type, const Type* interfaceType,
+                     JavaTypeNamespace* types)
     :Class()
 {
     this->comment = "/** Local-side IPC implementation stub class. */";
@@ -56,7 +62,7 @@ StubClass::StubClass(const Type* type, const Type* interfaceType)
     this->elements.push_back(ctor);
 
     // asInterface
-    make_as_interface(interfaceType);
+    make_as_interface(interfaceType, types);
 
     // asBinder
     Method* asBinder = new Method;
@@ -68,10 +74,10 @@ StubClass::StubClass(const Type* type, const Type* interfaceType)
     this->elements.push_back(asBinder);
 
     // onTransact
-    this->transact_code = new Variable(INT_TYPE, "code");
+    this->transact_code = new Variable(types->IntType(), "code");
     this->transact_data = new Variable(PARCEL_TYPE, "data");
     this->transact_reply = new Variable(PARCEL_TYPE, "reply");
-    this->transact_flags = new Variable(INT_TYPE, "flags");
+    this->transact_flags = new Variable(types->IntType(), "flags");
     Method* onTransact = new Method;
         onTransact->modifiers = PUBLIC | OVERRIDE;
         onTransact->returnType = BOOLEAN_TYPE;
@@ -97,7 +103,8 @@ StubClass::~StubClass()
 }
 
 void
-StubClass::make_as_interface(const Type *interfaceType)
+StubClass::make_as_interface(const Type *interfaceType,
+                             JavaTypeNamespace* types)
 {
     Variable* obj = new Variable(IBINDER_TYPE, "obj");
 
@@ -121,7 +128,7 @@ StubClass::make_as_interface(const Type *interfaceType)
     // IInterface iin = obj.queryLocalInterface(DESCRIPTOR)
     MethodCall* queryLocalInterface = new MethodCall(obj, "queryLocalInterface");
     queryLocalInterface->arguments.push_back(new LiteralExpression("DESCRIPTOR"));
-    IInterfaceType* iinType = new IInterfaceType();
+    IInterfaceType* iinType = new IInterfaceType(types);
     Variable *iin = new Variable(iinType, "iin");
     VariableDeclaration* iinVd = new VariableDeclaration(iin, queryLocalInterface, NULL);
     m->statements->Add(iinVd);
@@ -142,7 +149,7 @@ StubClass::make_as_interface(const Type *interfaceType)
 
     string proxyType = interfaceType->QualifiedName();
     proxyType += ".Stub.Proxy";
-    NewExpression* ne = new NewExpression(NAMES.Find(proxyType));
+    NewExpression* ne = new NewExpression(types->Find(proxyType));
     ne->arguments.push_back(obj);
     m->statements->Add(new ReturnStatement(ne));
 
@@ -202,9 +209,9 @@ ProxyClass::~ProxyClass()
 // =================================================
 static void
 generate_new_array(const Type* t, StatementBlock* addTo, Variable* v,
-                            Variable* parcel)
+                            Variable* parcel, JavaTypeNamespace* types)
 {
-    Variable* len = new Variable(INT_TYPE, v->name + "_length");
+    Variable* len = new Variable(types->IntType(), v->name + "_length");
     addTo->Add(new VariableDeclaration(len, new MethodCall(parcel, "readInt")));
     IfStatement* lencheck = new IfStatement();
     lencheck->expression = new Comparison(len, "<", new LiteralExpression("0"));
@@ -254,7 +261,8 @@ generate_read_from_parcel(const Type* t, StatementBlock* addTo, Variable* v,
 
 static void
 generate_method(const method_type* method, Class* interface,
-                    StubClass* stubClass, ProxyClass* proxyClass, int index)
+                StubClass* stubClass, ProxyClass* proxyClass, int index,
+                JavaTypeNamespace* types)
 {
     arg_type* arg;
     int i;
@@ -270,7 +278,7 @@ generate_method(const method_type* method, Class* interface,
     sprintf(transactCodeValue, "(android.os.IBinder.FIRST_CALL_TRANSACTION + %d)", index);
 
     Field* transactCode = new Field(STATIC | FINAL,
-                            new Variable(INT_TYPE, transactCodeName));
+                            new Variable(types->IntType(), transactCodeName));
     transactCode->value = transactCodeValue;
     stubClass->elements.push_back(transactCode);
 
@@ -278,14 +286,14 @@ generate_method(const method_type* method, Class* interface,
     Method* decl = new Method;
         decl->comment = gather_comments(method->comments_token->extra);
         decl->modifiers = PUBLIC;
-        decl->returnType = NAMES.Search(method->type.type.data);
+        decl->returnType = types->Search(method->type.type.data);
         decl->returnTypeDimension = method->type.dimension;
         decl->name = method->name.data;
 
     arg = method->args;
     while (arg != NULL) {
         decl->parameters.push_back(new Variable(
-                            NAMES.Search(arg->type.type.data), arg->name.data,
+                            types->Search(arg->type.type.data), arg->name.data,
                             arg->type.dimension));
         arg = arg->next;
     }
@@ -309,7 +317,7 @@ generate_method(const method_type* method, Class* interface,
     VariableFactory stubArgs("_arg");
     arg = method->args;
     while (arg != NULL) {
-        const Type* t = NAMES.Search(arg->type.type.data);
+        const Type* t = types->Search(arg->type.type.data);
         Variable* v = stubArgs.Get(t);
         v->dimension = arg->type.dimension;
 
@@ -324,7 +332,7 @@ generate_method(const method_type* method, Class* interface,
             }
             else if (arg->type.dimension == 1) {
                 generate_new_array(v->type, c->statements, v,
-                        stubClass->transact_data);
+                        stubClass->transact_data, types);
             }
             else {
                 fprintf(stderr, "aidl:internal error %s:%d\n", __FILE__,
@@ -370,7 +378,7 @@ generate_method(const method_type* method, Class* interface,
     i = 0;
     arg = method->args;
     while (arg != NULL) {
-        const Type* t = NAMES.Search(arg->type.type.data);
+        const Type* t = types->Search(arg->type.type.data);
         Variable* v = stubArgs.Get(i++);
 
         if (convert_direction(arg->direction.data) & OUT_PARAMETER) {
@@ -391,14 +399,14 @@ generate_method(const method_type* method, Class* interface,
     Method* proxy = new Method;
         proxy->comment = gather_comments(method->comments_token->extra);
         proxy->modifiers = PUBLIC | OVERRIDE;
-        proxy->returnType = NAMES.Search(method->type.type.data);
+        proxy->returnType = types->Search(method->type.type.data);
         proxy->returnTypeDimension = method->type.dimension;
         proxy->name = method->name.data;
         proxy->statements = new StatementBlock;
         arg = method->args;
         while (arg != NULL) {
             proxy->parameters.push_back(new Variable(
-                            NAMES.Search(arg->type.type.data), arg->name.data,
+                            types->Search(arg->type.type.data), arg->name.data,
                             arg->type.dimension));
             arg = arg->next;
         }
@@ -437,7 +445,7 @@ generate_method(const method_type* method, Class* interface,
     // the parameters
     arg = method->args;
     while (arg != NULL) {
-        const Type* t = NAMES.Search(arg->type.type.data);
+        const Type* t = types->Search(arg->type.type.data);
         Variable* v = new Variable(t, arg->name.data, arg->type.dimension);
         int dir = convert_direction(arg->direction.data);
         if (dir == OUT_PARAMETER && arg->type.dimension != 0) {
@@ -480,7 +488,7 @@ generate_method(const method_type* method, Class* interface,
         // the out/inout parameters
         arg = method->args;
         while (arg != NULL) {
-            const Type* t = NAMES.Search(arg->type.type.data);
+            const Type* t = types->Search(arg->type.type.data);
             Variable* v = new Variable(t, arg->name.data, arg->type.dimension);
             if (convert_direction(arg->direction.data) & OUT_PARAMETER) {
                 generate_read_from_parcel(t, tryStatement->statements,
@@ -524,7 +532,7 @@ generate_binder_interface_class(const interface_type* iface,
                                 JavaTypeNamespace* types)
 {
     const InterfaceType* interfaceType = static_cast<const InterfaceType*>(
-        NAMES.Find(iface->package, iface->name.data));
+        types->Find(iface->package, iface->name.data));
 
     // the interface class
     Class* interface = new Class;
@@ -536,13 +544,13 @@ generate_binder_interface_class(const interface_type* iface,
 
     // the stub inner class
     StubClass* stub = new StubClass(
-        NAMES.Find(iface->package, append(iface->name.data, ".Stub").c_str()),
-        interfaceType);
+        types->Find(iface->package, append(iface->name.data, ".Stub").c_str()),
+        interfaceType, types);
     interface->elements.push_back(stub);
 
     // the proxy inner class
     ProxyClass* proxy = new ProxyClass(
-        NAMES.Find(iface->package,
+        types->Find(iface->package,
                          append(iface->name.data, ".Stub.Proxy").c_str()),
         interfaceType);
     stub->elements.push_back(proxy);
@@ -556,7 +564,8 @@ generate_binder_interface_class(const interface_type* iface,
     while (item != NULL) {
         if (item->item_type == METHOD_TYPE) {
             method_type * method_item = (method_type*) item;
-            generate_method(method_item, interface, stub, proxy, method_item->assigned_id);
+            generate_method(method_item, interface, stub, proxy,
+                            method_item->assigned_id, types);
         }
         item = item->next;
         index++;

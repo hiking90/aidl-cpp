@@ -36,8 +36,9 @@ final class TestClass extends SuperClass
 }  // namespace
 
 TEST(AstJavaTests, GeneratesClass) {
-  Type class_type("TestClass", Type::GENERATED, false, false);
-  Type extend_type("SuperClass", Type::BUILT_IN, false, false);
+  JavaTypeNamespace types;
+  Type class_type(&types, "TestClass", Type::GENERATED, false, false);
+  Type extend_type(&types, "SuperClass", Type::BUILT_IN, false, false);
   Class a_class;
   a_class.comment = "// class comment";
   a_class.modifiers = FINAL;

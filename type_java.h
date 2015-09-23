@@ -26,6 +26,7 @@
 namespace android {
 namespace aidl {
 
+class JavaTypeNamespace;
 using std::string;
 using std::vector;
 
@@ -37,10 +38,11 @@ class Type {
   // WriteToParcel flags
   enum { PARCELABLE_WRITE_RETURN_VALUE = 0x0001 };
 
-  Type(const string& name, int kind, bool canWriteToParcel, bool canBeOut);
-  Type(const string& package, const string& name, int kind,
-       bool canWriteToParcel, bool canBeOut, const string& declFile = "",
-       int declLine = -1);
+  Type(const JavaTypeNamespace* types, const string& name, int kind,
+       bool canWriteToParcel, bool canBeOut);
+  Type(const JavaTypeNamespace* types, const string& package,
+       const string& name, int kind, bool canWriteToParcel, bool canBeOut,
+       const string& declFile = "", int declLine = -1);
   virtual ~Type();
 
   inline string Package() const { return m_package; }
@@ -77,6 +79,8 @@ class Type {
   void SetQualifiedName(const string& qualified);
   Expression* BuildWriteToParcelFlags(int flags) const;
 
+  const JavaTypeNamespace* m_types;
+
  private:
   Type();
   Type(const Type&);
@@ -93,9 +97,10 @@ class Type {
 
 class BasicType : public Type {
  public:
-  BasicType(const string& name, const string& marshallParcel,
-            const string& unmarshallParcel, const string& writeArrayParcel,
-            const string& createArrayParcel, const string& readArrayParcel);
+  BasicType(const JavaTypeNamespace* types, const string& name,
+            const string& marshallParcel, const string& unmarshallParcel,
+            const string& writeArrayParcel, const string& createArrayParcel,
+            const string& readArrayParcel);
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -121,7 +126,7 @@ class BasicType : public Type {
 
 class BooleanType : public Type {
  public:
-  BooleanType();
+  BooleanType(const JavaTypeNamespace* types);
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -140,7 +145,7 @@ class BooleanType : public Type {
 
 class CharType : public Type {
  public:
-  CharType();
+  CharType(const JavaTypeNamespace* types);
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -159,7 +164,7 @@ class CharType : public Type {
 
 class StringType : public Type {
  public:
-  StringType();
+  StringType(const JavaTypeNamespace* types);
 
   string CreatorName() const override;
 
@@ -180,7 +185,7 @@ class StringType : public Type {
 
 class CharSequenceType : public Type {
  public:
-  CharSequenceType();
+  CharSequenceType(const JavaTypeNamespace* types);
 
   string CreatorName() const override;
 
@@ -192,7 +197,7 @@ class CharSequenceType : public Type {
 
 class RemoteExceptionType : public Type {
  public:
-  RemoteExceptionType();
+  RemoteExceptionType(const JavaTypeNamespace* types);
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -202,7 +207,7 @@ class RemoteExceptionType : public Type {
 
 class RuntimeExceptionType : public Type {
  public:
-  RuntimeExceptionType();
+  RuntimeExceptionType(const JavaTypeNamespace* types);
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -212,7 +217,7 @@ class RuntimeExceptionType : public Type {
 
 class IBinderType : public Type {
  public:
-  IBinderType();
+  IBinderType(const JavaTypeNamespace* types);
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -229,7 +234,7 @@ class IBinderType : public Type {
 
 class IInterfaceType : public Type {
  public:
-  IInterfaceType();
+  IInterfaceType(const JavaTypeNamespace* types);
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -239,7 +244,7 @@ class IInterfaceType : public Type {
 
 class BinderType : public Type {
  public:
-  BinderType();
+  BinderType(const JavaTypeNamespace* types);
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -249,7 +254,7 @@ class BinderType : public Type {
 
 class BinderProxyType : public Type {
  public:
-  BinderProxyType();
+  BinderProxyType(const JavaTypeNamespace* types);
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -259,7 +264,7 @@ class BinderProxyType : public Type {
 
 class ParcelType : public Type {
  public:
-  ParcelType();
+  ParcelType(const JavaTypeNamespace* types);
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -269,7 +274,7 @@ class ParcelType : public Type {
 
 class ParcelableInterfaceType : public Type {
  public:
-  ParcelableInterfaceType();
+  ParcelableInterfaceType(const JavaTypeNamespace* types);
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -279,7 +284,7 @@ class ParcelableInterfaceType : public Type {
 
 class MapType : public Type {
  public:
-  MapType();
+  MapType(const JavaTypeNamespace* types);
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -291,7 +296,7 @@ class MapType : public Type {
 
 class ListType : public Type {
  public:
-  ListType();
+  ListType(const JavaTypeNamespace* types);
 
   string InstantiableName() const override;
 
@@ -305,9 +310,9 @@ class ListType : public Type {
 
 class UserDataType : public Type {
  public:
-  UserDataType(const string& package, const string& name, bool builtIn,
-               bool canWriteToParcel, const string& declFile = "",
-               int declLine = -1);
+  UserDataType(const JavaTypeNamespace* types, const string& package,
+               const string& name, bool builtIn, bool canWriteToParcel,
+               const string& declFile = "", int declLine = -1);
 
   string CreatorName() const override;
 
@@ -330,8 +335,9 @@ class UserDataType : public Type {
 
 class InterfaceType : public Type {
  public:
-  InterfaceType(const string& package, const string& name, bool builtIn,
-                bool oneway, const string& declFile, int declLine);
+  InterfaceType(const JavaTypeNamespace* types, const string& package,
+                const string& name, bool builtIn, bool oneway,
+                const string& declFile, int declLine);
 
   bool OneWay() const;
 
@@ -346,8 +352,8 @@ class InterfaceType : public Type {
 
 class GenericType : public Type {
  public:
-  GenericType(const string& package, const string& name,
-              const vector<const Type*>& args);
+  GenericType(const JavaTypeNamespace* types, const string& package,
+              const string& name, const vector<const Type*>& args);
 
   const vector<const Type*>& GenericArgumentTypes() const;
   string GenericArguments() const;
@@ -369,13 +375,13 @@ class GenericType : public Type {
 
 class ClassLoaderType : public Type {
  public:
-  ClassLoaderType();
+  ClassLoaderType(const JavaTypeNamespace* types);
 };
 
 class GenericListType : public GenericType {
  public:
-  GenericListType(const string& package, const string& name,
-                  const vector<const Type*>& args);
+  GenericListType(const JavaTypeNamespace* types, const string& package,
+                  const string& name, const vector<const Type*>& args);
 
   string CreatorName() const override;
   string InstantiableName() const override;
@@ -411,6 +417,8 @@ class JavaTypeNamespace : public TypeNamespace {
 
   void Dump() const;
 
+  const Type* IntType() const;
+
  private:
   struct Generic {
     string package;
@@ -424,10 +432,10 @@ class JavaTypeNamespace : public TypeNamespace {
   vector<const Type*> m_types;
   vector<Generic> m_generics;
 
+  const Type* m_int_type;
+
   DISALLOW_COPY_AND_ASSIGN(JavaTypeNamespace);
 };
-
-extern JavaTypeNamespace NAMES;
 
 extern Type* VOID_TYPE;
 extern Type* BOOLEAN_TYPE;
@@ -457,8 +465,6 @@ extern Expression* THIS_VALUE;
 extern Expression* SUPER_VALUE;
 extern Expression* TRUE_VALUE;
 extern Expression* FALSE_VALUE;
-
-void register_base_types();
 
 }  // namespace aidl
 }  // namespace android

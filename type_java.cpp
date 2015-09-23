@@ -24,8 +24,6 @@
 namespace android {
 namespace aidl {
 
-JavaTypeNamespace NAMES;
-
 Type* VOID_TYPE;
 Type* BOOLEAN_TYPE;
 Type* BYTE_TYPE;
@@ -57,102 +55,11 @@ Expression* SUPER_VALUE;
 Expression* TRUE_VALUE;
 Expression* FALSE_VALUE;
 
-void register_base_types() {
-  VOID_TYPE = new BasicType("void", "XXX", "XXX", "XXX", "XXX", "XXX");
-  NAMES.Add(VOID_TYPE);
-
-  BOOLEAN_TYPE = new BooleanType();
-  NAMES.Add(BOOLEAN_TYPE);
-
-  BYTE_TYPE = new BasicType("byte", "writeByte", "readByte", "writeByteArray",
-                            "createByteArray", "readByteArray");
-  NAMES.Add(BYTE_TYPE);
-
-  CHAR_TYPE = new CharType();
-  NAMES.Add(CHAR_TYPE);
-
-  INT_TYPE = new BasicType("int", "writeInt", "readInt", "writeIntArray",
-                           "createIntArray", "readIntArray");
-  NAMES.Add(INT_TYPE);
-
-  LONG_TYPE = new BasicType("long", "writeLong", "readLong", "writeLongArray",
-                            "createLongArray", "readLongArray");
-  NAMES.Add(LONG_TYPE);
-
-  FLOAT_TYPE =
-      new BasicType("float", "writeFloat", "readFloat", "writeFloatArray",
-                    "createFloatArray", "readFloatArray");
-  NAMES.Add(FLOAT_TYPE);
-
-  DOUBLE_TYPE =
-      new BasicType("double", "writeDouble", "readDouble", "writeDoubleArray",
-                    "createDoubleArray", "readDoubleArray");
-  NAMES.Add(DOUBLE_TYPE);
-
-  STRING_TYPE = new StringType();
-  NAMES.Add(STRING_TYPE);
-
-  OBJECT_TYPE = new Type("java.lang", "Object", Type::BUILT_IN, false, false);
-  NAMES.Add(OBJECT_TYPE);
-
-  CHAR_SEQUENCE_TYPE = new CharSequenceType();
-  NAMES.Add(CHAR_SEQUENCE_TYPE);
-
-  MAP_TYPE = new MapType();
-  NAMES.Add(MAP_TYPE);
-
-  LIST_TYPE = new ListType();
-  NAMES.Add(LIST_TYPE);
-
-  TEXT_UTILS_TYPE =
-      new Type("android.text", "TextUtils", Type::BUILT_IN, false, false);
-  NAMES.Add(TEXT_UTILS_TYPE);
-
-  REMOTE_EXCEPTION_TYPE = new RemoteExceptionType();
-  NAMES.Add(REMOTE_EXCEPTION_TYPE);
-
-  RUNTIME_EXCEPTION_TYPE = new RuntimeExceptionType();
-  NAMES.Add(RUNTIME_EXCEPTION_TYPE);
-
-  IBINDER_TYPE = new IBinderType();
-  NAMES.Add(IBINDER_TYPE);
-
-  IINTERFACE_TYPE = new IInterfaceType();
-  NAMES.Add(IINTERFACE_TYPE);
-
-  BINDER_NATIVE_TYPE = new BinderType();
-  NAMES.Add(BINDER_NATIVE_TYPE);
-
-  BINDER_PROXY_TYPE = new BinderProxyType();
-  NAMES.Add(BINDER_PROXY_TYPE);
-
-  PARCEL_TYPE = new ParcelType();
-  NAMES.Add(PARCEL_TYPE);
-
-  PARCELABLE_INTERFACE_TYPE = new ParcelableInterfaceType();
-  NAMES.Add(PARCELABLE_INTERFACE_TYPE);
-
-  CONTEXT_TYPE =
-      new Type("android.content", "Context", Type::BUILT_IN, false, false);
-  NAMES.Add(CONTEXT_TYPE);
-
-  CLASSLOADER_TYPE = new ClassLoaderType();
-  NAMES.Add(CLASSLOADER_TYPE);
-
-  NULL_VALUE = new LiteralExpression("null");
-  THIS_VALUE = new LiteralExpression("this");
-  SUPER_VALUE = new LiteralExpression("super");
-  TRUE_VALUE = new LiteralExpression("true");
-  FALSE_VALUE = new LiteralExpression("false");
-
-  NAMES.AddGenericType("java.util", "List", 1);
-  NAMES.AddGenericType("java.util", "Map", 2);
-}
-
-static Type* make_generic_type(const string& package, const string& name,
+static Type* make_generic_type(const JavaTypeNamespace* types,
+                               const string& package, const string& name,
                                const vector<const Type*>& args) {
   if (package == "java.util" && name == "List") {
-    return new GenericListType("java.util", "List", args);
+    return new GenericListType(types, "java.util", "List", args);
   }
   return NULL;
   // return new GenericType(package, name, args);
@@ -160,8 +67,10 @@ static Type* make_generic_type(const string& package, const string& name,
 
 // ================================================================
 
-Type::Type(const string& name, int kind, bool canWriteToParcel, bool canBeOut)
-    : m_package(),
+Type::Type(const JavaTypeNamespace* types, const string& name, int kind,
+           bool canWriteToParcel, bool canBeOut)
+    : m_types(types),
+      m_package(),
       m_name(name),
       m_declFile(""),
       m_declLine(-1),
@@ -171,10 +80,11 @@ Type::Type(const string& name, int kind, bool canWriteToParcel, bool canBeOut)
   m_qualifiedName = name;
 }
 
-Type::Type(const string& package, const string& name, int kind,
-           bool canWriteToParcel, bool canBeOut, const string& declFile,
-           int declLine)
-    : m_package(package),
+Type::Type(const JavaTypeNamespace* types, const string& package,
+           const string& name, int kind, bool canWriteToParcel, bool canBeOut,
+           const string& declFile, int declLine)
+    : m_types(types),
+      m_package(package),
       m_name(name),
       m_declFile(declFile),
       m_declLine(declLine),
@@ -274,12 +184,13 @@ Expression* Type::BuildWriteToParcelFlags(int flags) const {
 
 // ================================================================
 
-BasicType::BasicType(const string& name, const string& marshallParcel,
+BasicType::BasicType(const JavaTypeNamespace* types, const string& name,
+                     const string& marshallParcel,
                      const string& unmarshallParcel,
                      const string& writeArrayParcel,
                      const string& createArrayParcel,
                      const string& readArrayParcel)
-    : Type(name, BUILT_IN, true, false),
+    : Type(types, name, BUILT_IN, true, false),
       m_marshallParcel(marshallParcel),
       m_unmarshallParcel(unmarshallParcel),
       m_writeArrayParcel(writeArrayParcel),
@@ -315,7 +226,8 @@ void BasicType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-BooleanType::BooleanType() : Type("boolean", BUILT_IN, true, false) {}
+BooleanType::BooleanType(const JavaTypeNamespace* types)
+    : Type(types, "boolean", BUILT_IN, true, false) {}
 
 void BooleanType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                 Variable* parcel, int flags) const {
@@ -350,11 +262,13 @@ void BooleanType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-CharType::CharType() : Type("char", BUILT_IN, true, false) {}
+CharType::CharType(const JavaTypeNamespace* types)
+    : Type(types, "char", BUILT_IN, true, false) {}
 
 void CharType::WriteToParcel(StatementBlock* addTo, Variable* v,
                              Variable* parcel, int flags) const {
-  addTo->Add(new MethodCall(parcel, "writeInt", 1, new Cast(INT_TYPE, v)));
+  addTo->Add(
+      new MethodCall(parcel, "writeInt", 1, new Cast(m_types->IntType(), v)));
 }
 
 void CharType::CreateFromParcel(StatementBlock* addTo, Variable* v,
@@ -381,7 +295,8 @@ void CharType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-StringType::StringType() : Type("java.lang", "String", BUILT_IN, true, false) {}
+StringType::StringType(const JavaTypeNamespace* types)
+    : Type(types, "java.lang", "String", BUILT_IN, true, false) {}
 
 string StringType::CreatorName() const {
   return "android.os.Parcel.STRING_CREATOR";
@@ -416,8 +331,8 @@ void StringType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-CharSequenceType::CharSequenceType()
-    : Type("java.lang", "CharSequence", BUILT_IN, true, false) {}
+CharSequenceType::CharSequenceType(const JavaTypeNamespace* types)
+    : Type(types, "java.lang", "CharSequence", BUILT_IN, true, false) {}
 
 string CharSequenceType::CreatorName() const {
   return "android.os.Parcel.STRING_CREATOR";
@@ -469,8 +384,8 @@ void CharSequenceType::CreateFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-RemoteExceptionType::RemoteExceptionType()
-    : Type("android.os", "RemoteException", BUILT_IN, false, false) {}
+RemoteExceptionType::RemoteExceptionType(const JavaTypeNamespace* types)
+    : Type(types, "android.os", "RemoteException", BUILT_IN, false, false) {}
 
 void RemoteExceptionType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                         Variable* parcel, int flags) const {
@@ -484,8 +399,8 @@ void RemoteExceptionType::CreateFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-RuntimeExceptionType::RuntimeExceptionType()
-    : Type("java.lang", "RuntimeException", BUILT_IN, false, false) {}
+RuntimeExceptionType::RuntimeExceptionType(const JavaTypeNamespace* types)
+    : Type(types, "java.lang", "RuntimeException", BUILT_IN, false, false) {}
 
 void RuntimeExceptionType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                          Variable* parcel, int flags) const {
@@ -500,8 +415,8 @@ void RuntimeExceptionType::CreateFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-IBinderType::IBinderType()
-    : Type("android.os", "IBinder", BUILT_IN, true, false) {}
+IBinderType::IBinderType(const JavaTypeNamespace* types)
+    : Type(types, "android.os", "IBinder", BUILT_IN, true, false) {}
 
 void IBinderType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                 Variable* parcel, int flags) const {
@@ -530,8 +445,8 @@ void IBinderType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-IInterfaceType::IInterfaceType()
-    : Type("android.os", "IInterface", BUILT_IN, false, false) {}
+IInterfaceType::IInterfaceType(const JavaTypeNamespace* types)
+    : Type(types, "android.os", "IInterface", BUILT_IN, false, false) {}
 
 void IInterfaceType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                    Variable* parcel, int flags) const {
@@ -545,8 +460,8 @@ void IInterfaceType::CreateFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-BinderType::BinderType()
-    : Type("android.os", "Binder", BUILT_IN, false, false) {}
+BinderType::BinderType(const JavaTypeNamespace* types)
+    : Type(types, "android.os", "Binder", BUILT_IN, false, false) {}
 
 void BinderType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                Variable* parcel, int flags) const {
@@ -560,8 +475,8 @@ void BinderType::CreateFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-BinderProxyType::BinderProxyType()
-    : Type("android.os", "BinderProxy", BUILT_IN, false, false) {}
+BinderProxyType::BinderProxyType(const JavaTypeNamespace* types)
+    : Type(types, "android.os", "BinderProxy", BUILT_IN, false, false) {}
 
 void BinderProxyType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                     Variable* parcel, int flags) const {
@@ -575,8 +490,8 @@ void BinderProxyType::CreateFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-ParcelType::ParcelType()
-    : Type("android.os", "Parcel", BUILT_IN, false, false) {}
+ParcelType::ParcelType(const JavaTypeNamespace* types)
+    : Type(types, "android.os", "Parcel", BUILT_IN, false, false) {}
 
 void ParcelType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                Variable* parcel, int flags) const {
@@ -590,8 +505,8 @@ void ParcelType::CreateFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-ParcelableInterfaceType::ParcelableInterfaceType()
-    : Type("android.os", "Parcelable", BUILT_IN, false, false) {}
+ParcelableInterfaceType::ParcelableInterfaceType(const JavaTypeNamespace* types)
+    : Type(types, "android.os", "Parcelable", BUILT_IN, false, false) {}
 
 void ParcelableInterfaceType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                             Variable* parcel, int flags) const {
@@ -606,7 +521,8 @@ void ParcelableInterfaceType::CreateFromParcel(StatementBlock* addTo,
 
 // ================================================================
 
-MapType::MapType() : Type("java.util", "Map", BUILT_IN, true, true) {}
+MapType::MapType(const JavaTypeNamespace* types)
+    : Type(types, "java.util", "Map", BUILT_IN, true, true) {}
 
 void MapType::WriteToParcel(StatementBlock* addTo, Variable* v,
                             Variable* parcel, int flags) const {
@@ -638,7 +554,8 @@ void MapType::ReadFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-ListType::ListType() : Type("java.util", "List", BUILT_IN, true, true) {}
+ListType::ListType(const JavaTypeNamespace* types)
+    : Type(types, "java.util", "List", BUILT_IN, true, true) {}
 
 string ListType::InstantiableName() const { return "java.util.ArrayList"; }
 
@@ -662,11 +579,12 @@ void ListType::ReadFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-UserDataType::UserDataType(const string& package, const string& name,
+UserDataType::UserDataType(const JavaTypeNamespace* types,
+                           const string& package, const string& name,
                            bool builtIn, bool canWriteToParcel,
                            const string& declFile, int declLine)
-    : Type(package, name, builtIn ? BUILT_IN : USERDATA, canWriteToParcel, true,
-           declFile, declLine) {}
+    : Type(types, package, name, builtIn ? BUILT_IN : USERDATA,
+           canWriteToParcel, true, declFile, declLine) {}
 
 string UserDataType::CreatorName() const {
   return QualifiedName() + ".CREATOR";
@@ -752,11 +670,12 @@ void UserDataType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-InterfaceType::InterfaceType(const string& package, const string& name,
+InterfaceType::InterfaceType(const JavaTypeNamespace* types,
+                             const string& package, const string& name,
                              bool builtIn, bool oneway, const string& declFile,
                              int declLine)
-    : Type(package, name, builtIn ? BUILT_IN : INTERFACE, true, false, declFile,
-           declLine),
+    : Type(types, package, name, builtIn ? BUILT_IN : INTERFACE, true, false,
+           declFile, declLine),
       m_oneway(oneway) {}
 
 bool InterfaceType::OneWay() const { return m_oneway; }
@@ -773,18 +692,17 @@ void InterfaceType::WriteToParcel(StatementBlock* addTo, Variable* v,
 void InterfaceType::CreateFromParcel(StatementBlock* addTo, Variable* v,
                                      Variable* parcel, Variable**) const {
   // v = Interface.asInterface(parcel.readStrongBinder());
-  string type = v->type->QualifiedName();
-  type += ".Stub";
+  string stub_type = v->type->QualifiedName() + ".Stub";
   addTo->Add(new Assignment(
-      v, new MethodCall(NAMES.Find(type), "asInterface", 1,
+      v, new MethodCall(m_types->Find(stub_type), "asInterface", 1,
                         new MethodCall(parcel, "readStrongBinder"))));
 }
 
 // ================================================================
 
-GenericType::GenericType(const string& package, const string& name,
-                         const vector<const Type*>& args)
-    : Type(package, name, BUILT_IN, true, true) {
+GenericType::GenericType(const JavaTypeNamespace* types, const string& package,
+                         const string& name, const vector<const Type*>& args)
+    : Type(types, package, name, BUILT_IN, true, true) {
   m_args = args;
 
   m_importName = package + '.' + name;
@@ -828,9 +746,11 @@ void GenericType::ReadFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-GenericListType::GenericListType(const string& package, const string& name,
+GenericListType::GenericListType(const JavaTypeNamespace* types,
+                                 const string& package, const string& name,
                                  const vector<const Type*>& args)
-    : GenericType(package, name, args), m_creator(args[0]->CreatorName()) {}
+    : GenericType(types, package, name, args),
+      m_creator(args[0]->CreatorName()) {}
 
 string GenericListType::CreatorName() const {
   return "android.os.Parcel.arrayListCreator";
@@ -883,12 +803,106 @@ void GenericListType::ReadFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-ClassLoaderType::ClassLoaderType()
-    : Type("java.lang", "ClassLoader", BUILT_IN, false, false) {}
+ClassLoaderType::ClassLoaderType(const JavaTypeNamespace* types)
+    : Type(types, "java.lang", "ClassLoader", BUILT_IN, false, false) {}
 
 // ================================================================
 
-JavaTypeNamespace::JavaTypeNamespace() {}
+JavaTypeNamespace::JavaTypeNamespace() {
+  VOID_TYPE = new BasicType(this, "void", "XXX", "XXX", "XXX", "XXX", "XXX");
+  Add(VOID_TYPE);
+
+  BOOLEAN_TYPE = new BooleanType(this);
+  Add(BOOLEAN_TYPE);
+
+  BYTE_TYPE =
+      new BasicType(this, "byte", "writeByte", "readByte", "writeByteArray",
+                    "createByteArray", "readByteArray");
+  Add(BYTE_TYPE);
+
+  CHAR_TYPE = new CharType(this);
+  Add(CHAR_TYPE);
+
+  INT_TYPE = new BasicType(this, "int", "writeInt", "readInt", "writeIntArray",
+                           "createIntArray", "readIntArray");
+  Add(INT_TYPE);
+  m_int_type = INT_TYPE;
+
+  LONG_TYPE =
+      new BasicType(this, "long", "writeLong", "readLong", "writeLongArray",
+                    "createLongArray", "readLongArray");
+  Add(LONG_TYPE);
+
+  FLOAT_TYPE =
+      new BasicType(this, "float", "writeFloat", "readFloat", "writeFloatArray",
+                    "createFloatArray", "readFloatArray");
+  Add(FLOAT_TYPE);
+
+  DOUBLE_TYPE =
+      new BasicType(this, "double", "writeDouble", "readDouble",
+                    "writeDoubleArray", "createDoubleArray", "readDoubleArray");
+  Add(DOUBLE_TYPE);
+
+  STRING_TYPE = new StringType(this);
+  Add(STRING_TYPE);
+
+  OBJECT_TYPE =
+      new Type(this, "java.lang", "Object", Type::BUILT_IN, false, false);
+  Add(OBJECT_TYPE);
+
+  CHAR_SEQUENCE_TYPE = new CharSequenceType(this);
+  Add(CHAR_SEQUENCE_TYPE);
+
+  MAP_TYPE = new MapType(this);
+  Add(MAP_TYPE);
+
+  LIST_TYPE = new ListType(this);
+  Add(LIST_TYPE);
+
+  TEXT_UTILS_TYPE =
+      new Type(this, "android.text", "TextUtils", Type::BUILT_IN, false, false);
+  Add(TEXT_UTILS_TYPE);
+
+  REMOTE_EXCEPTION_TYPE = new RemoteExceptionType(this);
+  Add(REMOTE_EXCEPTION_TYPE);
+
+  RUNTIME_EXCEPTION_TYPE = new RuntimeExceptionType(this);
+  Add(RUNTIME_EXCEPTION_TYPE);
+
+  IBINDER_TYPE = new IBinderType(this);
+  Add(IBINDER_TYPE);
+
+  IINTERFACE_TYPE = new IInterfaceType(this);
+  Add(IINTERFACE_TYPE);
+
+  BINDER_NATIVE_TYPE = new BinderType(this);
+  Add(BINDER_NATIVE_TYPE);
+
+  BINDER_PROXY_TYPE = new BinderProxyType(this);
+  Add(BINDER_PROXY_TYPE);
+
+  PARCEL_TYPE = new ParcelType(this);
+  Add(PARCEL_TYPE);
+
+  PARCELABLE_INTERFACE_TYPE = new ParcelableInterfaceType(this);
+  Add(PARCELABLE_INTERFACE_TYPE);
+
+  CONTEXT_TYPE = new Type(this, "android.content", "Context", Type::BUILT_IN,
+                          false, false);
+  Add(CONTEXT_TYPE);
+
+  CLASSLOADER_TYPE = new ClassLoaderType(this);
+  Add(CLASSLOADER_TYPE);
+
+  NULL_VALUE = new LiteralExpression("null");
+  THIS_VALUE = new LiteralExpression("this");
+  SUPER_VALUE = new LiteralExpression("super");
+  TRUE_VALUE = new LiteralExpression("true");
+  FALSE_VALUE = new LiteralExpression("false");
+
+  AddGenericType("java.util", "List", 1);
+  AddGenericType("java.util", "Map", 2);
+}
 
 JavaTypeNamespace::~JavaTypeNamespace() {
   int N = m_types.size();
@@ -914,8 +928,7 @@ bool JavaTypeNamespace::Add(const Type* type) {
   if (type->Kind() != existing->Kind()) {
     fprintf(stderr, "%s:%d attempt to redefine %s as %s,\n",
             type->DeclFile().c_str(), type->DeclLine(),
-            type->QualifiedName().c_str(),
-            type->HumanReadableKind().c_str());
+            type->QualifiedName().c_str(), type->HumanReadableKind().c_str());
     fprintf(stderr, "%s:%d previously defined here as %s.\n",
             existing->DeclFile().c_str(), existing->DeclLine(),
             existing->HumanReadableKind().c_str());
@@ -926,8 +939,7 @@ bool JavaTypeNamespace::Add(const Type* type) {
 }
 
 void JavaTypeNamespace::AddGenericType(const string& package,
-                                       const string& name,
-                                       int args) {
+                                       const string& name, int args) {
   Generic g;
   g.package = package;
   g.name = name;
@@ -971,25 +983,24 @@ static string normalize_generic(const string& s) {
 
 bool JavaTypeNamespace::AddParcelableType(user_data_type* p,
                                           const std::string& filename) {
-  Type* type = new UserDataType(p->package ? p->package : "", p->name.data,
-                                false, p->parcelable, filename, p->name.lineno);
+  Type* type =
+      new UserDataType(this, p->package ? p->package : "", p->name.data, false,
+                       p->parcelable, filename, p->name.lineno);
   return Add(type);
 }
 
 bool JavaTypeNamespace::AddBinderType(interface_type* b,
                                       const std::string& filename) {
-  Type* type = new InterfaceType(b->package ? b->package : "",
-                                 b->name.data, false, b->oneway,
-                                 filename, b->name.lineno);
-  // for interfaces, also add the stub and proxy types
-  Type* stub = new Type(b->package ? b->package : "",
-                        string{b->name.data} + ".Stub",
-                        Type::GENERATED, false, false,
-                        filename, b->name.lineno);
-  Type* proxy = new Type(b->package ? b->package : "",
-                         string{b->name.data} + ".Stub.Proxy",
-                         Type::GENERATED, false, false,
-                         filename, b->name.lineno);
+  // for interfaces, add the stub, proxy, and interface types.
+  Type* type =
+      new InterfaceType(this, b->package ? b->package : "", b->name.data, false,
+                        b->oneway, filename, b->name.lineno);
+  Type* stub = new Type(this, b->package ? b->package : "",
+                        string{b->name.data} + ".Stub", Type::GENERATED, false,
+                        false, filename, b->name.lineno);
+  Type* proxy = new Type(this, b->package ? b->package : "",
+                         string{b->name.data} + ".Stub.Proxy", Type::GENERATED,
+                         false, false, filename, b->name.lineno);
 
   bool success = true;
   success &= Add(type);
@@ -1057,7 +1068,7 @@ const Type* JavaTypeNamespace::Search(const string& name) {
 
   // construct a GenericType, add it to our name set so they always get
   // the same object, and return it.
-  result = make_generic_type(g->package, g->name, args);
+  result = make_generic_type(this, g->package, g->name, args);
   if (result == NULL) {
     LOG(ERROR) << "internal error";
     return NULL;
@@ -1098,6 +1109,8 @@ void JavaTypeNamespace::Dump() const {
            t->Name().c_str(), t->QualifiedName().c_str());
   }
 }
+
+const Type* JavaTypeNamespace::IntType() const { return m_int_type; }
 
 }  // namespace aidl
 }  // namespace android
