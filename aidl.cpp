@@ -345,6 +345,14 @@ int check_method(const char* filename, method_type* m) {
             err = 1;
         }
 
+        // Reserve a namespace for internal use
+        if (!strncmp(arg->name.data, "_aidl", 5)) {
+            fprintf(stderr, "%s:%d parameter %d %s cannot begin with"
+                    " '_aidl'\n",
+                    filename, m->name.lineno, index, arg->name.data);
+            err = 1;
+        }
+
 next:
         index++;
         arg = arg->next;
