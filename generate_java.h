@@ -12,13 +12,11 @@ namespace aidl {
 using std::string;
 using std::vector;
 
-class JavaTypeNamespace;
-
 int generate_java(const string& filename, const string& originalSrc,
-                  interface_type* iface, JavaTypeNamespace* types);
+                interface_type* iface);
 
 android::aidl::Class* generate_binder_interface_class(
-    const interface_type* iface, JavaTypeNamespace* types);
+    const interface_type* iface);
 
 string gather_comments(extra_text_type* extra);
 string append(const char* a, const char* b);
