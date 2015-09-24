@@ -23,7 +23,6 @@ const char kIExampleInterfaceClass[] = "android.test.IExampleInterface";
 
 const char* kIExampleInterfaceParcelables[] = {
   "android.foo.ExampleParcelable",
-  "android.test.ExampleParcelable2",
   nullptr,
 };
 
@@ -37,7 +36,7 @@ const char kIExampleInterfaceContents[] = R"(
 package android.test;
 
 import android.foo.ExampleParcelable;
-import android.test.ExampleParcelable2;
+import android.test.CompoundParcelable;
 import android.bar.IAuxInterface;
 import android.test.IAuxInterface2;
 
@@ -54,7 +53,8 @@ interface IExampleInterface {
     IExampleInterface getRecursiveBinder();
 
     int takesAnInterface(in IAuxInterface2 arg);
-    int takesAParcelable(in ExampleParcelable2 arg);
+    int takesAParcelable(in CompoundParcelable.Subclass1 arg,
+                         inout CompoundParcelable.Subclass2 arg2);
 }
 )";
 
@@ -187,16 +187,30 @@ return true;
 case TRANSACTION_takesAParcelable:
 {
 data.enforceInterface(DESCRIPTOR);
-android.test.ExampleParcelable2 _arg0;
+android.test.CompoundParcelable.Subclass1 _arg0;
 if ((0!=data.readInt())) {
-_arg0 = android.test.ExampleParcelable2.CREATOR.createFromParcel(data);
+_arg0 = android.test.CompoundParcelable.Subclass1.CREATOR.createFromParcel(data);
 }
 else {
 _arg0 = null;
 }
-int _result = this.takesAParcelable(_arg0);
+android.test.CompoundParcelable.Subclass2 _arg1;
+if ((0!=data.readInt())) {
+_arg1 = android.test.CompoundParcelable.Subclass2.CREATOR.createFromParcel(data);
+}
+else {
+_arg1 = null;
+}
+int _result = this.takesAParcelable(_arg0, _arg1);
 reply.writeNoException();
 reply.writeInt(_result);
+if ((_arg1!=null)) {
+reply.writeInt(1);
+_arg1.writeToParcel(reply, android.os.Parcelable.PARCELABLE_WRITE_RETURN_VALUE);
+}
+else {
+reply.writeInt(0);
+}
 return true;
 }
 }
@@ -354,7 +368,7 @@ _data.recycle();
 }
 return _result;
 }
-@Override public int takesAParcelable(android.test.ExampleParcelable2 arg) throws android.os.RemoteException
+@Override public int takesAParcelable(android.test.CompoundParcelable.Subclass1 arg, android.test.CompoundParcelable.Subclass2 arg2) throws android.os.RemoteException
 {
 android.os.Parcel _data = android.os.Parcel.obtain();
 android.os.Parcel _reply = android.os.Parcel.obtain();
@@ -368,9 +382,19 @@ arg.writeToParcel(_data, 0);
 else {
 _data.writeInt(0);
 }
+if ((arg2!=null)) {
+_data.writeInt(1);
+arg2.writeToParcel(_data, 0);
+}
+else {
+_data.writeInt(0);
+}
 mRemote.transact(Stub.TRANSACTION_takesAParcelable, _data, _reply, 0);
 _reply.readException();
 _result = _reply.readInt();
+if ((0!=_reply.readInt())) {
+arg2.readFromParcel(_reply);
+}
 }
 finally {
 _reply.recycle();
@@ -397,7 +421,7 @@ public boolean setScanMode(int mode, int duration) throws android.os.RemoteExcep
 public void registerBinder(android.bar.IAuxInterface foo) throws android.os.RemoteException;
 public android.test.IExampleInterface getRecursiveBinder() throws android.os.RemoteException;
 public int takesAnInterface(android.test.IAuxInterface2 arg) throws android.os.RemoteException;
-public int takesAParcelable(android.test.ExampleParcelable2 arg) throws android.os.RemoteException;
+public int takesAParcelable(android.test.CompoundParcelable.Subclass1 arg, android.test.CompoundParcelable.Subclass2 arg2) throws android.os.RemoteException;
 })";
 
 }  // namespace test_data
