@@ -671,7 +671,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
       parsed_doc->item_type != INTERFACE_TYPE_BINDER ||
       parsed_doc->next != nullptr) {
     cerr << "aidl expects exactly one interface per input file";
-    err |= 1;
+    return 1;
   }
   interface_type* interface = (interface_type*)parsed_doc;
   err |= check_filename(input_file_name.c_str(),
