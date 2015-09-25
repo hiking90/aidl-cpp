@@ -403,16 +403,14 @@ class JavaTypeNamespace : public TypeNamespace {
   JavaTypeNamespace();
   virtual ~JavaTypeNamespace();
 
-  bool AddParcelableType(user_data_type* p, const string& filename) override;
-  bool AddBinderType(interface_type* b, const string& filename) override;
+  bool AddParcelableType(const user_data_type* p,
+                         const string& filename) override;
+  bool AddBinderType(const interface_type* b,
+                     const string& filename) override;
+  bool AddContainerType(const string& type_name) override;
+
   const Type* Search(const string& name) override;
   const Type* Find(const string& name) const override;
-
-  bool Add(const Type* type);
-
-  // args is the number of template types (what is this called?)
-  void AddGenericType(const string& package, const string& name, int args);
-
   // helper alias for Find(name);
   const Type* Find(const char* package, const char* name) const;
 
@@ -436,17 +434,29 @@ class JavaTypeNamespace : public TypeNamespace {
   const Type* ClassLoaderType() const { return m_classloader_type; }
 
  private:
-  struct Generic {
-    string package;
-    string name;
-    string qualified;
-    int args;
+  class ContainerClass final {
+   public:
+    ContainerClass(const string& package,
+                   const string& class_name,
+                   size_t nargs);
+    ~ContainerClass() = default;
+    const string package;
+    const string class_name;
+    const string canonical_name;
+    const size_t args;
   };
 
-  const Generic* search_generic(const string& name) const;
+  bool Add(const Type* type);
+
+  // args is the number of template types (what is this called?)
+  const ContainerClass* FindContainerClass(const string& name,
+                                           size_t nargs) const;
+  bool CanonicalizeContainerClass(const string& raw_name,
+                                  const ContainerClass** container_class,
+                                  vector<const Type*>* arg_types) const;
 
   vector<const Type*> m_types;
-  vector<Generic> m_generics;
+  vector<ContainerClass> m_containers;
 
   const Type* m_bool_type{nullptr};
   const Type* m_int_type{nullptr};

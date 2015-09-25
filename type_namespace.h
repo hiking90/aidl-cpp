@@ -31,15 +31,16 @@ namespace aidl {
 class TypeNamespace {
  public:
   // Load this TypeNamespace with user defined types.
-  virtual bool AddParcelableType(user_data_type* p,
+  virtual bool AddParcelableType(const user_data_type* p,
                                  const std::string& filename) = 0;
-  virtual bool AddBinderType(interface_type* b,
+  virtual bool AddBinderType(const interface_type* b,
                              const std::string& filename) = 0;
+  virtual bool AddContainerType(const std::string& type_name) = 0;
 
   // Search for a type by inexact match with |name|.
   virtual const Type* Search(const std::string& name) = 0;
   // Search for a type by exact match with |name|.
-  virtual const Type* Find(const string& name) const = 0;
+  virtual const Type* Find(const std::string& name) const = 0;
 
  protected:
   TypeNamespace() = default;
