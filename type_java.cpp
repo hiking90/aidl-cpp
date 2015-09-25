@@ -904,19 +904,6 @@ bool JavaTypeNamespace::Add(const Type* type) {
   return true;
 }
 
-const Type* JavaTypeNamespace::Search(const string& name) {
-  const Type* result = Find(name);
-  if (result != nullptr) {
-    return result;
-  }
-
-  if (!AddContainerType(name)) {
-    return nullptr;
-  }
-
-  return Find(name);
-}
-
 const Type* JavaTypeNamespace::Find(const string& unstripped_name) const {
   const ContainerClass* g = nullptr;
   vector<const Type*> template_arg_types;
@@ -1028,6 +1015,11 @@ bool JavaTypeNamespace::AddContainerType(const string& type_name) {
 
   Add(result);
   return true;
+}
+
+const ValidatableType* JavaTypeNamespace::GetValidatableType(
+    const string& name) const {
+  return Find(name);
 }
 
 const JavaTypeNamespace::ContainerClass* JavaTypeNamespace::FindContainerClass(

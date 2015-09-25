@@ -42,6 +42,7 @@ LOCAL_SRC_FILES := \
     parse_helpers.cpp \
     search_path.cpp \
     type_java.cpp \
+    type_namespace.cpp \
 
 include $(BUILD_HOST_STATIC_LIBRARY)
 

@@ -22,11 +22,23 @@
 
 #include <base/macros.h>
 
-struct user_data_type;
-struct interface_type;
+#include "aidl_language.h"
 
 namespace android {
 namespace aidl {
+
+class ValidatableType {
+ public:
+  ValidatableType() = default;
+  virtual ~ValidatableType() = default;
+
+  virtual bool CanBeArray() const = 0;
+  virtual bool CanBeOutParameter() const = 0;
+  virtual bool CanWriteToParcel() const = 0;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(ValidatableType);
+};
 
 class TypeNamespace {
  public:
@@ -35,16 +47,29 @@ class TypeNamespace {
                                  const std::string& filename) = 0;
   virtual bool AddBinderType(const interface_type* b,
                              const std::string& filename) = 0;
+  // We dynamically create container types as we discover them in the parse
+  // tree.  Returns false iff this is an invalid type.  Silently discards
+  // duplicates and non-container types.
   virtual bool AddContainerType(const std::string& type_name) = 0;
 
-  // Search for a type by inexact match with |name|.
-  virtual const Type* Search(const std::string& name) = 0;
-  // Search for a type by exact match with |name|.
-  virtual const Type* Find(const std::string& name) const = 0;
+  // Returns true iff this has a type for |type_name|.
+  virtual bool HasType(const std::string& type_name) const;
+
+  // Returns true iff |raw_type| is a valid return type.
+  virtual bool IsValidReturnType(const type_type* raw_type,
+                                 const std::string& filename) const;
+
+  // Returns true iff |arg_type| is a valid method argument.
+  virtual bool IsValidArg(const arg_type* a,
+                          int arg_index,
+                          const std::string& filename) const;
 
  protected:
   TypeNamespace() = default;
   virtual ~TypeNamespace() = default;
+
+  virtual const ValidatableType* GetValidatableType(
+      const std::string& name) const = 0;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(TypeNamespace);

@@ -288,14 +288,14 @@ generate_method(const method_type* method, Class* interface,
     Method* decl = new Method;
         decl->comment = gather_comments(method->comments_token->extra);
         decl->modifiers = PUBLIC;
-        decl->returnType = types->Search(method->type.type.data);
+        decl->returnType = types->Find(method->type.type.data);
         decl->returnTypeDimension = method->type.dimension;
         decl->name = method->name.data;
 
     arg = method->args;
     while (arg != NULL) {
         decl->parameters.push_back(new Variable(
-                            types->Search(arg->type.type.data), arg->name.data,
+                            types->Find(arg->type.type.data), arg->name.data,
                             arg->type.dimension));
         arg = arg->next;
     }
@@ -319,7 +319,7 @@ generate_method(const method_type* method, Class* interface,
     VariableFactory stubArgs("_arg");
     arg = method->args;
     while (arg != NULL) {
-        const Type* t = types->Search(arg->type.type.data);
+        const Type* t = types->Find(arg->type.type.data);
         Variable* v = stubArgs.Get(t);
         v->dimension = arg->type.dimension;
 
@@ -380,7 +380,7 @@ generate_method(const method_type* method, Class* interface,
     i = 0;
     arg = method->args;
     while (arg != NULL) {
-        const Type* t = types->Search(arg->type.type.data);
+        const Type* t = types->Find(arg->type.type.data);
         Variable* v = stubArgs.Get(i++);
 
         if (convert_direction(arg->direction.data) & OUT_PARAMETER) {
@@ -401,14 +401,14 @@ generate_method(const method_type* method, Class* interface,
     Method* proxy = new Method;
         proxy->comment = gather_comments(method->comments_token->extra);
         proxy->modifiers = PUBLIC | OVERRIDE;
-        proxy->returnType = types->Search(method->type.type.data);
+        proxy->returnType = types->Find(method->type.type.data);
         proxy->returnTypeDimension = method->type.dimension;
         proxy->name = method->name.data;
         proxy->statements = new StatementBlock;
         arg = method->args;
         while (arg != NULL) {
             proxy->parameters.push_back(new Variable(
-                            types->Search(arg->type.type.data), arg->name.data,
+                            types->Find(arg->type.type.data), arg->name.data,
                             arg->type.dimension));
             arg = arg->next;
         }
@@ -449,7 +449,7 @@ generate_method(const method_type* method, Class* interface,
     // the parameters
     arg = method->args;
     while (arg != NULL) {
-        const Type* t = types->Search(arg->type.type.data);
+        const Type* t = types->Find(arg->type.type.data);
         Variable* v = new Variable(t, arg->name.data, arg->type.dimension);
         int dir = convert_direction(arg->direction.data);
         if (dir == OUT_PARAMETER && arg->type.dimension != 0) {
@@ -492,7 +492,7 @@ generate_method(const method_type* method, Class* interface,
         // the out/inout parameters
         arg = method->args;
         while (arg != NULL) {
-            const Type* t = types->Search(arg->type.type.data);
+            const Type* t = types->Find(arg->type.type.data);
             Variable* v = new Variable(t, arg->name.data, arg->type.dimension);
             if (convert_direction(arg->direction.data) & OUT_PARAMETER) {
                 generate_read_from_parcel(t, tryStatement->statements,

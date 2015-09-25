@@ -199,160 +199,45 @@ bool gather_types(const char* raw_filename,
   return success;
 }
 
-int check_method(const char* filename, method_type* m, TypeNamespace* types) {
-    int err = 0;
-
-    // return type
-    const Type* returnType = types->Search(m->type.type.data);
-    if (returnType == NULL) {
-        fprintf(stderr, "%s:%d unknown return type %s\n", filename,
-                    m->type.type.lineno, m->type.type.data);
-        err = 1;
-        return err;
+int check_types(const string& filename,
+                interface_type* c,
+                TypeNamespace* types) {
+  int err = 0;
+  map<string,method_type*> method_names;
+  for (interface_item_type* member = c->interface_items;
+       member;
+       member = member->next) {
+    if (member->item_type != METHOD_TYPE) {
+      continue;
     }
+    method_type* m = (method_type*)member;
 
-    if (!returnType->CanWriteToParcel()) {
-        fprintf(stderr, "%s:%d return type %s can't be marshalled.\n", filename,
-                        m->type.type.lineno, m->type.type.data);
-        err = 1;
-    }
 
-    if (m->type.dimension > 0 && !returnType->CanBeArray()) {
-        fprintf(stderr, "%s:%d return type %s%s can't be an array.\n", filename,
-                m->type.array_token.lineno, m->type.type.data,
-                m->type.array_token.data);
-        err = 1;
-    }
-
-    if (m->type.dimension > 1) {
-        fprintf(stderr, "%s:%d return type %s%s only one"
-                " dimensional arrays are supported\n", filename,
-                m->type.array_token.lineno, m->type.type.data,
-                m->type.array_token.data);
-        err = 1;
+    if (!types->AddContainerType(m->type.type.data) ||
+        !types->IsValidReturnType(&m->type, filename)) {
+      err = 1;  // return type is invalid
     }
 
     int index = 1;
-
-    arg_type* arg = m->args;
-    while (arg) {
-        const Type* t = types->Search(arg->type.type.data);
-
-        // check the arg type
-        if (t == NULL) {
-            fprintf(stderr, "%s:%d parameter %s (%d) unknown type %s\n",
-                    filename, m->type.type.lineno, arg->name.data, index,
-                    arg->type.type.data);
-            err = 1;
-            goto next;
-        }
-
-        if (!t->CanWriteToParcel()) {
-            fprintf(stderr, "%s:%d parameter %d: '%s %s' can't be marshalled.\n",
-                        filename, m->type.type.lineno, index,
-                        arg->type.type.data, arg->name.data);
-            err = 1;
-        }
-
-        if (arg->direction.data == NULL
-                && (arg->type.dimension != 0 || t->CanBeOutParameter())) {
-            fprintf(stderr, "%s:%d parameter %d: '%s %s' can be an out"
-                                " parameter, so you must declare it as in,"
-                                " out or inout.\n",
-                        filename, m->type.type.lineno, index,
-                        arg->type.type.data, arg->name.data);
-            err = 1;
-        }
-
-        if (convert_direction(arg->direction.data) != IN_PARAMETER
-                && !t->CanBeOutParameter()
-                && arg->type.dimension == 0) {
-            fprintf(stderr, "%s:%d parameter %d: '%s %s %s' can only be an in"
-                            " parameter.\n",
-                        filename, m->type.type.lineno, index,
-                        arg->direction.data, arg->type.type.data,
-                        arg->name.data);
-            err = 1;
-        }
-
-        if (arg->type.dimension > 0 && !t->CanBeArray()) {
-            fprintf(stderr, "%s:%d parameter %d: '%s %s%s %s' can't be an"
-                    " array.\n", filename,
-                    m->type.array_token.lineno, index, arg->direction.data,
-                    arg->type.type.data, arg->type.array_token.data,
-                    arg->name.data);
-            err = 1;
-        }
-
-        if (arg->type.dimension > 1) {
-            fprintf(stderr, "%s:%d parameter %d: '%s %s%s %s' only one"
-                    " dimensional arrays are supported\n", filename,
-                    m->type.array_token.lineno, index, arg->direction.data,
-                    arg->type.type.data, arg->type.array_token.data,
-                    arg->name.data);
-            err = 1;
-        }
-
-        // check that the name doesn't match a keyword
-        if (is_java_keyword(arg->name.data)) {
-            fprintf(stderr, "%s:%d parameter %d %s is named the same as a"
-                    " Java or aidl keyword\n",
-                    filename, m->name.lineno, index, arg->name.data);
-            err = 1;
-        }
-
-        // Reserve a namespace for internal use
-        if (!strncmp(arg->name.data, "_aidl", 5)) {
-            fprintf(stderr, "%s:%d parameter %d %s cannot begin with"
-                    " '_aidl'\n",
-                    filename, m->name.lineno, index, arg->name.data);
-            err = 1;
-        }
-
-next:
-        index++;
-        arg = arg->next;
+    for (arg_type* arg = m->args; arg; ++index, arg = arg->next) {
+      if (!types->AddContainerType(arg->type.type.data) ||
+          !types->IsValidArg(arg, index, filename)) {
+        err = 1;
+      }
     }
 
-    return err;
-}
-
-int check_types(const char* filename,
-                document_item_type* items,
-                TypeNamespace* types) {
-    int err = 0;
-    while (items) {
-        // (nothing to check for USER_DATA_TYPE)
-        if (items->item_type == INTERFACE_TYPE_BINDER) {
-            map<string,method_type*> methodNames;
-            interface_type* c = (interface_type*)items;
-
-            interface_item_type* member = c->interface_items;
-            while (member) {
-                if (member->item_type == METHOD_TYPE) {
-                    method_type* m = (method_type*)member;
-
-                    err |= check_method(filename, m, types);
-
-                    // prevent duplicate methods
-                    if (methodNames.find(m->name.data) == methodNames.end()) {
-                        methodNames[m->name.data] = m;
-                    } else {
-                        fprintf(stderr,"%s:%d attempt to redefine method %s,\n",
-                                filename, m->name.lineno, m->name.data);
-                        method_type* old = methodNames[m->name.data];
-                        fprintf(stderr, "%s:%d    previously defined here.\n",
-                                filename, old->name.lineno);
-                        err = 1;
-                    }
-                }
-                member = member->next;
-            }
-        }
-
-        items = items->next;
+    // prevent duplicate methods
+    if (method_names.find(m->name.data) == method_names.end()) {
+      method_names[m->name.data] = m;
+    } else {
+      cerr << filename << ":" << m->name.lineno
+           << " attempt to redefine method " << m->name.data << "," << endl
+           << filename << ":" << m->name.lineno
+           << "    previously defined here." << endl;
+      err = 1;
     }
-    return err;
+  }
+  return err;
 }
 
 void generate_dep_file(const JavaOptions& options,
@@ -677,7 +562,10 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
 
   // parse the imports of the input file
   for (import_info* import = p.GetImports(); import; import = import->next) {
-    if (types->Find(import->neededClass) != NULL) {
+    if (types->HasType(import->neededClass)) {
+      // There are places in the Android tree where an import doesn't resolve,
+      // but we'll pick the type up through the preprocessed types.
+      // This seems like an error, but legacy support demands we support it...
       continue;
     }
     import->filename = find_import_file(import->neededClass);
@@ -713,7 +601,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
   }
 
   // check the referenced types in parsed_doc to make sure we've imported them
-  err |= check_types(input_file_name.c_str(), parsed_doc, types);
+  err |= check_types(input_file_name, interface, types);
 
 
   // assign method ids and validate.

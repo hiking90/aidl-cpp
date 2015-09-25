@@ -31,7 +31,7 @@ class JavaTypeNamespace;
 using std::string;
 using std::vector;
 
-class Type {
+class Type : public ValidatableType {
  public:
   // kinds
   enum { BUILT_IN, USERDATA, INTERFACE, GENERATED };
@@ -409,8 +409,8 @@ class JavaTypeNamespace : public TypeNamespace {
                      const string& filename) override;
   bool AddContainerType(const string& type_name) override;
 
-  const Type* Search(const string& name) override;
-  const Type* Find(const string& name) const override;
+  // Search for a type by exact match with |name|.
+  const Type* Find(const string& name) const;
   // helper alias for Find(name);
   const Type* Find(const char* package, const char* name) const;
 
@@ -432,6 +432,9 @@ class JavaTypeNamespace : public TypeNamespace {
   }
   const Type* ContextType() const { return m_context_type; }
   const Type* ClassLoaderType() const { return m_classloader_type; }
+
+ protected:
+  const ValidatableType* GetValidatableType(const string& name) const override;
 
  private:
   class ContainerClass final {
