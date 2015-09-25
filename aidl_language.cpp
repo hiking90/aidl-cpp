@@ -28,6 +28,8 @@ void yylex_init(void **);
 void yylex_destroy(void *);
 void yyset_in(FILE *f, void *);
 int yyparse(Parser*);
+YY_BUFFER_STATE yy_scan_string(const char *, void *);
+void yy_delete_buffer(YY_BUFFER_STATE, void *);
 
 Parser::Parser(const string& filename)
     : filename_(filename) {
@@ -35,6 +37,8 @@ Parser::Parser(const string& filename)
 }
 
 Parser::~Parser() {
+  if (buffer_is_valid_)
+    yy_delete_buffer(buffer_, scanner_);
   yylex_destroy(scanner_);
 }
 
@@ -71,6 +75,14 @@ bool Parser::OpenFileFromDisk() {
 
   yyset_in(in, Scanner());
   return true;
+}
+
+void Parser::SetFileContents(const std::string& contents) {
+  if (buffer_is_valid_)
+    yy_delete_buffer(buffer_, scanner_);
+
+  buffer_ = yy_scan_string(contents.c_str(), scanner_);
+  buffer_is_valid_ = true;
 }
 
 bool Parser::RunParser() {

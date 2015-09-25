@@ -5,6 +5,9 @@
 
 #include <base/macros.h>
 
+struct yy_buffer_state;
+typedef yy_buffer_state* YY_BUFFER_STATE;
+
 typedef enum {
     NO_EXTRA_TEXT = 0,
     SHORT_COMMENT,
@@ -153,6 +156,11 @@ class Parser {
   ~Parser();
 
   bool OpenFileFromDisk();
+
+  // Call this instead of OpenFileFromDisk to provide the text of the file
+  // directly.
+  void SetFileContents(const std::string& contents);
+
   bool RunParser();
   void ReportError(const std::string& err);
 
@@ -174,6 +182,8 @@ class Parser {
   void *scanner_ = nullptr;
   document_item_type* document_ = nullptr;
   import_info* imports_ = nullptr;
+  bool buffer_is_valid_ = false;
+  YY_BUFFER_STATE buffer_;
 
   DISALLOW_COPY_AND_ASSIGN(Parser);
 };
