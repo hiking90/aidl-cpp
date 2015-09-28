@@ -45,8 +45,14 @@ enum {
 
 namespace android {
 namespace aidl {
-
 class CodeWriter;
+}  // namespace aidl
+}  // namespace android
+
+namespace android {
+namespace aidl {
+namespace java {
+
 class Type;
 
 // Write the modifiers that are set in both mod and mask
@@ -390,6 +396,7 @@ struct Document
     virtual void Write(CodeWriter* to) const;
 };
 
+}  // namespace java
 }  // namespace aidl
 }  // namespace android
 

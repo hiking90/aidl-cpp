@@ -29,6 +29,7 @@ using android::base::Trim;
 
 namespace android {
 namespace aidl {
+namespace java {
 
 Expression* NULL_VALUE;
 Expression* THIS_VALUE;
@@ -1103,5 +1104,6 @@ void JavaTypeNamespace::Dump() const {
   }
 }
 
+}  // namespace java
 }  // namespace aidl
 }  // namespace android

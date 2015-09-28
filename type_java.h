@@ -25,6 +25,7 @@
 
 namespace android {
 namespace aidl {
+namespace java {
 
 class JavaTypeNamespace;
 
@@ -485,6 +486,7 @@ extern Expression* SUPER_VALUE;
 extern Expression* TRUE_VALUE;
 extern Expression* FALSE_VALUE;
 
+}  // namespace java
 }  // namespace aidl
 }  // namespace android
 

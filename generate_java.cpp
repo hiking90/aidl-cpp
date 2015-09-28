@@ -7,6 +7,8 @@
 #include "code_writer.h"
 #include "type_java.h"
 
+using ::android::aidl::java::Variable;
+
 namespace android {
 namespace aidl {
 
@@ -61,7 +63,8 @@ append(const char* a, const char* b)
     return s;
 }
 
-// =================================================
+namespace java {
+
 int
 generate_java(const string& filename, const string& originalSrc,
                 interface_type* iface, JavaTypeNamespace* types)
@@ -84,5 +87,6 @@ generate_java(const string& filename, const string& originalSrc,
     return 0;
 }
 
+}  // namespace java
 }  // namespace android
 }  // namespace aidl

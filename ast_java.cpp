@@ -21,6 +21,7 @@
 
 namespace android {
 namespace aidl {
+namespace java {
 
 void
 WriteModifiers(CodeWriter* to, int mod, int mask)
@@ -931,5 +932,6 @@ Document::Write(CodeWriter* to) const
     }
 }
 
+}  // namespace java
 }  // namespace aidl
 }  // namespace android

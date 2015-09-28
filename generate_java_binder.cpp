@@ -12,6 +12,7 @@
 
 namespace android {
 namespace aidl {
+namespace java {
 
 // =================================================
 class StubClass : public Class
@@ -565,5 +566,6 @@ generate_binder_interface_class(const interface_type* iface,
     return interface;
 }
 
+}  // namespace java
 }  // namespace android
 }  // namespace aidl

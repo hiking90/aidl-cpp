@@ -24,6 +24,7 @@
 
 namespace android {
 namespace aidl {
+namespace java {
 namespace {
 
 const char kExpectedClassOutput[] =
@@ -52,5 +53,6 @@ TEST(AstJavaTests, GeneratesClass) {
   EXPECT_EQ(string(kExpectedClassOutput), actual_output);
 }
 
+}  // namespace java
 }  // namespace aidl
 }  // namespace android

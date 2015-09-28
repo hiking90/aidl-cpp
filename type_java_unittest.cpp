@@ -25,6 +25,7 @@ using std::unique_ptr;
 
 namespace android {
 namespace aidl {
+namespace java {
 namespace {
 
 user_data_type* MakeFakeUserDataType(const std::string& package,
@@ -68,5 +69,6 @@ TEST_F(JavaTypeNamespaceTest, ContainerTypeCreation) {
   EXPECT_NE(types_.Find("List<Foo>"), nullptr);
 }
 
+}  // namespace java
 }  // namespace android
 }  // namespace aidl

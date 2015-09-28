@@ -12,13 +12,17 @@ namespace aidl {
 using std::string;
 using std::vector;
 
+namespace java {
+
 class JavaTypeNamespace;
 
 int generate_java(const string& filename, const string& originalSrc,
-                  interface_type* iface, JavaTypeNamespace* types);
+                  interface_type* iface, java::JavaTypeNamespace* types);
 
-android::aidl::Class* generate_binder_interface_class(
-    const interface_type* iface, JavaTypeNamespace* types);
+android::aidl::java::Class* generate_binder_interface_class(
+    const interface_type* iface, java::JavaTypeNamespace* types);
+
+}  // namespace java
 
 string gather_comments(extra_text_type* extra);
 string append(const char* a, const char* b);
@@ -26,8 +30,8 @@ string append(const char* a, const char* b);
 class VariableFactory
 {
 public:
-    using Variable = android::aidl::Variable;
-    using Type = android::aidl::Type;
+    using Variable = ::android::aidl::java::Variable;
+    using Type = ::android::aidl::java::Type;
 
     VariableFactory(const string& base); // base must be short
     Variable* Get(const Type* type);
