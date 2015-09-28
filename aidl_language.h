@@ -8,23 +8,23 @@
 struct yy_buffer_state;
 typedef yy_buffer_state* YY_BUFFER_STATE;
 
-typedef enum {
+enum which_extra_text {
     NO_EXTRA_TEXT = 0,
     SHORT_COMMENT,
     LONG_COMMENT,
     COPY_TEXT,
     WHITESPACE
-} which_extra_text;
+};
 
-typedef struct extra_text_type {
+struct extra_text_type {
     unsigned lineno;
     which_extra_text which;
     char* data; 
     unsigned len;
     struct extra_text_type* next;
-} extra_text_type;
+};
 
-typedef struct buffer_type {
+struct buffer_type {
   unsigned lineno;
   unsigned token;
   char *data;
@@ -33,15 +33,15 @@ typedef struct buffer_type {
   std::string Literal() const {
     return data ? std::string(data) : "";
   }
-} buffer_type;
+};
 
-typedef struct type_type {
+struct type_type {
   buffer_type type;
   buffer_type array_token;
   int dimension;
 
   std::string Brackets() const;
-} type_type;
+};
 
 struct arg_type {
   buffer_type comma_token; // empty in the first one in the list
@@ -55,12 +55,12 @@ enum {
     METHOD_TYPE
 };
 
-typedef struct interface_item_type {
+struct interface_item_type {
     unsigned item_type;
     struct interface_item_type* next;
-} interface_item_type;
+};
 
-typedef struct method_type {
+struct method_type {
     interface_item_type interface_item;
     type_type type;
     bool oneway;
@@ -76,29 +76,29 @@ typedef struct method_type {
     buffer_type semicolon_token;
     buffer_type* comments_token; // points into this structure, DO NOT DELETE
     int assigned_id;
-} method_type;
+};
 
 enum {
     USER_DATA_TYPE = 12,
     INTERFACE_TYPE_BINDER
 };
 
-typedef struct document_item_type {
+struct document_item_type {
     unsigned item_type;
     struct document_item_type* next;
-} document_item_type;
+};
 
 
-typedef struct user_data_type {
+struct user_data_type {
     document_item_type document_item;
     buffer_type keyword_token; // only the first one
     char* package;
     buffer_type name;
     buffer_type semicolon_token;
     bool parcelable;
-} user_data_type;
+};
 
-typedef struct interface_type {
+struct interface_type {
     document_item_type document_item;
     buffer_type interface_token;
     bool oneway;
@@ -109,7 +109,7 @@ typedef struct interface_type {
     interface_item_type* interface_items;
     buffer_type close_brace_token;
     buffer_type* comments_token; // points into this structure, DO NOT DELETE
-} interface_type;
+};
 
 
 #if __cplusplus
@@ -125,19 +125,19 @@ enum {
 
 // callbacks from within the parser
 // these functions all take ownership of the strings
-typedef struct ParserCallbacks {
+struct ParserCallbacks {
     void (*document)(document_item_type* items);
     void (*import)(buffer_type* statement);
-} ParserCallbacks;
+};
 
 extern ParserCallbacks* g_callbacks;
 
 // the package name for our current file
 extern char const* g_currentPackage;
 
-typedef enum {
+enum error_type {
     STATEMENT_INSIDE_INTERFACE
-} error_type;
+};
 
 void init_buffer_type(buffer_type* buf, int lineno);
 
