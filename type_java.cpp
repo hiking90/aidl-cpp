@@ -18,8 +18,14 @@
 
 #include <sys/types.h>
 
+#include <base/strings.h>
+
 #include "aidl_language.h"
 #include "logging.h"
+
+using android::base::Split;
+using android::base::Join;
+using android::base::Trim;
 
 namespace android {
 namespace aidl {
@@ -29,16 +35,6 @@ Expression* THIS_VALUE;
 Expression* SUPER_VALUE;
 Expression* TRUE_VALUE;
 Expression* FALSE_VALUE;
-
-static Type* make_generic_type(const JavaTypeNamespace* types,
-                               const string& package, const string& name,
-                               const vector<const Type*>& args) {
-  if (package == "java.util" && name == "List") {
-    return new GenericListType(types, "java.util", "List", args);
-  }
-  return NULL;
-  // return new GenericType(package, name, args);
-}
 
 // ================================================================
 
@@ -784,6 +780,15 @@ ClassLoaderType::ClassLoaderType(const JavaTypeNamespace* types)
 
 // ================================================================
 
+JavaTypeNamespace::ContainerClass::ContainerClass(const string& package,
+                                                  const string& class_name,
+                                                  size_t nargs)
+    : package(package),
+      class_name(class_name),
+      canonical_name(package + "." + class_name),
+      args(nargs) {
+}
+
 JavaTypeNamespace::JavaTypeNamespace() {
   Add(new BasicType(this, "void", "XXX", "XXX", "XXX", "XXX", "XXX"));
 
@@ -861,8 +866,8 @@ JavaTypeNamespace::JavaTypeNamespace() {
   TRUE_VALUE = new LiteralExpression("true");
   FALSE_VALUE = new LiteralExpression("false");
 
-  AddGenericType("java.util", "List", 1);
-  AddGenericType("java.util", "Map", 2);
+  m_containers.emplace_back("java.util", "List", 1);
+  m_containers.emplace_back("java.util", "Map", 2);
 }
 
 JavaTypeNamespace::~JavaTypeNamespace() {
@@ -899,24 +904,56 @@ bool JavaTypeNamespace::Add(const Type* type) {
   return true;
 }
 
-void JavaTypeNamespace::AddGenericType(const string& package,
-                                       const string& name, int args) {
-  Generic g;
-  g.package = package;
-  g.name = name;
-  g.qualified = package + '.' + name;
-  g.args = args;
-  m_generics.push_back(g);
+const Type* JavaTypeNamespace::Search(const string& name) {
+  const Type* result = Find(name);
+  if (result != nullptr) {
+    return result;
+  }
+
+  if (!AddContainerType(name)) {
+    return nullptr;
+  }
+
+  return Find(name);
 }
 
-const Type* JavaTypeNamespace::Find(const string& name) const {
-  int N = m_types.size();
-  for (int i = 0; i < N; i++) {
-    if (m_types[i]->QualifiedName() == name) {
-      return m_types[i];
+const Type* JavaTypeNamespace::Find(const string& unstripped_name) const {
+  const ContainerClass* g = nullptr;
+  vector<const Type*> template_arg_types;
+  if (!CanonicalizeContainerClass(unstripped_name, &g, &template_arg_types)) {
+    LOG(ERROR) << "Error canonicalizing type '" << unstripped_name << "'";
+    return nullptr;
+  }
+
+  string name = Trim(unstripped_name);
+  if (g != nullptr) {
+    vector<string> template_args;
+    for (const Type* type : template_arg_types) {
+      template_args.push_back(type->QualifiedName());
+     }
+    name = g->canonical_name + "<" + Join(template_args, ',') + ">";
+   }
+
+  // Always prefer a exact match if possible.
+  // This works for primitives and class names qualified with a package.
+  for (const Type* type : m_types) {
+    if (type->QualifiedName() == name) {
+      return type;
     }
   }
-  return NULL;
+
+  // We allow authors to drop packages when refering to a class name.
+  // our language doesn't allow you to not specify outer classes
+  // when referencing an inner class.  that could be changed, and this
+  // would be the place to do it, but I don't think the complexity in
+  // scoping rules is worth it.
+  for (const Type* type : m_types) {
+    if (type->Name() == name) {
+      return type;
+    }
+  }
+
+  return nullptr;
 }
 
 const Type* JavaTypeNamespace::Find(const char* package,
@@ -930,19 +967,7 @@ const Type* JavaTypeNamespace::Find(const char* package,
   return Find(s);
 }
 
-static string normalize_generic(const string& s) {
-  string r;
-  int N = s.size();
-  for (int i = 0; i < N; i++) {
-    char c = s[i];
-    if (!isspace(c)) {
-      r += c;
-    }
-  }
-  return r;
-}
-
-bool JavaTypeNamespace::AddParcelableType(user_data_type* p,
+bool JavaTypeNamespace::AddParcelableType(const user_data_type* p,
                                           const std::string& filename) {
   Type* type =
       new UserDataType(this, p->package ? p->package : "", p->name.data, false,
@@ -950,7 +975,7 @@ bool JavaTypeNamespace::AddParcelableType(user_data_type* p,
   return Add(type);
 }
 
-bool JavaTypeNamespace::AddBinderType(interface_type* b,
+bool JavaTypeNamespace::AddBinderType(const interface_type* b,
                                       const std::string& filename) {
   // for interfaces, add the stub, proxy, and interface types.
   Type* type =
@@ -970,96 +995,111 @@ bool JavaTypeNamespace::AddBinderType(interface_type* b,
   return success;
 }
 
-const Type* JavaTypeNamespace::Search(const string& name) {
-  // an exact match wins
-  const Type* result = Find(name);
-  if (result != NULL) {
-    return result;
+bool JavaTypeNamespace::AddContainerType(const string& type_name) {
+  if (Find(type_name) != nullptr) {
+    return true;  // Don't add duplicates of the same templated type.
   }
 
-  // try the class names
-  // our language doesn't allow you to not specify outer classes
-  // when referencing an inner class.  that could be changed, and this
-  // would be the place to do it, but I don't think the complexity in
-  // scoping rules is worth it.
-  int N = m_types.size();
-  for (int i = 0; i < N; i++) {
-    if (m_types[i]->Name() == name) {
-      return m_types[i];
-    }
+  const ContainerClass* g = nullptr;
+  vector<const Type*> template_arg_types;
+  if (!CanonicalizeContainerClass(type_name, &g, &template_arg_types)) {
+    LOG(ERROR) << "Error canonicalizing type '" << type_name << "'";
+    return false;
   }
 
-  // we got to here and it's not a generic, give up
-  if (name.find('<') == name.npos) {
-    return NULL;
+  if (g == nullptr) {
+    // We parsed the type correctly, but it wasn't a container type.  No error.
+    return true;
   }
 
-  // remove any whitespace
-  string normalized = normalize_generic(name);
-
-  // find the part before the '<', find a generic for it
-  ssize_t baseIndex = normalized.find('<');
-  string base(normalized.c_str(), baseIndex);
-  const Generic* g = search_generic(base);
-  if (g == NULL) {
-    return NULL;
-  }
-
-  // For each of the args, do a recursive search on it.  We don't allow
-  // generics within generics like Java does, because we're really limiting
-  // them to just built-in container classes, at least for now.  Our syntax
-  // ensures this right now as well.
-  vector<const Type*> args;
-  size_t start = baseIndex + 1;
-  size_t end = start;
-  while (normalized[start] != '\0') {
-    end = normalized.find(',', start);
-    if (end == normalized.npos) {
-      end = normalized.find('>', start);
-    }
-    string s(normalized.c_str() + start, end - start);
-    const Type* t = this->Search(s);
-    if (t == NULL) {
-      LOG(ERROR) << "internal error";
-      return NULL;
-    }
-    args.push_back(t);
-    start = end + 1;
-  }
-
-  // construct a GenericType, add it to our name set so they always get
-  // the same object, and return it.
-  result = make_generic_type(this, g->package, g->name, args);
-  if (result == NULL) {
-    LOG(ERROR) << "internal error";
-    return NULL;
+  // construct an instance of a container type, add it to our name set so they
+  // always get the same object, and return it.
+  Type* result = nullptr;
+  if (g->canonical_name == "java.util.List" &&
+      template_arg_types.size() == 1u) {
+    result = new GenericListType(this, g->package, g->class_name,
+                                 template_arg_types);
+  } else {
+    LOG(ERROR) << "Don't know how to create a container of type "
+               << g->canonical_name << " with " << template_arg_types.size()
+               << " arguments.";
+    return false;
   }
 
   Add(result);
-  return Find(result->QualifiedName());
+  return true;
 }
 
-const JavaTypeNamespace::Generic* JavaTypeNamespace::search_generic(
-    const string& name) const {
-  int N = m_generics.size();
-
-  // first exact match
-  for (int i = 0; i < N; i++) {
-    const Generic& g = m_generics[i];
-    if (g.qualified == name) {
-      return &g;
+const JavaTypeNamespace::ContainerClass* JavaTypeNamespace::FindContainerClass(
+    const string& name,
+    size_t nargs) const {
+  // first check fully qualified class names (with packages).
+  for (const ContainerClass& container : m_containers) {
+    if (container.canonical_name == name && nargs == container.args) {
+      return &container;
     }
   }
 
-  // then name match
-  for (int i = 0; i < N; i++) {
-    const Generic& g = m_generics[i];
-    if (g.name == name) {
-      return &g;
+  // then match on the class name alone (no package).
+  for (const ContainerClass& container : m_containers) {
+    if (container.class_name == name && nargs == container.args) {
+      return &container;
     }
   }
 
-  return NULL;
+  return nullptr;
+}
+
+bool JavaTypeNamespace::CanonicalizeContainerClass(
+    const string& raw_name,
+    const ContainerClass** container_class,
+    vector<const Type*>* arg_types) const {
+  string name = Trim(raw_name);
+  const size_t opening_brace = name.find('<');
+  if (opening_brace == name.npos) {
+    // Not a template type and not an error.
+    *container_class = nullptr;
+    arg_types->clear();
+    return true;
+  }
+
+  const size_t closing_brace = name.find('>');
+  if (opening_brace != name.rfind('<') ||
+      closing_brace != name.rfind('>') ||
+      closing_brace != name.length() - 1) {
+    LOG(ERROR) << "Invalid template type '" << name << "'";
+    // Nested/invalid templates are forbidden.
+    return false;
+  }
+
+  string container_class_name = Trim(name.substr(0, opening_brace));
+  string remainder = name.substr(opening_brace + 1,
+                                 (closing_brace - opening_brace) - 1);
+  vector<string> template_args = Split(remainder, ",");
+
+  const ContainerClass* g =
+      FindContainerClass(container_class_name, template_args.size());
+  if (g == nullptr) {
+    LOG(ERROR) << "Failed to find templated container '"
+               << container_class_name << "'";
+    return false;
+  }
+
+  vector<const Type*> template_arg_types;
+  for (auto& template_arg : template_args) {
+    // Recursively search for the contained types.
+    const Type* template_arg_type = Find(Trim(template_arg));
+    if (template_arg_type == nullptr) {
+      LOG(ERROR) << "Failed to find formal type of '"
+                 << template_arg << "'";
+      return false;
+    }
+    template_arg_types.push_back(template_arg_type);
+  }
+
+  *arg_types = template_arg_types;
+  *container_class = g;
+  return true;
 }
 
 void JavaTypeNamespace::Dump() const {

@@ -86,6 +86,7 @@ LOCAL_SRC_FILES := \
     test_main.cpp \
     tests/end_to_end_tests.cpp \
     tests/example_interface_test_data.cpp \
+    type_java_unittest.cpp \
 
 LOCAL_SHARED_LIBRARIES := \
     libchrome-host \
