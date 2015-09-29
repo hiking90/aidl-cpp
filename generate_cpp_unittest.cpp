@@ -33,6 +33,8 @@ namespace cpp {
 namespace internals {
 unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
                                        const interface_type& parsed_doc);
+unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
+                                          const interface_type& parsed_doc);
 }
 
 namespace {
@@ -53,42 +55,87 @@ R"(#ifndef BpPingResponder_H
 
 namespace android {
 
+namespace generated {
+
 class BpPingResponder : public public android::BpInterface<IPingResponder> {
 public:
 BpPingResponder();
 ~BpPingResponder();
-virtual android::status_t Ping(int32_t token, int32_t* _aidl_return);
+android::status_t Ping(int32_t token, int32_t* _aidl_return) override;
 };  // class BpPingResponder
+
+}  // namespace generated
 
 }  // namespace android
 
 #endif  // BpPingResponder_H)";
 
+const char kExpectedTrivialInterfaceHeaderOutput[] =
+R"(#include <binder/IBinder.h>
+#include <binder/IInterface.h>
+
+namespace android {
+
+namespace generated {
+
+class IPingResponder : public public android::IInterface {
+public:
+DECLARE_META_INTERFACE(PingResponder);
+virtual android::status_t Ping(int32_t token, int32_t* _aidl_return) = 0;
+enum Call {
+  PING = android::IBinder::FIRST_CALL_TRANSACTION + 0,
+}
+};  // class IPingResponder
+
+}  // namespace generated
+
+}  // namespace android
+)";
+
 }  // namespace
 
-TEST(GenerateCPPTests, GeneratesClientHeader) {
-  Parser p{"BpExampleInterface.h"};
-  p.SetFileContents(kTrivialInterfaceAIDL);
+class TrivialInterfaceASTTest : public ::testing::Test {
+ protected:
+  interface_type* Parse() {
+    Parser p{"BpExampleInterface.h"};
+    p.SetFileContents(kTrivialInterfaceAIDL);
 
-  ASSERT_TRUE(p.RunParser());
+    EXPECT_TRUE(p.RunParser());
 
-  document_item_type *parsed_doc = p.GetDocument();
+    document_item_type *parsed_doc = p.GetDocument();
+    if (parsed_doc == nullptr) return nullptr;
 
-  ASSERT_NE(nullptr, parsed_doc);
-  EXPECT_EQ(nullptr, parsed_doc->next);
-  ASSERT_EQ(INTERFACE_TYPE_BINDER, parsed_doc->item_type);
+    EXPECT_NE(nullptr, parsed_doc);
+    EXPECT_EQ(nullptr, parsed_doc->next);
+    EXPECT_EQ(INTERFACE_TYPE_BINDER, parsed_doc->item_type);
 
-  interface_type *interface = (interface_type*)parsed_doc;
+    return (interface_type*)parsed_doc;
+   }
 
+  void Compare(Document* doc, const char* expected) {
+    string output;
+    unique_ptr<CodeWriter> cw = GetStringWriter(&output);
+
+    doc->Write(cw.get());
+
+    EXPECT_EQ(expected, output);
+  }
+};
+
+TEST_F(TrivialInterfaceASTTest, GeneratesClientHeader) {
+  interface_type* interface = Parse();
+  ASSERT_NE(interface, nullptr);
   TypeNamespace types;
   unique_ptr<Document> doc = internals::BuildClientHeader(types, *interface);
+  Compare(doc.get(), kExpectedTrivialClientHeaderOutput);
+}
 
-  string output;
-  unique_ptr<CodeWriter> cw = GetStringWriter(&output);
-
-  doc->Write(cw.get());
-
-  EXPECT_EQ(kExpectedTrivialClientHeaderOutput, output);
+TEST_F(TrivialInterfaceASTTest, GeneratesInterfaceHeader) {
+  interface_type* interface = Parse();
+  ASSERT_NE(interface, nullptr);
+  TypeNamespace types;
+  unique_ptr<Document> doc = internals::BuildInterfaceHeader(types, *interface);
+  Compare(doc.get(), kExpectedTrivialInterfaceHeaderOutput);
 }
 
 }  // namespace cpp

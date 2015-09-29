@@ -56,12 +56,17 @@ class Declaration : public AstNode {
 class ClassDecl : public Declaration {
  public:
   ClassDecl(const std::string& name,
+            const std::string& parent);
+  ClassDecl(const std::string& name,
             const std::string& parent,
             std::vector<std::unique_ptr<Declaration>> public_members,
             std::vector<std::unique_ptr<Declaration>> private_members);
   virtual ~ClassDecl() = default;
 
   void Write(CodeWriter* to) const override;
+
+  void AddPublic(std::unique_ptr<Declaration> member);
+  void AddPrivate(std::unique_ptr<Declaration> member);
 
  private:
   std::string name_;
@@ -116,11 +121,20 @@ class ConstructorDecl : public Declaration {
 
 class MethodDecl : public Declaration {
  public:
+  enum Modifiers {
+    IS_CONST = 1 << 0,
+    IS_VIRTUAL = 1 << 1,
+    IS_OVERRIDE = 1 << 2,
+    IS_PURE_VIRTUAL = 1 << 3,
+  };
+
+  MethodDecl(const std::string& return_type,
+             const std::string& name,
+             std::vector<std::string> arguments);
   MethodDecl(const std::string& return_type,
              const std::string& name,
              std::vector<std::string> arguments,
-             bool is_const = false,
-             bool is_virtual = false);
+             uint32_t modifiers);
   virtual ~MethodDecl() = default;
 
   void Write(CodeWriter* to) const override;
@@ -129,8 +143,10 @@ class MethodDecl : public Declaration {
   const std::string return_type_;
   const std::string name_;
   std::vector<std::string> arguments_;
-  bool is_const_;
-  bool is_virtual_;
+  bool is_const_ = false;
+  bool is_virtual_ = false;
+  bool is_override_ = false;
+  bool is_pure_virtual_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(MethodDecl);
 };
@@ -139,6 +155,9 @@ class CppNamespace : public Declaration {
  public:
   CppNamespace(const std::string& name,
                std::vector<std::unique_ptr<Declaration>> declarations);
+  CppNamespace(const std::string& name,
+               std::unique_ptr<Declaration> declaration);
+  CppNamespace(const std::string& name);
   virtual ~CppNamespace() = default;
 
   void Write(CodeWriter* to) const override;

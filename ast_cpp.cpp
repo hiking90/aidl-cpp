@@ -9,6 +9,10 @@ namespace android {
 namespace aidl {
 namespace cpp {
 
+ClassDecl::ClassDecl(const std::string& name, const std::string& parent)
+    : name_(name),
+      parent_(parent) {}
+
 ClassDecl::ClassDecl(const std::string& name, const std::string& parent,
                      std::vector<unique_ptr<Declaration>> public_members,
                      std::vector<unique_ptr<Declaration>> private_members)
@@ -38,6 +42,14 @@ void ClassDecl::Write(CodeWriter* to) const {
     dec->Write(to);
 
   to->Write("};  // class %s\n", name_.c_str());
+}
+
+void ClassDecl::AddPublic(std::unique_ptr<Declaration> member) {
+  public_members_.push_back(std::move(member));
+}
+
+void ClassDecl::AddPrivate(std::unique_ptr<Declaration> member) {
+  private_members_.push_back(std::move(member));
 }
 
 Enum::EnumField::EnumField(const string& k, const string&v)
@@ -96,14 +108,22 @@ void ConstructorDecl::Write(CodeWriter* to) const {
 
 MethodDecl::MethodDecl(const std::string& return_type,
                        const std::string& name,
+                       std::vector<std::string> arguments)
+    : return_type_(return_type),
+      name_(name),
+      arguments_(arguments) {}
+
+MethodDecl::MethodDecl(const std::string& return_type,
+                       const std::string& name,
                        std::vector<std::string> arguments,
-                       bool is_const,
-                       bool is_virtual)
+                       uint32_t modifiers)
     : return_type_(return_type),
       name_(name),
       arguments_(arguments),
-      is_const_(is_const),
-      is_virtual_(is_virtual) {}
+      is_const_(modifiers & IS_CONST),
+      is_virtual_(modifiers & IS_VIRTUAL),
+      is_override_(modifiers & IS_OVERRIDE),
+      is_pure_virtual_(modifiers & IS_PURE_VIRTUAL) {}
 
 void MethodDecl::Write(CodeWriter* to) const {
   if (is_virtual_)
@@ -125,6 +145,12 @@ void MethodDecl::Write(CodeWriter* to) const {
   if (is_const_)
     to->Write(" const");
 
+  if (is_override_)
+    to->Write(" override");
+
+  if (is_pure_virtual_)
+    to->Write(" = 0");
+
   to->Write(";\n");
 }
 
@@ -132,6 +158,14 @@ CppNamespace::CppNamespace(const std::string& name,
                            std::vector<unique_ptr<Declaration>> declarations)
     : declarations_(std::move(declarations)),
       name_(name) {}
+
+CppNamespace::CppNamespace(const std::string& name,
+                           unique_ptr<Declaration> declaration)
+    : name_(name) {
+  declarations_.push_back(std::move(declaration));
+}
+CppNamespace::CppNamespace(const std::string& name)
+    : name_(name) {}
 
 void CppNamespace::Write(CodeWriter* to) const {
   to->Write("namespace %s {\n\n", name_.c_str());

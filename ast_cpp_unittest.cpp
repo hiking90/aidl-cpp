@@ -68,20 +68,17 @@ R"(enum Foo {
 }  // namespace
 
 TEST(AstCppTests, GeneratesHeader) {
-  unique_ptr<MethodDecl> norm{new MethodDecl("void",
-                                             "NormalMethod",
-                                             { "int normalarg",
-                                               "float normal2" })};
-  unique_ptr<MethodDecl> sub{new MethodDecl("void",
-                                            "SubMethod",
-                                            { "int subarg" },
-                                            true,
-                                            true)};
-  unique_ptr<MethodDecl> sub2{new MethodDecl("void",
-                                             "SubMethod",
-                                             { "int subarg" },
-                                             true,
-                                             true)};
+  unique_ptr<MethodDecl> norm{
+      new MethodDecl("void", "NormalMethod",
+                     { "int normalarg", "float normal2" })};
+  unique_ptr<MethodDecl> sub{
+      new MethodDecl("void", "SubMethod",
+                     { "int subarg" },
+                     MethodDecl::IS_CONST | MethodDecl::IS_VIRTUAL)};
+  unique_ptr<MethodDecl> sub2{
+      new MethodDecl("void", "SubMethod",
+                     { "int subarg" },
+                     MethodDecl::IS_CONST | MethodDecl::IS_VIRTUAL)};
   vector<unique_ptr<Declaration>> test_methods;
   test_methods.push_back(std::move(norm));
   test_methods.push_back(std::move(sub));

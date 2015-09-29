@@ -38,18 +38,17 @@ namespace android {
 namespace aidl {
 namespace cpp {
 namespace internals {
+namespace {
 
-string StrippedLiteral(const buffer_type& buffer) {
-  std::string i_name = buffer.Literal();
+const char kAndroidStatusLiteral[] = "android::status_t";
+const char kIBinderHeader[] = "binder/IBinder.h";
+const char kIInterfaceHeader[] = "binder/IInterface.h";
 
-  string c_name;
-
-  if (i_name.length() >= 2 && i_name[0] == 'I' && isupper(i_name[1]))
-    c_name = i_name.substr(1);
-  else
-    c_name = i_name;
-
-  return c_name;
+string UpperCase(const std::string& s) {
+  string result = s;
+  for (char& c : result)
+    c = toupper(c);
+  return result;
 }
 
 string GetCPPVarDec(const TypeNamespace& types, const type_type* type,
@@ -66,34 +65,92 @@ string GetCPPVarDec(const TypeNamespace& types, const type_type* type,
                       type->Brackets().c_str());
 }
 
+unique_ptr<Declaration> BuildMethodDecl(const method_type* method,
+                                        const TypeNamespace& types,
+                                        bool for_interface) {
+  vector<string> args;
+  for (const unique_ptr<AidlArgument>& arg : *method->args) {
+    args.push_back(GetCPPVarDec(
+          types, &arg->type, arg->name.Literal(),
+          OUT_PARAMETER & convert_direction(arg->direction.data)));
+  }
+
+  string return_arg = GetCPPVarDec(types, &method->type, "_aidl_return", true);
+  args.push_back(return_arg);
+
+  uint32_t modifiers = 0;
+  if (for_interface) {
+    modifiers |= MethodDecl::IS_VIRTUAL;
+    modifiers |= MethodDecl::IS_PURE_VIRTUAL;
+  } else {
+    modifiers |= MethodDecl::IS_OVERRIDE;
+  }
+
+  return unique_ptr<Declaration>{
+      new MethodDecl{kAndroidStatusLiteral,
+                     method->name.Literal(),
+                     args,
+                     modifiers}};
+}
+
+unique_ptr<CppNamespace> NestInNamespaces(unique_ptr<Declaration> decl) {
+  using N = CppNamespace;
+  using NPtr = unique_ptr<N>;
+  return NPtr{new N{"android", NPtr{new N{"generated", std::move(decl)}}}};
+}
+
+}  // namespace
+
+enum class ClassNames { BASE, CLIENT, SERVER, INTERFACE };
+
+string ClassName(const interface_type& interface, ClassNames type) {
+  string c_name = interface.name.Literal();
+
+  if (c_name.length() >= 2 && c_name[0] == 'I' && isupper(c_name[1]))
+    c_name = c_name.substr(1);
+
+  switch (type) {
+    case ClassNames::CLIENT:
+      c_name = "Bp" + c_name;
+      break;
+    case ClassNames::SERVER:
+      c_name = "Bn" + c_name;
+      break;
+    case ClassNames::INTERFACE:
+      c_name = "I" + c_name;
+      break;
+    case ClassNames::BASE:
+      break;
+  }
+  return c_name;
+}
+
 unique_ptr<Document> BuildClientSource(const TypeNamespace& types,
                                        const interface_type& parsed_doc) {
-  unique_ptr<CppNamespace> ns{new CppNamespace{"android", {}}};
+  unique_ptr<CppNamespace> ns{new CppNamespace{"android"}};
   return unique_ptr<Document>{new CppSource{ {}, std::move(ns)}};
 }
 
 unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
                                        const interface_type& parsed_doc) {
-  unique_ptr<CppNamespace> ns{new CppNamespace{"android", {}}};
+  unique_ptr<CppNamespace> ns{new CppNamespace{"android"}};
   return unique_ptr<Document>{new CppSource{ {}, std::move(ns)}};
 }
 
 unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& types,
                                           const interface_type& parsed_doc) {
-  unique_ptr<CppNamespace> ns{new CppNamespace{"android", {}}};
+  unique_ptr<CppNamespace> ns{new CppNamespace{"android"}};
   return unique_ptr<Document>{new CppSource{ {}, std::move(ns)}};
 }
 
 unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
                                        const interface_type& parsed_doc) {
-  string i_name = parsed_doc.name.Literal();
-  string c_name = StrippedLiteral(parsed_doc.name);
-  string bp_name = "Bp" + c_name;
+  const string i_name = ClassName(parsed_doc, ClassNames::INTERFACE);
+  const string bp_name = ClassName(parsed_doc, ClassNames::CLIENT);
 
-  unique_ptr<ConstructorDecl> constructor{
-      new ConstructorDecl(bp_name, {})};
+  unique_ptr<ConstructorDecl> constructor{new ConstructorDecl(bp_name, {})};
   unique_ptr<ConstructorDecl> destructor{
-      new ConstructorDecl("~" + bp_name, {})};
+        new ConstructorDecl("~" + bp_name, {})};
 
   vector<unique_ptr<Declaration>> publics;
   publics.push_back(std::move(constructor));
@@ -102,25 +159,7 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
   for (method_type *item = parsed_doc.interface_items;
        item;
        item = item->next) {
-    string method_name = item->name.Literal();
-    string return_arg =
-        GetCPPVarDec(types, &item->type, "_aidl_return", true);
-
-    vector<string> args;
-
-    for (const std::unique_ptr<AidlArgument>& arg : *item->args)
-      args.push_back(GetCPPVarDec(
-            types, &arg->type, arg->name.Literal(),
-            OUT_PARAMETER & convert_direction(arg->direction.data)));
-
-    args.push_back(return_arg);
-
-    unique_ptr<Declaration> meth {
-        new MethodDecl("android::status_t", method_name,
-                       args, false, true)
-    };
-
-    publics.push_back(std::move(meth));
+    publics.push_back(BuildMethodDecl(item, types, false));
   }
 
   unique_ptr<ClassDecl> bp_class{
@@ -130,30 +169,22 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
                     {}
       }};
 
-  vector<unique_ptr<Declaration>> bp_class_vec;
-  bp_class_vec.push_back(std::move(bp_class));
-
-  unique_ptr<CppNamespace> ns {new CppNamespace{"android",
-                                                std::move(bp_class_vec)}};
-
-  unique_ptr<Document> bp_header{new CppHeader{bp_name + "_H",
-                                               {"binder/IBinder.h",
-                                                "binder/IInterface.h",
-                                                "utils/Errors.h",
-                                                i_name + ".h"},
-                                               std::move(ns) }};
-
-  return bp_header;
+  return unique_ptr<Document>{new CppHeader{
+      bp_name + "_H",
+      {kIBinderHeader,
+       kIInterfaceHeader,
+       "utils/Errors.h",
+       i_name + ".h"},
+      NestInNamespaces(std::move(bp_class))}};
 }
 
 unique_ptr<Document> BuildServerHeader(const TypeNamespace& types,
                                        const interface_type& parsed_doc) {
-  string i_name = parsed_doc.name.Literal();;
-  string c_name = StrippedLiteral(parsed_doc.name);
-  string bn_name = "Bn" + c_name;
+  const string i_name = ClassName(parsed_doc, ClassNames::INTERFACE);
+  const string bn_name = ClassName(parsed_doc, ClassNames::SERVER);
 
   unique_ptr<Declaration> on_transact{
-      new MethodDecl("android::status_t", "onTransact",
+      new MethodDecl(kAndroidStatusLiteral, "onTransact",
                      { "uint32_t code",
                        "const android::Parcel& data",
                        "android::Parcel* reply",
@@ -170,24 +201,39 @@ unique_ptr<Document> BuildServerHeader(const TypeNamespace& types,
                     {}
       }};
 
-  std::vector<unique_ptr<Declaration>> declarations;
-  declarations.push_back(std::move(bn_class));
-
-  unique_ptr<CppNamespace> ns{
-      new CppNamespace{"android", std::move(declarations)}};
-
-  unique_ptr<Document> bn_header{new CppHeader{bn_name + "_H",
-                                               {"binder/IInterface.h",
-                                                i_name + ".h"},
-                                               std::move(ns) }};
-
-  return bn_header;
+  return unique_ptr<Document>{new CppHeader{
+      bn_name + "_H",
+      {"binder/IInterface.h",
+       i_name + ".h"},
+      NestInNamespaces(std::move(bn_class))}};
 }
 
 unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
                                           const interface_type& parsed_doc) {
-  unique_ptr<CppNamespace> ns{new CppNamespace{"android", {}}};
-  return unique_ptr<Document>{new CppSource{ {}, std::move(ns)}};
+  unique_ptr<ClassDecl> if_class{
+      new ClassDecl{ClassName(parsed_doc, ClassNames::INTERFACE),
+                    "public android::IInterface"}};
+  if_class->AddPublic(unique_ptr<Declaration>{
+      new ConstructorDecl{
+          "DECLARE_META_INTERFACE",
+          {ClassName(parsed_doc, ClassNames::BASE)}}});
+
+  unique_ptr<Enum> call_enum{new Enum{"Call"}};
+  for (const method_type* method = parsed_doc.interface_items;
+       method;
+       method = method->next) {
+    if_class->AddPublic(BuildMethodDecl(method, types, true));
+    call_enum->AddValue(
+        UpperCase(method->name.data),
+        StringPrintf("android::IBinder::FIRST_CALL_TRANSACTION + %d",
+                     method->assigned_id));
+  }
+  if_class->AddPublic(std::move(call_enum));
+
+  return unique_ptr<Document>{new CppSource{
+      {kIBinderHeader,
+       kIInterfaceHeader},
+      NestInNamespaces(std::move(if_class))}};
 }
 
 bool GenerateCppForFile(const std::string& name, unique_ptr<Document> doc) {
