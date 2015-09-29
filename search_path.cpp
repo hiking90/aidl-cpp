@@ -2,6 +2,7 @@
 #include "search_path.h"
 #include "options.h"
 #include "os.h"
+#include "parse_helpers.h"
 #include <string.h>
 
 #ifdef _WIN32
@@ -9,6 +10,8 @@
 #endif
 
 static vector<string> g_importPaths;
+
+using android::aidl::cpp_strdup;
 
 void
 set_import_paths(const vector<string>& importPaths)
@@ -49,7 +52,7 @@ find_import_file(const char* given)
 #else
         if (0 == access(f.c_str(), R_OK)) {
 #endif        
-            return strdup(f.c_str());
+            return cpp_strdup(f.c_str());
         }
     }
 

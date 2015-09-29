@@ -47,7 +47,7 @@ char* parse_import_statement(const char* text) {
   }
   len = end - text;
 
-  char* rv = (char*)malloc(len + 1);
+  char* rv = new char[len + 1];
   memcpy(rv, text, len);
   rv[len] = '\0';
 
@@ -83,6 +83,13 @@ bool is_java_keyword(const char* str) {
   };
   return std::find(kJavaKeywords.begin(), kJavaKeywords.end(), str) !=
       kJavaKeywords.end();
+}
+
+char* cpp_strdup(const char* in)
+{
+  char *out = new char[std::strlen(in) + 1];
+  strcpy(out, in);
+  return out;
 }
 
 }  // namespace android
