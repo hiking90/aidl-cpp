@@ -322,7 +322,7 @@ generate_method(const method_type* method, Class* interface,
 
         c->statements->Add(new VariableDeclaration(v));
 
-        if (convert_direction(arg->direction.data) & IN_PARAMETER) {
+        if (arg->GetDirection() & AidlArgument::IN_DIR) {
             generate_create_from_parcel(t, c->statements, v,
                     stubClass->transact_data, &cl);
         } else {
@@ -377,7 +377,7 @@ generate_method(const method_type* method, Class* interface,
         const Type* t = types->Find(arg->type.type.data);
         Variable* v = stubArgs.Get(i++);
 
-        if (convert_direction(arg->direction.data) & OUT_PARAMETER) {
+        if (arg->GetDirection() & AidlArgument::OUT_DIR) {
             generate_write_to_parcel(t, c->statements, v,
                                 stubClass->transact_reply,
                                 Type::PARCELABLE_WRITE_RETURN_VALUE);
@@ -440,8 +440,8 @@ generate_method(const method_type* method, Class* interface,
     for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
         const Type* t = types->Find(arg->type.type.data);
         Variable* v = new Variable(t, arg->name.data, arg->type.dimension);
-        int dir = convert_direction(arg->direction.data);
-        if (dir == OUT_PARAMETER && arg->type.dimension != 0) {
+        AidlArgument::Direction dir = arg->GetDirection();
+        if (dir == AidlArgument::OUT_DIR && arg->type.dimension != 0) {
             IfStatement* checklen = new IfStatement();
             checklen->expression = new Comparison(v, "==", NULL_VALUE);
             checklen->statements->Add(new MethodCall(_data, "writeInt", 1,
@@ -451,7 +451,7 @@ generate_method(const method_type* method, Class* interface,
                         1, new FieldVariable(v, "length")));
             tryStatement->statements->Add(checklen);
         }
-        else if (dir & IN_PARAMETER) {
+        else if (dir & AidlArgument::IN_DIR) {
             generate_write_to_parcel(t, tryStatement->statements, v, _data, 0);
         }
     }
@@ -481,7 +481,7 @@ generate_method(const method_type* method, Class* interface,
         for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
             const Type* t = types->Find(arg->type.type.data);
             Variable* v = new Variable(t, arg->name.data, arg->type.dimension);
-            if (convert_direction(arg->direction.data) & OUT_PARAMETER) {
+            if (arg->GetDirection() & AidlArgument::OUT_DIR) {
                 generate_read_from_parcel(t, tryStatement->statements,
                                             v, _reply, &cl);
             }

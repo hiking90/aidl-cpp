@@ -44,9 +44,47 @@ Parser::~Parser() {
 }
 
 AidlArgument::AidlArgument(buffer_type direction, type_type type, buffer_type name)
-    : direction(direction),
-      name(name),
-      type(type) {}
+    : name(name),
+      type(type) {
+  direction_specified_ = direction.data != nullptr;
+
+  if (! direction_specified_) {
+    direction_ = AidlArgument::IN_DIR;
+  } else if (! strcmp(direction.data, "in")) {
+    direction_ = AidlArgument::IN_DIR;
+  } else if (! strcmp(direction.data, "out")) {
+    direction_ = AidlArgument::OUT_DIR;
+  } else {
+    direction_ = AidlArgument::INOUT_DIR;
+  }
+
+}
+
+string AidlArgument::ToString() const {
+  string ret;
+
+  if (direction_specified_) {
+    switch(direction_) {
+    case AidlArgument::IN_DIR:
+      ret += "in ";
+      break;
+    case AidlArgument::OUT_DIR:
+      ret += "out ";
+      break;
+    case AidlArgument::INOUT_DIR:
+      ret += "inout ";
+      break;
+    }
+  }
+
+  ret += string(type.type.data);
+  if (type.array_token.data)
+    ret += string(type.array_token.data);
+  ret += " ";
+  ret += string(name.data);
+
+  return ret;
+}
 
 string Parser::FileName() {
   return filename_;

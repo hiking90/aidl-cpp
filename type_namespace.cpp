@@ -87,7 +87,7 @@ bool TypeNamespace::IsValidArg(const AidlArgument& a,
     return false;
   }
 
-  if (a.direction.data == nullptr &&
+  if (!a.DirectionWasSpecified() &&
       (a.type.dimension != 0 || t->CanBeOutParameter())) {
     cerr << error_prefix << StringPrintf(
         "'%s %s' can be an out parameter, so you must declare it as in,"
@@ -95,20 +95,19 @@ bool TypeNamespace::IsValidArg(const AidlArgument& a,
     return false;
   }
 
-  if (convert_direction(a.direction.data) != IN_PARAMETER &&
+  if (a.GetDirection() != AidlArgument::IN_DIR &&
       !t->CanBeOutParameter() &&
       a.type.dimension == 0) {
     cerr << error_prefix << StringPrintf(
-        "'%s %s %s' can only be an in parameter.",
-        a.direction.data, a.type.type.data, a.name.data) << endl;
+        "'%s' can only be an in parameter.",
+        a.ToString().c_str()) << endl;
     return false;
   }
 
   if (a.type.dimension > 0 && !t->CanBeArray()) {
     cerr << error_prefix << StringPrintf(
-        "'%s %s%s %s' cannot be an array.",
-        a.direction.data, a.type.type.data, a.type.array_token.data,
-        a.name.data) << endl;
+        "'%s' cannot be an array.",
+        a.ToString().c_str()) << endl;
     return false;
   }
 

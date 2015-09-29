@@ -25,8 +25,6 @@ namespace aidl {
 // we rely on the input matching the import regex from below
 char* parse_import_statement(const char* text);
 
-int convert_direction(const char* direction);
-
 bool is_java_keyword(const char* str);
 
 char* cpp_strdup(const char* in);

@@ -72,7 +72,7 @@ unique_ptr<Declaration> BuildMethodDecl(const method_type* method,
   for (const unique_ptr<AidlArgument>& arg : *method->args) {
     args.push_back(GetCPPVarDec(
           types, &arg->type, arg->name.Literal(),
-          OUT_PARAMETER & convert_direction(arg->direction.data)));
+          AidlArgument::OUT_DIR & arg->GetDirection()));
   }
 
   string return_arg = GetCPPVarDec(types, &method->type, "_aidl_return", true);

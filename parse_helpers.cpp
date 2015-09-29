@@ -54,19 +54,6 @@ char* parse_import_statement(const char* text) {
   return rv;
 }
 
-int convert_direction(const char* direction) {
-  if (direction == NULL) {
-    return IN_PARAMETER;
-  }
-  if (0 == strcmp(direction, "in")) {
-    return IN_PARAMETER;
-  }
-  if (0 == strcmp(direction, "out")) {
-    return OUT_PARAMETER;
-  }
-  return INOUT_PARAMETER;
-}
-
 bool is_java_keyword(const char* str) {
   static const std::vector<std::string> kJavaKeywords{
       "abstract",   "assert",       "boolean",   "break",      "byte",

@@ -56,14 +56,22 @@ class AidlNode {
 
 class AidlArgument : public AidlNode {
  public:
+  enum Direction { IN_DIR = 1, OUT_DIR = 2, INOUT_DIR = 3 };
+
   AidlArgument(buffer_type direction, type_type type, buffer_type name);
   virtual ~AidlArgument() = default;
 
-  buffer_type direction;
+  Direction GetDirection() const { return direction_; }
+  bool DirectionWasSpecified() const { return direction_specified_; }
+  std::string ToString() const;
+
   buffer_type name;
   type_type type;
 
  private:
+  Direction direction_;
+  bool direction_specified_;
+
   DISALLOW_COPY_AND_ASSIGN(AidlArgument);
 };
 
@@ -122,13 +130,6 @@ struct interface_type {
 #if __cplusplus
 extern "C" {
 #endif
-
-// in, out or inout
-enum {
-    IN_PARAMETER = 1,
-    OUT_PARAMETER = 2,
-    INOUT_PARAMETER = 3
-};
 
 // callbacks from within the parser
 // these functions all take ownership of the strings
