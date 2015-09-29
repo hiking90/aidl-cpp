@@ -18,11 +18,13 @@ static void drop_extra_text(void);
 // package handling
 static void do_package_statement(const char* importText);
 
+using android::aidl::cpp_strdup;
+
 #define SET_BUFFER(t) \
     do { \
         yylval->buffer.lineno = yyget_lineno(yyscanner); \
         yylval->buffer.token = (t); \
-        yylval->buffer.data = strdup(yytext); \
+        yylval->buffer.data = cpp_strdup(yytext); \
         yylval->buffer.extra = get_extra_text(); \
     } while(0)
 
@@ -108,7 +110,7 @@ oneway          { SET_BUFFER(yy::parser::token::ONEWAY); return yy::parser::toke
 .               { printf("UNKNOWN(%s)", yytext);
                   yylval->buffer.lineno = yylineno;
                   yylval->buffer.token = yy::parser::token::IDENTIFIER;
-                  yylval->buffer.data = strdup(yytext);
+                  yylval->buffer.data = cpp_strdup(yytext);
                   return yy::parser::token::IDENTIFIER;
                 }
 
@@ -121,7 +123,7 @@ extra_text_type* g_nextExtraText = NULL;
 
 void begin_extra_text(unsigned lineno, which_extra_text which)
 {
-    extra_text_type* text = (extra_text_type*)malloc(sizeof(extra_text_type));
+    extra_text_type* text = new extra_text_type();
     text->lineno = lineno;
     text->which = which;
     text->data = NULL;
@@ -138,18 +140,18 @@ void begin_extra_text(unsigned lineno, which_extra_text which)
 void append_extra_text(char* text)
 {
     if (g_nextExtraText->data == NULL) {
-        g_nextExtraText->data = strdup(text);
+        g_nextExtraText->data = cpp_strdup(text);
         g_nextExtraText->len = strlen(text);
     } else {
         char* orig = g_nextExtraText->data;
         unsigned oldLen = g_nextExtraText->len;
         unsigned len = strlen(text);
         g_nextExtraText->len += len;
-        g_nextExtraText->data = (char*)malloc(g_nextExtraText->len+1);
+        g_nextExtraText->data = new char[g_nextExtraText->len+1];
         memcpy(g_nextExtraText->data, orig, oldLen);
         memcpy(g_nextExtraText->data+oldLen, text, len);
         g_nextExtraText->data[g_nextExtraText->len] = '\0';
-        free(orig);
+        delete[] orig;
     }
 }
 
@@ -167,9 +169,9 @@ void drop_extra_text(void)
     extra_text_type* p = g_extraText;
     while (p) {
         extra_text_type* next = p->next;
-        free(p->data);
-        free(p);
-        free(next);
+        delete[] p->data;
+        delete p;
+        p = next;
     }
     g_extraText = NULL;
     g_nextExtraText = NULL;
@@ -180,6 +182,6 @@ void drop_extra_text(void)
 // ================================================
 void do_package_statement(const char* importText)
 {
-    if (g_currentPackage) free((void*)g_currentPackage);
+    if (g_currentPackage) delete[] g_currentPackage;
     g_currentPackage = android::aidl::parse_import_statement(importText);
 }

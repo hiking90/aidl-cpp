@@ -1,6 +1,7 @@
 %{
 #include "aidl_language.h"
 #include "aidl_language_y.hpp"
+#include "parse_helpers.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +11,8 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
 static int count_brackets(const char*);
 
 #define lex_scanner ps->Scanner()
+
+using android::aidl::cpp_strdup;
 
 %}
 
@@ -100,13 +103,13 @@ declaration:
 
 parcelable_decl:
         PARCELABLE IDENTIFIER ';'                   {
-                                                        user_data_type* b = (user_data_type*)malloc(sizeof(user_data_type));
+                                                        user_data_type* b = new user_data_type();
                                                         b->document_item.item_type = USER_DATA_TYPE;
                                                         b->document_item.next = NULL;
                                                         b->keyword_token = $1;
                                                         b->name = $2;
                                                         b->package =
-                                                        strdup(ps->Package().c_str());
+                                                        cpp_strdup(ps->Package().c_str());
                                                         b->semicolon_token = $3;
                                                         b->parcelable = true;
                                                         $$ = b;
@@ -125,7 +128,7 @@ parcelable_decl:
 
 interface_header:
         INTERFACE                                  {
-                                                        interface_type* c = (interface_type*)malloc(sizeof(interface_type));
+                                                        interface_type* c = new interface_type();
                                                         c->document_item.item_type = INTERFACE_TYPE_BINDER;
                                                         c->document_item.next = NULL;
                                                         c->interface_token = $1;
@@ -135,7 +138,7 @@ interface_header:
                                                         $$ = c;
                                                    }
     |   ONEWAY INTERFACE                           {
-                                                        interface_type* c = (interface_type*)malloc(sizeof(interface_type));
+                                                        interface_type* c = new interface_type();
                                                         c->document_item.item_type = INTERFACE_TYPE_BINDER;
                                                         c->document_item.next = NULL;
                                                         c->interface_token = $2;
@@ -151,7 +154,7 @@ interface_decl:
                                                         interface_type* c = $1;
                                                         c->name = $2;
                                                         c->package =
-                                                        strdup(ps->Package().c_str());
+                                                        cpp_strdup(ps->Package().c_str());
                                                         c->open_brace_token = $3;
                                                         c->interface_items = $4;
                                                         c->close_brace_token = $5;
@@ -193,7 +196,7 @@ interface_items:
 
 method_decl:
         type IDENTIFIER '(' arg_list ')' ';'  {
-                                                        method_type *method = (method_type*)malloc(sizeof(method_type));
+                                                        method_type *method = new method_type();
                                                         method->interface_item.item_type = METHOD_TYPE;
                                                         method->interface_item.next = NULL;
                                                         method->oneway = false;
@@ -211,7 +214,7 @@ method_decl:
                                                         $$ = method;
                                                     }
     |   ONEWAY type IDENTIFIER '(' arg_list ')' ';'  {
-                                                        method_type *method = (method_type*)malloc(sizeof(method_type));
+                                                        method_type *method = new method_type();
                                                         method->interface_item.item_type = METHOD_TYPE;
                                                         method->interface_item.next = NULL;
                                                         method->oneway = true;
@@ -229,7 +232,7 @@ method_decl:
                                                         $$ = method;
                                                     }
     |    type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';'  {
-                                                        method_type *method = (method_type*)malloc(sizeof(method_type));
+                                                        method_type *method = new method_type();
                                                         method->interface_item.item_type = METHOD_TYPE;
                                                         method->interface_item.next = NULL;
                                                         method->oneway = false;
@@ -247,7 +250,7 @@ method_decl:
                                                         $$ = method;
                                                     }
     |   ONEWAY type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';'  {
-                                                        method_type *method = (method_type*)malloc(sizeof(method_type));
+                                                        method_type *method = new method_type();
                                                         method->interface_item.item_type = METHOD_TYPE;
                                                         method->interface_item.next = NULL;
                                                         method->oneway = true;

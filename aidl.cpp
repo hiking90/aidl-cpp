@@ -403,34 +403,32 @@ int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
         document_item_type* doc;
 
         if (0 == strcmp("parcelable", type)) {
-            user_data_type* parcl = (user_data_type*)malloc(
-                    sizeof(user_data_type));
+            user_data_type* parcl = new user_data_type();
             memset(parcl, 0, sizeof(user_data_type));
             parcl->document_item.item_type = USER_DATA_TYPE;
             parcl->keyword_token.lineno = lineno;
-            parcl->keyword_token.data = strdup(type);
-            parcl->package = packagename ? strdup(packagename) : NULL;
+            parcl->keyword_token.data = cpp_strdup(type);
+            parcl->package = packagename ? cpp_strdup(packagename) : NULL;
             parcl->name.lineno = lineno;
-            parcl->name.data = strdup(classname);
+            parcl->name.data = cpp_strdup(classname);
             parcl->semicolon_token.lineno = lineno;
-            parcl->semicolon_token.data = strdup(";");
+            parcl->semicolon_token.data = cpp_strdup(";");
             parcl->parcelable = true;
             doc = (document_item_type*)parcl;
         }
         else if (0 == strcmp("interface", type)) {
-            interface_type* iface = (interface_type*)malloc(
-                    sizeof(interface_type));
+            interface_type* iface = new interface_type();
             memset(iface, 0, sizeof(interface_type));
             iface->document_item.item_type = INTERFACE_TYPE_BINDER;
             iface->interface_token.lineno = lineno;
-            iface->interface_token.data = strdup(type);
-            iface->package = packagename ? strdup(packagename) : NULL;
+            iface->interface_token.data = cpp_strdup(type);
+            iface->package = packagename ? cpp_strdup(packagename) : NULL;
             iface->name.lineno = lineno;
-            iface->name.data = strdup(classname);
+            iface->name.data = cpp_strdup(classname);
             iface->open_brace_token.lineno = lineno;
-            iface->open_brace_token.data = strdup("{");
+            iface->open_brace_token.data = cpp_strdup("{");
             iface->close_brace_token.lineno = lineno;
-            iface->close_brace_token.data = strdup("}");
+            iface->close_brace_token.data = cpp_strdup("}");
             doc = (document_item_type*)iface;
         }
         else {

@@ -29,6 +29,8 @@ int convert_direction(const char* direction);
 
 bool is_java_keyword(const char* str);
 
+char* cpp_strdup(const char* in);
+
 }  // namespace android
 }  // namespace aidl
 
