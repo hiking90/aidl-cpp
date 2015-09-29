@@ -67,29 +67,10 @@ WriteArgumentList(CodeWriter* to, const vector<Expression*>& arguments)
     }
 }
 
-ClassElement::ClassElement()
-{
-}
-
-ClassElement::~ClassElement()
-{
-}
-
-Field::Field()
-    :ClassElement(),
-     modifiers(0),
-     variable(NULL)
-{
-}
-
 Field::Field(int m, Variable* v)
     :ClassElement(),
      modifiers(m),
      variable(v)
-{
-}
-
-Field::~Field()
 {
 }
 
@@ -114,16 +95,8 @@ Field::Write(CodeWriter* to) const
     to->Write(";\n");
 }
 
-Expression::~Expression()
-{
-}
-
 LiteralExpression::LiteralExpression(const string& v)
     :value(v)
-{
-}
-
-LiteralExpression::~LiteralExpression()
 {
 }
 
@@ -138,21 +111,10 @@ StringLiteralExpression::StringLiteralExpression(const string& v)
 {
 }
 
-StringLiteralExpression::~StringLiteralExpression()
-{
-}
-
 void
 StringLiteralExpression::Write(CodeWriter* to) const
 {
     to->Write("\"%s\"", this->value.c_str());
-}
-
-Variable::Variable()
-    :type(NULL),
-     name(),
-     dimension(0)
-{
 }
 
 Variable::Variable(const Type* t, const string& n)
@@ -166,10 +128,6 @@ Variable::Variable(const Type* t, const string& n, int d)
     :type(t),
      name(n),
      dimension(d)
-{
-}
-
-Variable::~Variable()
 {
 }
 
@@ -210,10 +168,6 @@ FieldVariable::FieldVariable(const Type* c, const string& n)
 {
 }
 
-FieldVariable::~FieldVariable()
-{
-}
-
 void
 FieldVariable::Write(CodeWriter* to) const
 {
@@ -224,19 +178,6 @@ FieldVariable::Write(CodeWriter* to) const
         to->Write("%s", this->clazz->QualifiedName().c_str());
     }
     to->Write(".%s", name.c_str());
-}
-
-
-Statement::~Statement()
-{
-}
-
-StatementBlock::StatementBlock()
-{
-}
-
-StatementBlock::~StatementBlock()
-{
 }
 
 void
@@ -267,10 +208,6 @@ ExpressionStatement::ExpressionStatement(Expression* e)
 {
 }
 
-ExpressionStatement::~ExpressionStatement()
-{
-}
-
 void
 ExpressionStatement::Write(CodeWriter* to) const
 {
@@ -292,10 +229,6 @@ Assignment::Assignment(Variable* l, Expression* r, const Type* c)
 {
 }
 
-Assignment::~Assignment()
-{
-}
-
 void
 Assignment::Write(CodeWriter* to) const
 {
@@ -308,16 +241,12 @@ Assignment::Write(CodeWriter* to) const
 }
 
 MethodCall::MethodCall(const string& n)
-    :obj(NULL),
-     clazz(NULL),
-     name(n)
+    : name(n)
 {
 }
 
 MethodCall::MethodCall(const string& n, int argc = 0, ...)
-    :obj(NULL),
-     clazz(NULL),
-     name(n)
+    :name(n)
 {
   va_list args;
   va_start(args, argc);
@@ -327,21 +256,18 @@ MethodCall::MethodCall(const string& n, int argc = 0, ...)
 
 MethodCall::MethodCall(Expression* o, const string& n)
     :obj(o),
-     clazz(NULL),
      name(n)
 {
 }
 
 MethodCall::MethodCall(const Type* t, const string& n)
-    :obj(NULL),
-     clazz(t),
+    :clazz(t),
      name(n)
 {
 }
 
 MethodCall::MethodCall(Expression* o, const string& n, int argc = 0, ...)
     :obj(o),
-     clazz(NULL),
      name(n)
 {
   va_list args;
@@ -351,18 +277,13 @@ MethodCall::MethodCall(Expression* o, const string& n, int argc = 0, ...)
 }
 
 MethodCall::MethodCall(const Type* t, const string& n, int argc = 0, ...)
-    :obj(NULL),
-     clazz(t),
+    :clazz(t),
      name(n)
 {
   va_list args;
   va_start(args, argc);
   init(argc, args);
   va_end(args);
-}
-
-MethodCall::~MethodCall()
-{
 }
 
 void
@@ -396,10 +317,6 @@ Comparison::Comparison(Expression* l, const string& o, Expression* r)
 {
 }
 
-Comparison::~Comparison()
-{
-}
-
 void
 Comparison::Write(CodeWriter* to) const
 {
@@ -422,10 +339,6 @@ NewExpression::NewExpression(const Type* t, int argc = 0, ...)
   va_start(args, argc);
   init(argc, args);
   va_end(args);
-}
-
-NewExpression::~NewExpression()
-{
 }
 
 void
@@ -451,10 +364,6 @@ NewArrayExpression::NewArrayExpression(const Type* t, Expression* s)
 {
 }
 
-NewArrayExpression::~NewArrayExpression()
-{
-}
-
 void
 NewArrayExpression::Write(CodeWriter* to) const
 {
@@ -463,21 +372,10 @@ NewArrayExpression::Write(CodeWriter* to) const
     to->Write("]");
 }
 
-Ternary::Ternary()
-    :condition(NULL),
-     ifpart(NULL),
-     elsepart(NULL)
-{
-}
-
 Ternary::Ternary(Expression* a, Expression* b, Expression* c)
     :condition(a),
      ifpart(b),
      elsepart(c)
-{
-}
-
-Ternary::~Ternary()
 {
 }
 
@@ -493,19 +391,9 @@ Ternary::Write(CodeWriter* to) const
     to->Write("))");
 }
 
-Cast::Cast()
-    :type(NULL),
-     expression(NULL)
-{
-}
-
 Cast::Cast(const Type* t, Expression* e)
     :type(t),
      expression(e)
-{
-}
-
-Cast::~Cast()
 {
 }
 
@@ -525,13 +413,7 @@ VariableDeclaration::VariableDeclaration(Variable* l, Expression* r, const Type*
 }
 
 VariableDeclaration::VariableDeclaration(Variable* l)
-    :lvalue(l),
-     cast(NULL),
-     rvalue(NULL)
-{
-}
-
-VariableDeclaration::~VariableDeclaration()
+    :lvalue(l)
 {
 }
 
@@ -547,17 +429,6 @@ VariableDeclaration::Write(CodeWriter* to) const
         this->rvalue->Write(to);
     }
     to->Write(";\n");
-}
-
-IfStatement::IfStatement()
-    :expression(NULL),
-     statements(new StatementBlock),
-     elseif(NULL)
-{
-}
-
-IfStatement::~IfStatement()
-{
 }
 
 void
@@ -580,25 +451,12 @@ ReturnStatement::ReturnStatement(Expression* e)
 {
 }
 
-ReturnStatement::~ReturnStatement()
-{
-}
-
 void
 ReturnStatement::Write(CodeWriter* to) const
 {
     to->Write("return ");
     this->expression->Write(to);
     to->Write(";\n");
-}
-
-TryStatement::TryStatement()
-    :statements(new StatementBlock)
-{
-}
-
-TryStatement::~TryStatement()
-{
 }
 
 void
@@ -614,10 +472,6 @@ CatchStatement::CatchStatement(Variable* e)
 {
 }
 
-CatchStatement::~CatchStatement()
-{
-}
-
 void
 CatchStatement::Write(CodeWriter* to) const
 {
@@ -630,15 +484,6 @@ CatchStatement::Write(CodeWriter* to) const
     this->statements->Write(to);
 }
 
-FinallyStatement::FinallyStatement()
-    :statements(new StatementBlock)
-{
-}
-
-FinallyStatement::~FinallyStatement()
-{
-}
-
 void
 FinallyStatement::Write(CodeWriter* to) const
 {
@@ -646,19 +491,9 @@ FinallyStatement::Write(CodeWriter* to) const
     this->statements->Write(to);
 }
 
-Case::Case()
-    :statements(new StatementBlock)
-{
-}
-
 Case::Case(const string& c)
-    :statements(new StatementBlock)
 {
     cases.push_back(c);
-}
-
-Case::~Case()
-{
 }
 
 void
@@ -685,10 +520,6 @@ SwitchStatement::SwitchStatement(Expression* e)
 {
 }
 
-SwitchStatement::~SwitchStatement()
-{
-}
-
 void
 SwitchStatement::Write(CodeWriter* to) const
 {
@@ -702,31 +533,10 @@ SwitchStatement::Write(CodeWriter* to) const
     to->Write("}\n");
 }
 
-Break::Break()
-{
-}
-
-Break::~Break()
-{
-}
-
 void
 Break::Write(CodeWriter* to) const
 {
     to->Write("break;\n");
-}
-
-Method::Method()
-    :ClassElement(),
-     modifiers(0),
-     returnType(NULL), // (NULL means constructor)
-     returnTypeDimension(0),
-     statements(NULL)
-{
-}
-
-Method::~Method()
-{
 }
 
 void
@@ -797,18 +607,6 @@ Method::Write(CodeWriter* to) const
         to->Write("\n");
         this->statements->Write(to);
     }
-}
-
-Class::Class()
-    :modifiers(0),
-     what(CLASS),
-     type(NULL),
-     extends(NULL)
-{
-}
-
-Class::~Class()
-{
 }
 
 void
@@ -883,14 +681,6 @@ Class::Write(CodeWriter* to) const
 
     to->Write("}\n");
 
-}
-
-Document::Document()
-{
-}
-
-Document::~Document()
-{
 }
 
 static string

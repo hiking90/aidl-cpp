@@ -60,8 +60,8 @@ void WriteModifiers(CodeWriter* to, int mod, int mask);
 
 struct ClassElement
 {
-    ClassElement();
-    virtual ~ClassElement();
+    ClassElement() = default;
+    virtual ~ClassElement() = default;
 
     virtual void GatherTypes(set<const Type*>* types) const = 0;
     virtual void Write(CodeWriter* to) const = 0;
@@ -69,7 +69,7 @@ struct ClassElement
 
 struct Expression
 {
-    virtual ~Expression();
+    virtual ~Expression() = default;
     virtual void Write(CodeWriter* to) const = 0;
 };
 
@@ -78,8 +78,8 @@ struct LiteralExpression : public Expression
     string value;
 
     LiteralExpression(const string& value);
-    virtual ~LiteralExpression();
-    virtual void Write(CodeWriter* to) const;
+    virtual ~LiteralExpression() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 // TODO: also escape the contents.  not needed for now
@@ -88,20 +88,20 @@ struct StringLiteralExpression : public Expression
     string value;
 
     StringLiteralExpression(const string& value);
-    virtual ~StringLiteralExpression();
-    virtual void Write(CodeWriter* to) const;
+    virtual ~StringLiteralExpression() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 struct Variable : public Expression
 {
-    const Type* type;
+    const Type* type = nullptr;
     string name;
-    int dimension;
+    int dimension = 0;
 
-    Variable();
+    Variable() = default;
     Variable(const Type* type, const string& name);
     Variable(const Type* type, const string& name, int dimension);
-    virtual ~Variable();
+    virtual ~Variable() = default;
 
     virtual void GatherTypes(set<const Type*>* types) const;
     void WriteDeclaration(CodeWriter* to) const;
@@ -116,7 +116,7 @@ struct FieldVariable : public Expression
 
     FieldVariable(Expression* object, const string& name);
     FieldVariable(const Type* clazz, const string& name);
-    virtual ~FieldVariable();
+    virtual ~FieldVariable() = default;
 
     void Write(CodeWriter* to) const;
 };
@@ -124,21 +124,21 @@ struct FieldVariable : public Expression
 struct Field : public ClassElement
 {
     string comment;
-    int modifiers;
-    Variable *variable;
+    int modifiers = 0;
+    Variable *variable = nullptr;
     string value;
 
-    Field();
+    Field() = default;
     Field(int modifiers, Variable* variable);
-    virtual ~Field();
+    virtual ~Field() = default;
 
-    virtual void GatherTypes(set<const Type*>* types) const;
-    virtual void Write(CodeWriter* to) const;
+    void GatherTypes(set<const Type*>* types) const override;
+    void Write(CodeWriter* to) const override;
 };
 
 struct Statement
 {
-    virtual ~Statement();
+    virtual ~Statement() = default;
     virtual void Write(CodeWriter* to) const = 0;
 };
 
@@ -146,9 +146,9 @@ struct StatementBlock : public Statement
 {
     vector<Statement*> statements;
 
-    StatementBlock();
-    virtual ~StatementBlock();
-    virtual void Write(CodeWriter* to) const;
+    StatementBlock() = default;
+    virtual ~StatementBlock() = default;
+    void Write(CodeWriter* to) const override;
 
     void Add(Statement* statement);
     void Add(Expression* expression);
@@ -159,8 +159,8 @@ struct ExpressionStatement : public Statement
     Expression* expression;
 
     ExpressionStatement(Expression* expression);
-    virtual ~ExpressionStatement();
-    virtual void Write(CodeWriter* to) const;
+    virtual ~ExpressionStatement() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 struct Assignment : public Expression
@@ -171,14 +171,14 @@ struct Assignment : public Expression
 
     Assignment(Variable* lvalue, Expression* rvalue);
     Assignment(Variable* lvalue, Expression* rvalue, const Type* cast);
-    virtual ~Assignment();
-    virtual void Write(CodeWriter* to) const;
+    virtual ~Assignment() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 struct MethodCall : public Expression
 {
-    Expression* obj;
-    const Type* clazz;
+    Expression* obj = nullptr;
+    const Type* clazz = nullptr;
     string name;
     vector<Expression*> arguments;
     vector<string> exceptions;
@@ -189,8 +189,8 @@ struct MethodCall : public Expression
     MethodCall(const Type* clazz, const string& name);
     MethodCall(Expression* obj, const string& name, int argc, ...);
     MethodCall(const Type* clazz, const string& name, int argc, ...);
-    virtual ~MethodCall();
-    virtual void Write(CodeWriter* to) const;
+    virtual ~MethodCall() = default;
+    void Write(CodeWriter* to) const override;
 
 private:
     void init(int n, va_list args);
@@ -203,8 +203,8 @@ struct Comparison : public Expression
     Expression* rvalue;
 
     Comparison(Expression* lvalue, const string& op, Expression* rvalue);
-    virtual ~Comparison();
-    virtual void Write(CodeWriter* to) const;
+    virtual ~Comparison() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 struct NewExpression : public Expression
@@ -214,8 +214,8 @@ struct NewExpression : public Expression
 
     NewExpression(const Type* type);
     NewExpression(const Type* type, int argc, ...);
-    virtual ~NewExpression();
-    virtual void Write(CodeWriter* to) const;
+    virtual ~NewExpression() = default;
+    void Write(CodeWriter* to) const override;
 
 private:
     void init(int n, va_list args);
@@ -227,54 +227,54 @@ struct NewArrayExpression : public Expression
     Expression* size;
 
     NewArrayExpression(const Type* type, Expression* size);
-    virtual ~NewArrayExpression();
-    virtual void Write(CodeWriter* to) const;
+    virtual ~NewArrayExpression() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 struct Ternary : public Expression
 {
-    Expression* condition;
-    Expression* ifpart;
-    Expression* elsepart;
+    Expression* condition = nullptr;
+    Expression* ifpart = nullptr;
+    Expression* elsepart = nullptr;
 
-    Ternary();
+    Ternary() = default;
     Ternary(Expression* condition, Expression* ifpart, Expression* elsepart);
-    virtual ~Ternary();
-    virtual void Write(CodeWriter* to) const;
+    virtual ~Ternary() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 struct Cast : public Expression
 {
-    const Type* type;
-    Expression* expression;
+    const Type* type = nullptr;
+    Expression* expression = nullptr;
 
-    Cast();
+    Cast() = default;
     Cast(const Type* type, Expression* expression);
-    virtual ~Cast();
-    virtual void Write(CodeWriter* to) const;
+    virtual ~Cast() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 struct VariableDeclaration : public Statement
 {
-    Variable* lvalue;
-    const Type* cast;
-    Expression* rvalue;
+    Variable* lvalue = nullptr;
+    const Type* cast = nullptr;
+    Expression* rvalue = nullptr;
 
     VariableDeclaration(Variable* lvalue);
     VariableDeclaration(Variable* lvalue, Expression* rvalue, const Type* cast = NULL);
-    virtual ~VariableDeclaration();
-    virtual void Write(CodeWriter* to) const;
+    virtual ~VariableDeclaration() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 struct IfStatement : public Statement
 {
-    Expression* expression;
-    StatementBlock* statements;
-    IfStatement* elseif;
+    Expression* expression = nullptr;
+    StatementBlock* statements = new StatementBlock;
+    IfStatement* elseif = nullptr;
 
-    IfStatement();
-    virtual ~IfStatement();
-    virtual void Write(CodeWriter* to) const;
+    IfStatement() = default;
+    virtual ~IfStatement() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 struct ReturnStatement : public Statement
@@ -282,17 +282,17 @@ struct ReturnStatement : public Statement
     Expression* expression;
 
     ReturnStatement(Expression* expression);
-    virtual ~ReturnStatement();
-    virtual void Write(CodeWriter* to) const;
+    virtual ~ReturnStatement() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 struct TryStatement : public Statement
 {
-    StatementBlock* statements;
+    StatementBlock* statements = new StatementBlock;
 
-    TryStatement();
-    virtual ~TryStatement();
-    virtual void Write(CodeWriter* to) const;
+    TryStatement() = default;
+    virtual ~TryStatement() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 struct CatchStatement : public Statement
@@ -301,27 +301,27 @@ struct CatchStatement : public Statement
     Variable* exception;
 
     CatchStatement(Variable* exception);
-    virtual ~CatchStatement();
-    virtual void Write(CodeWriter* to) const;
+    virtual ~CatchStatement() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 struct FinallyStatement : public Statement
 {
-    StatementBlock* statements;
+    StatementBlock* statements = new StatementBlock;
 
-    FinallyStatement();
-    virtual ~FinallyStatement();
-    virtual void Write(CodeWriter* to) const;
+    FinallyStatement() = default;
+    virtual ~FinallyStatement() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 struct Case
 {
     vector<string> cases;
-    StatementBlock* statements;
+    StatementBlock* statements = new StatementBlock;
 
-    Case();
+    Case() = default;
     Case(const string& c);
-    virtual ~Case();
+    virtual ~Case() = default;
     virtual void Write(CodeWriter* to) const;
 };
 
@@ -331,33 +331,33 @@ struct SwitchStatement : public Statement
     vector<Case*> cases;
 
     SwitchStatement(Expression* expression);
-    virtual ~SwitchStatement();
-    virtual void Write(CodeWriter* to) const;
+    virtual ~SwitchStatement() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 struct Break : public Statement
 {
-    Break();
-    virtual ~Break();
-    virtual void Write(CodeWriter* to) const;
+    Break() = default;
+    virtual ~Break() = default;
+    void Write(CodeWriter* to) const override;
 };
 
 struct Method : public ClassElement
 {
     string comment;
-    int modifiers;
-    const Type* returnType;
-    size_t returnTypeDimension;
+    int modifiers = 0;
+    const Type* returnType = nullptr;  // nullptr means constructor
+    size_t returnTypeDimension = 0;
     string name;
     vector<Variable*> parameters;
     vector<const Type*> exceptions;
-    StatementBlock* statements;
+    StatementBlock* statements = nullptr;
 
-    Method();
-    virtual ~Method();
+    Method() = default;
+    virtual ~Method() = default;
 
-    virtual void GatherTypes(set<const Type*>* types) const;
-    virtual void Write(CodeWriter* to) const;
+    void GatherTypes(set<const Type*>* types) const override;
+    void Write(CodeWriter* to) const override;
 };
 
 struct Class : public ClassElement
@@ -368,18 +368,18 @@ struct Class : public ClassElement
     };
 
     string comment;
-    int modifiers;
-    int what;               // CLASS or INTERFACE
-    const Type* type;
-    const Type* extends;
+    int modifiers = 0;
+    int what = CLASS;               // CLASS or INTERFACE
+    const Type* type = nullptr;
+    const Type* extends = nullptr;
     vector<const Type*> interfaces;
     vector<ClassElement*> elements;
 
-    Class();
-    virtual ~Class();
+    Class() = default;
+    virtual ~Class() = default;
 
-    virtual void GatherTypes(set<const Type*>* types) const;
-    virtual void Write(CodeWriter* to) const;
+    void GatherTypes(set<const Type*>* types) const override;
+    void Write(CodeWriter* to) const override;
 };
 
 struct Document
@@ -390,8 +390,8 @@ struct Document
     set<const Type*> imports;
     vector<Class*> classes;
 
-    Document();
-    virtual ~Document();
+    Document() = default;
+    virtual ~Document() = default;
 
     virtual void Write(CodeWriter* to) const;
 };
