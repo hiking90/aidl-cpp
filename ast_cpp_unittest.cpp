@@ -58,6 +58,13 @@ virtual void SubMethod(int subarg) const;
 
 #endif  // HEADER_INCLUDE_GUARD_H_)";
 
+const char kExpectedEnumOutput[] =
+R"(enum Foo {
+  BAR = 42,
+  BAZ,
+}
+)";
+
 }  // namespace
 
 TEST(AstCppTests, GeneratesHeader) {
@@ -106,6 +113,16 @@ TEST(AstCppTests, GeneratesHeader) {
   CodeWriterPtr writer = GetStringWriter(&actual_output);
   cpp_header.Write(writer.get());
   EXPECT_EQ(string(kExpectedHeaderOutput), actual_output);
+}
+
+TEST(AstCppTests, GeneratesEnum) {
+  Enum e("Foo");
+  e.AddValue("BAR", "42");
+  e.AddValue("BAZ", "");
+  string actual_output;
+  CodeWriterPtr writer = GetStringWriter(&actual_output);
+  e.Write(writer.get());
+  EXPECT_EQ(string(kExpectedEnumOutput), actual_output);
 }
 
 }  // namespace cpp

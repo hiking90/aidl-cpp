@@ -2,6 +2,7 @@
 
 #include "code_writer.h"
 
+using std::string;
 using std::unique_ptr;
 
 namespace android {
@@ -39,14 +40,40 @@ void ClassDecl::Write(CodeWriter* to) const {
   to->Write("};  // class %s\n", name_.c_str());
 }
 
+Enum::EnumField::EnumField(const string& k, const string&v)
+    : key(k),
+      value(v) {}
+
+Enum::Enum(const string& name) : enum_name_(name) {}
+
+void Enum::Write(CodeWriter* to) const {
+  to->Write("enum %s {\n", enum_name_.c_str());
+  for (const auto& field : fields_) {
+    if (field.value.empty()) {
+      to->Write("  %s,\n", field.key.c_str());
+    } else {
+      to->Write("  %s = %s,\n", field.key.c_str(), field.value.c_str());
+    }
+  }
+  to->Write("}\n");
+}
+
+void Enum::AddValue(const string& key, const string& value) {
+  fields_.emplace_back(key, value);
+}
+
+ConstructorDecl::ConstructorDecl(
+    const std::string& name,
+    std::vector<std::string> arguments)
+    : name_(name),
+      arguments_(arguments) {}
+
 ConstructorDecl::ConstructorDecl(
     const std::string& name,
     std::vector<std::string> arguments,
-    bool is_const,
     bool is_virtual)
     : name_(name),
       arguments_(arguments),
-      is_const_(is_const),
       is_virtual_(is_virtual) {}
 
 void ConstructorDecl::Write(CodeWriter* to) const {
@@ -64,12 +91,7 @@ void ConstructorDecl::Write(CodeWriter* to) const {
     to->Write("%s", arg.c_str());
   }
 
-  to->Write(")");
-
-  if (is_const_)
-    to->Write(" const");
-
-  to->Write(";\n");
+  to->Write(");\n");
 }
 
 MethodDecl::MethodDecl(const std::string& return_type,

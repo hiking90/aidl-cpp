@@ -91,10 +91,9 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
   string bp_name = "Bp" + c_name;
 
   unique_ptr<ConstructorDecl> constructor{
-        new ConstructorDecl(bp_name, {}, false, false)};
-
+      new ConstructorDecl(bp_name, {})};
   unique_ptr<ConstructorDecl> destructor{
-        new ConstructorDecl("~" + bp_name, {}, false, false)};
+      new ConstructorDecl("~" + bp_name, {})};
 
   vector<unique_ptr<Declaration>> publics;
   publics.push_back(std::move(constructor));
