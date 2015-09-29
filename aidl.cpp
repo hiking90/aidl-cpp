@@ -41,6 +41,7 @@
 #include "os.h"
 #include "parse_helpers.h"
 #include "search_path.h"
+#include "type_cpp.h"
 #include "type_java.h"
 #include "type_namespace.h"
 
@@ -610,7 +611,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
 int compile_aidl_to_cpp(const CppOptions& options) {
   interface_type* interface = nullptr;
   import_info* imports = nullptr;
-  unique_ptr<java::JavaTypeNamespace> types(new java::JavaTypeNamespace());
+  unique_ptr<cpp::TypeNamespace> types(new cpp::TypeNamespace());
   int err = load_and_validate_aidl(std::vector<std::string>{},
                                    options.ImportPaths(),
                                    options.InputFileName(),
@@ -623,7 +624,7 @@ int compile_aidl_to_cpp(const CppOptions& options) {
 
   // TODO(wiley) b/23600457 generate a dependency file if requested with -b
 
-  return (cpp::GenerateCpp(options, interface)) ? 0 : 1;
+  return (cpp::GenerateCpp(options, *types, *interface)) ? 0 : 1;
 }
 
 int compile_aidl_to_java(const JavaOptions& options) {

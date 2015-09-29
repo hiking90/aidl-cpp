@@ -22,11 +22,14 @@
 #include <random>
 #include <string>
 
+#include <base/stringprintf.h>
+
 #include "aidl_language.h"
 #include "ast_cpp.h"
 #include "code_writer.h"
 #include "logging.h"
 
+using android::base::StringPrintf;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -49,43 +52,42 @@ string StrippedLiteral(const buffer_type& buffer) {
   return c_name;
 }
 
-string GetCPPType(type_type *type) {
-  string lit = type->type.Literal();
-
-  if (lit == "int")
-    return "int32_t";
-  else if (lit == "long")
-    return "int64_t";
-  else
-    LOG(FATAL) << "Type not yet supported";
-
-  return "int";
+string GetCPPVarDec(const TypeNamespace& types, const type_type* type,
+                    const string& var_name, bool use_pointer) {
+  const Type* cpp_type = types.Find(type->type.data);
+  if (cpp_type == nullptr) {
+    // We should have caught this in type resolution.
+    LOG(FATAL) << "internal error";
+  }
+  return StringPrintf("%s%s %s%s",
+                      cpp_type->CppType().c_str(),
+                      (use_pointer) ? "*" : "",
+                      var_name.c_str(),
+                      type->Brackets().c_str());
 }
 
-string GetCPPVarDec(type_type* type, string name,
-                    int direction) {
-  return GetCPPType(type) + ((OUT_PARAMETER & direction) ? "* " : " ") +
-      name + type->Brackets();
-}
-
-unique_ptr<Document> BuildClientSource(interface_type* parsed_doc) {
+unique_ptr<Document> BuildClientSource(const TypeNamespace& types,
+                                       const interface_type& parsed_doc) {
   unique_ptr<CppNamespace> ns{new CppNamespace{"android", {}}};
   return unique_ptr<Document>{new CppSource{ {}, std::move(ns)}};
 }
 
-unique_ptr<Document> BuildServerSource(interface_type* parsed_doc) {
+unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
+                                       const interface_type& parsed_doc) {
   unique_ptr<CppNamespace> ns{new CppNamespace{"android", {}}};
   return unique_ptr<Document>{new CppSource{ {}, std::move(ns)}};
 }
 
-unique_ptr<Document> BuildInterfaceSource(interface_type* parsed_doc) {
+unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& types,
+                                          const interface_type& parsed_doc) {
   unique_ptr<CppNamespace> ns{new CppNamespace{"android", {}}};
   return unique_ptr<Document>{new CppSource{ {}, std::move(ns)}};
 }
 
-unique_ptr<Document> BuildClientHeader(interface_type* parsed_doc) {
-  string i_name = parsed_doc->name.Literal();
-  string c_name = StrippedLiteral(parsed_doc->name);
+unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
+                                       const interface_type& parsed_doc) {
+  string i_name = parsed_doc.name.Literal();
+  string c_name = StrippedLiteral(parsed_doc.name);
   string bp_name = "Bp" + c_name;
 
   unique_ptr<ConstructorDecl> constructor{
@@ -98,18 +100,19 @@ unique_ptr<Document> BuildClientHeader(interface_type* parsed_doc) {
   publics.push_back(std::move(constructor));
   publics.push_back(std::move(destructor));
 
-  for (method_type *item = parsed_doc->interface_items;
+  for (method_type *item = parsed_doc.interface_items;
        item;
        item = item->next) {
     string method_name = item->name.Literal();
-    string return_arg = GetCPPVarDec(&item->type, "_aidl_return",
-                                     OUT_PARAMETER);
+    string return_arg =
+        GetCPPVarDec(types, &item->type, "_aidl_return", true);
 
     vector<string> args;
 
     for (const std::unique_ptr<AidlArgument>& arg : *item->args)
-      args.push_back(GetCPPVarDec(&arg->type, arg->name.Literal(),
-                                  convert_direction(arg->direction.data)));
+      args.push_back(GetCPPVarDec(
+            types, &arg->type, arg->name.Literal(),
+            OUT_PARAMETER & convert_direction(arg->direction.data)));
 
     args.push_back(return_arg);
 
@@ -144,9 +147,10 @@ unique_ptr<Document> BuildClientHeader(interface_type* parsed_doc) {
   return bp_header;
 }
 
-unique_ptr<Document> BuildServerHeader(interface_type* parsed_doc) {
-  string i_name = parsed_doc->name.Literal();;
-  string c_name = StrippedLiteral(parsed_doc->name);
+unique_ptr<Document> BuildServerHeader(const TypeNamespace& types,
+                                       const interface_type& parsed_doc) {
+  string i_name = parsed_doc.name.Literal();;
+  string c_name = StrippedLiteral(parsed_doc.name);
   string bn_name = "Bn" + c_name;
 
   unique_ptr<Declaration> on_transact{
@@ -181,7 +185,8 @@ unique_ptr<Document> BuildServerHeader(interface_type* parsed_doc) {
   return bn_header;
 }
 
-unique_ptr<Document> BuildInterfaceHeader(interface_type* parsed_doc) {
+unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
+                                          const interface_type& parsed_doc) {
   unique_ptr<CppNamespace> ns{new CppNamespace{"android", {}}};
   return unique_ptr<Document>{new CppSource{ {}, std::move(ns)}};
 }
@@ -199,21 +204,23 @@ bool GenerateCppForFile(const std::string& name, unique_ptr<Document> doc) {
 
 using namespace internals;
 
-bool GenerateCpp(const CppOptions& options, interface_type* parsed_doc) {
+bool GenerateCpp(const CppOptions& options,
+                 const TypeNamespace& types,
+                 const interface_type& parsed_doc) {
   bool success = true;
 
   success &= GenerateCppForFile(options.ClientCppFileName(),
-                                BuildClientSource(parsed_doc));
+                                BuildClientSource(types, parsed_doc));
   success &= GenerateCppForFile(options.ClientHeaderFileName(),
-                                BuildClientHeader(parsed_doc));
+                                BuildClientHeader(types, parsed_doc));
   success &= GenerateCppForFile(options.ServerCppFileName(),
-                                BuildServerSource(parsed_doc));
+                                BuildServerSource(types, parsed_doc));
   success &= GenerateCppForFile(options.ServerHeaderFileName(),
-                                BuildServerHeader(parsed_doc));
+                                BuildServerHeader(types, parsed_doc));
   success &= GenerateCppForFile(options.InterfaceCppFileName(),
-                                BuildInterfaceSource(parsed_doc));
+                                BuildInterfaceSource(types, parsed_doc));
   success &= GenerateCppForFile(options.InterfaceHeaderFileName(),
-                                BuildInterfaceHeader(parsed_doc));
+                                BuildInterfaceHeader(types, parsed_doc));
 
   return success;
 }

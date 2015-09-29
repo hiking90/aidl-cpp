@@ -21,6 +21,7 @@
 #include "aidl_language.h"
 #include "ast_cpp.h"
 #include "code_writer.h"
+#include "type_cpp.h"
 
 using std::string;
 using std::unique_ptr;
@@ -30,7 +31,8 @@ namespace aidl {
 namespace cpp {
 
 namespace internals {
-unique_ptr<Document> BuildClientHeader(interface_type* parsed_doc);
+unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
+                                       const interface_type& parsed_doc);
 }
 
 namespace {
@@ -78,7 +80,8 @@ TEST(GenerateCPPTests, GeneratesClientHeader) {
 
   interface_type *interface = (interface_type*)parsed_doc;
 
-  unique_ptr<Document> doc = internals::BuildClientHeader(interface);
+  TypeNamespace types;
+  unique_ptr<Document> doc = internals::BuildClientHeader(types, *interface);
 
   string output;
   unique_ptr<CodeWriter> cw = GetStringWriter(&output);

@@ -19,12 +19,15 @@
 
 #include "aidl_language.h"
 #include "options.h"
+#include "type_cpp.h"
 
 namespace android {
 namespace aidl {
 namespace cpp {
 
-bool GenerateCpp(const CppOptions& options, interface_type* parsed_doc);
+bool GenerateCpp(const CppOptions& options,
+                 const cpp::TypeNamespace& types,
+                 const interface_type& parsed_doc);
 
 }  // namespace cpp
 }  // namespace aidl
