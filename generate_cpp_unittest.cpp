@@ -27,9 +27,10 @@ using std::unique_ptr;
 
 namespace android {
 namespace aidl {
+namespace cpp {
 
 namespace internals {
-unique_ptr<CppDocument> BuildClientHeader(interface_type* parsed_doc);
+unique_ptr<Document> BuildClientHeader(interface_type* parsed_doc);
 }
 
 namespace {
@@ -77,7 +78,7 @@ TEST(GenerateCPPTests, GeneratesClientHeader) {
 
   interface_type *interface = (interface_type*)parsed_doc;
 
-  unique_ptr<CppDocument> doc = internals::BuildClientHeader(interface);
+  unique_ptr<Document> doc = internals::BuildClientHeader(interface);
 
   string output;
   unique_ptr<CodeWriter> cw = GetStringWriter(&output);
@@ -87,5 +88,6 @@ TEST(GenerateCPPTests, GeneratesClientHeader) {
   EXPECT_EQ(kExpectedTrivialClientHeaderOutput, output);
 }
 
+}  // namespace cpp
 }  // namespace aidl
 }  // namespace android

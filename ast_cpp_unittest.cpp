@@ -27,6 +27,7 @@ using std::unique_ptr;
 
 namespace android {
 namespace aidl {
+namespace cpp {
 namespace {
 
 const char kExpectedHeaderOutput[] =
@@ -60,41 +61,41 @@ virtual void SubMethod(int subarg) const;
 }  // namespace
 
 TEST(AstCppTests, GeneratesHeader) {
-  unique_ptr<CppMethodDeclaration> norm{new CppMethodDeclaration("void",
-                                                                "NormalMethod",
-                                                                { "int normalarg",
-                                                                "float normal2" })};
-  unique_ptr<CppMethodDeclaration> sub{new CppMethodDeclaration("void",
-                                                                "SubMethod",
-                                                                { "int subarg" },
-                                                                true,
-                                                                true)};
-  unique_ptr<CppMethodDeclaration> sub2{new CppMethodDeclaration("void",
-                                                                 "SubMethod",
-                                                                 { "int subarg" },
-                                                                 true,
-                                                                 true)};
-  vector<unique_ptr<CppDeclaration>> test_methods;
+  unique_ptr<MethodDecl> norm{new MethodDecl("void",
+                                             "NormalMethod",
+                                             { "int normalarg",
+                                               "float normal2" })};
+  unique_ptr<MethodDecl> sub{new MethodDecl("void",
+                                            "SubMethod",
+                                            { "int subarg" },
+                                            true,
+                                            true)};
+  unique_ptr<MethodDecl> sub2{new MethodDecl("void",
+                                             "SubMethod",
+                                             { "int subarg" },
+                                             true,
+                                             true)};
+  vector<unique_ptr<Declaration>> test_methods;
   test_methods.push_back(std::move(norm));
   test_methods.push_back(std::move(sub));
 
-  vector<unique_ptr<CppDeclaration>> test_sub_methods;
+  vector<unique_ptr<Declaration>> test_sub_methods;
   test_sub_methods.push_back(std::move(sub2));
 
-  unique_ptr<CppDeclaration> test{new CppClassDeclaration { "TestClass", "",
+  unique_ptr<Declaration> test{new ClassDecl { "TestClass", "",
       std::move(test_methods), {} }};
 
-  unique_ptr<CppDeclaration> test_sub{new CppClassDeclaration { "TestSubClass",
+  unique_ptr<Declaration> test_sub{new ClassDecl { "TestSubClass",
       "TestClass", std::move(test_sub_methods), {} }};
 
-  vector<unique_ptr<CppDeclaration>> classes;
+  vector<unique_ptr<Declaration>> classes;
   classes.push_back(std::move(test));
   classes.push_back(std::move(test_sub));
 
   unique_ptr<CppNamespace> test_ns{new CppNamespace {"test",
       std::move(classes)}};
 
-  vector<unique_ptr<CppDeclaration>> test_ns_vec;
+  vector<unique_ptr<Declaration>> test_ns_vec;
   test_ns_vec.push_back(std::move(test_ns));
 
   unique_ptr<CppNamespace> android_ns{new CppNamespace {"android", std::move(test_ns_vec) }};
@@ -107,5 +108,6 @@ TEST(AstCppTests, GeneratesHeader) {
   EXPECT_EQ(string(kExpectedHeaderOutput), actual_output);
 }
 
+}  // namespace cpp
 }  // namespace aidl
 }  // namespace android

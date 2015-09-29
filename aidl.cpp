@@ -639,7 +639,7 @@ int compile_aidl_to_cpp(const CppOptions& options) {
 
   // TODO(wiley) b/23600457 generate a dependency file if requested with -b
 
-  return (GenerateCpp(options, interface)) ? 0 : 1;
+  return (cpp::GenerateCpp(options, interface)) ? 0 : 1;
 }
 
 int compile_aidl_to_java(const JavaOptions& options) {

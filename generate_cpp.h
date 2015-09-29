@@ -22,10 +22,12 @@
 
 namespace android {
 namespace aidl {
+namespace cpp {
 
 bool GenerateCpp(const CppOptions& options, interface_type* parsed_doc);
 
-}  // namespace android
+}  // namespace cpp
 }  // namespace aidl
+}  // namespace android
 
 #endif // AIDL_GENERATE_CPP_H_

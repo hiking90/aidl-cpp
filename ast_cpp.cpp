@@ -6,16 +6,17 @@ using std::unique_ptr;
 
 namespace android {
 namespace aidl {
+namespace cpp {
 
-CppClassDeclaration::CppClassDeclaration(const std::string& name, const std::string& parent,
-                                         std::vector<unique_ptr<CppDeclaration>> public_members,
-                                         std::vector<unique_ptr<CppDeclaration>> private_members)
+ClassDecl::ClassDecl(const std::string& name, const std::string& parent,
+                     std::vector<unique_ptr<Declaration>> public_members,
+                     std::vector<unique_ptr<Declaration>> private_members)
     : name_(name),
       parent_(parent),
       public_members_(std::move(public_members)),
       private_members_(std::move(private_members)) {}
 
-void CppClassDeclaration::Write(CodeWriter* to) const {
+void ClassDecl::Write(CodeWriter* to) const {
   to->Write("class %s ", name_.c_str());
 
   if (parent_.length() > 0)
@@ -38,7 +39,7 @@ void CppClassDeclaration::Write(CodeWriter* to) const {
   to->Write("};  // class %s\n", name_.c_str());
 }
 
-CppMacroOrConstructorDeclaration::CppMacroOrConstructorDeclaration(
+ConstructorDecl::ConstructorDecl(
     const std::string& name,
     std::vector<std::string> arguments,
     bool is_const,
@@ -48,7 +49,7 @@ CppMacroOrConstructorDeclaration::CppMacroOrConstructorDeclaration(
       is_const_(is_const),
       is_virtual_(is_virtual) {}
 
-void CppMacroOrConstructorDeclaration::Write(CodeWriter* to) const {
+void ConstructorDecl::Write(CodeWriter* to) const {
   if (is_virtual_)
     to->Write("virtual ");
 
@@ -71,18 +72,18 @@ void CppMacroOrConstructorDeclaration::Write(CodeWriter* to) const {
   to->Write(";\n");
 }
 
-CppMethodDeclaration::CppMethodDeclaration(const std::string& return_type,
-                                           const std::string& name,
-                                           std::vector<std::string> arguments,
-                                           bool is_const,
-                                           bool is_virtual)
+MethodDecl::MethodDecl(const std::string& return_type,
+                       const std::string& name,
+                       std::vector<std::string> arguments,
+                       bool is_const,
+                       bool is_virtual)
     : return_type_(return_type),
       name_(name),
       arguments_(arguments),
       is_const_(is_const),
       is_virtual_(is_virtual) {}
 
-void CppMethodDeclaration::Write(CodeWriter* to) const {
+void MethodDecl::Write(CodeWriter* to) const {
   if (is_virtual_)
     to->Write("virtual ");
 
@@ -106,7 +107,7 @@ void CppMethodDeclaration::Write(CodeWriter* to) const {
 }
 
 CppNamespace::CppNamespace(const std::string& name,
-                           std::vector<unique_ptr<CppDeclaration>> declarations)
+                           std::vector<unique_ptr<Declaration>> declarations)
     : declarations_(std::move(declarations)),
       name_(name) {}
 
@@ -121,12 +122,12 @@ void CppNamespace::Write(CodeWriter* to) const {
   to->Write("}  // namespace %s\n", name_.c_str());
 }
 
-CppDocument::CppDocument(const std::vector<std::string>& include_list,
-                         unique_ptr<CppNamespace> a_namespace)
+Document::Document(const std::vector<std::string>& include_list,
+                   unique_ptr<CppNamespace> a_namespace)
     : include_list_(include_list),
       namespace_(std::move(a_namespace)) {}
 
-void CppDocument::Write(CodeWriter* to) const {
+void Document::Write(CodeWriter* to) const {
   for (const auto& include : include_list_) {
     to->Write("#include <%s>\n", include.c_str());
   }
@@ -138,14 +139,14 @@ void CppDocument::Write(CodeWriter* to) const {
 CppHeader::CppHeader(const std::string& include_guard,
                      const std::vector<std::string>& include_list,
                      unique_ptr<CppNamespace> a_namespace)
-    : CppDocument(include_list, std::move(a_namespace)),
+    : Document(include_list, std::move(a_namespace)),
       include_guard_(include_guard) {}
 
 void CppHeader::Write(CodeWriter* to) const {
   to->Write("#ifndef %s\n", include_guard_.c_str());
   to->Write("#define %s\n\n", include_guard_.c_str());
 
-  CppDocument::Write(to);
+  Document::Write(to);
   to->Write("\n");
 
   to->Write("#endif  // %s", include_guard_.c_str());
@@ -153,7 +154,8 @@ void CppHeader::Write(CodeWriter* to) const {
 
 CppSource::CppSource(const std::vector<std::string>& include_list,
                      unique_ptr<CppNamespace> a_namespace)
-    : CppDocument(include_list, std::move(a_namespace)) {}
+    : Document(include_list, std::move(a_namespace)) {}
 
+}  // namespace cpp
 }  // namespace aidl
 }  // namespace android
