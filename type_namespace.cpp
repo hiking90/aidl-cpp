@@ -66,67 +66,67 @@ bool TypeNamespace::IsValidReturnType(const type_type* raw_type,
   return true;
 }
 
-bool TypeNamespace::IsValidArg(const arg_type* a,
+bool TypeNamespace::IsValidArg(const AidlArgument& a,
                                int arg_index,
                                const string& filename) const {
   string error_prefix = StringPrintf(
       "In file %s line %d parameter %s (%d):\n    ",
-      filename.c_str(), a->name.lineno, a->name.data, arg_index);
+      filename.c_str(), a.name.lineno, a.name.data, arg_index);
 
   // check the arg type
-  const ValidatableType* t = GetValidatableType(a->type.type.data);
+  const ValidatableType* t = GetValidatableType(a.type.type.data);
   if (t == nullptr) {
-    cerr << error_prefix << "unknown type " << a->type.type.data << endl;
+    cerr << error_prefix << "unknown type " << a.type.type.data << endl;
     return false;
   }
 
   if (!t->CanWriteToParcel()) {
     cerr << error_prefix
          << StringPrintf("'%s %s' can't be marshalled.",
-                         a->type.type.data, a->name.data) << endl;
+                         a.type.type.data, a.name.data) << endl;
     return false;
   }
 
-  if (a->direction.data == nullptr &&
-      (a->type.dimension != 0 || t->CanBeOutParameter())) {
+  if (a.direction.data == nullptr &&
+      (a.type.dimension != 0 || t->CanBeOutParameter())) {
     cerr << error_prefix << StringPrintf(
         "'%s %s' can be an out parameter, so you must declare it as in,"
-        " out or inout.", a->type.type.data, a->name.data) << endl;
+        " out or inout.", a.type.type.data, a.name.data) << endl;
     return false;
   }
 
-  if (convert_direction(a->direction.data) != IN_PARAMETER &&
+  if (convert_direction(a.direction.data) != IN_PARAMETER &&
       !t->CanBeOutParameter() &&
-      a->type.dimension == 0) {
+      a.type.dimension == 0) {
     cerr << error_prefix << StringPrintf(
         "'%s %s %s' can only be an in parameter.",
-        a->direction.data, a->type.type.data, a->name.data) << endl;
+        a.direction.data, a.type.type.data, a.name.data) << endl;
     return false;
   }
 
-  if (a->type.dimension > 0 && !t->CanBeArray()) {
+  if (a.type.dimension > 0 && !t->CanBeArray()) {
     cerr << error_prefix << StringPrintf(
         "'%s %s%s %s' cannot be an array.",
-        a->direction.data, a->type.type.data, a->type.array_token.data,
-        a->name.data) << endl;
+        a.direction.data, a.type.type.data, a.type.array_token.data,
+        a.name.data) << endl;
     return false;
   }
 
-  if (a->type.dimension > 1) {
+  if (a.type.dimension > 1) {
     cerr << error_prefix << "Only one dimensional arrays are supported."
          << endl;
     return false;
   }
 
   // check that the name doesn't match a keyword
-  if (is_java_keyword(a->name.data)) {
+  if (is_java_keyword(a.name.data)) {
     cerr << error_prefix << "Argument name is a C++, Java, or aidl keyword"
          << endl;
     return false;
   }
 
   // Reserve a namespace for internal use
-  if (!strncmp(a->name.data, "_aidl", 5)) {
+  if (!strncmp(a.name.data, "_aidl", 5)) {
     cerr << error_prefix << "Argument name cannot begin with '_aidl'"
          << endl;
     return false;

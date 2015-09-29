@@ -42,6 +42,11 @@ Parser::~Parser() {
   yylex_destroy(scanner_);
 }
 
+AidlArgument::AidlArgument(buffer_type direction, type_type type, buffer_type name)
+    : direction(direction),
+      name(name),
+      type(type) {}
+
 string Parser::FileName() {
   return filename_;
 }

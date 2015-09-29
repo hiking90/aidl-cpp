@@ -60,7 +60,7 @@ class TypeNamespace {
                                  const std::string& filename) const;
 
   // Returns true iff |arg_type| is a valid method argument.
-  virtual bool IsValidArg(const arg_type* a,
+  virtual bool IsValidArg(const AidlArgument& a,
                           int arg_index,
                           const std::string& filename) const;
 

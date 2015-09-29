@@ -22,7 +22,8 @@ static int count_brackets(const char*);
 %union {
     buffer_type buffer;
     type_type type;
-    arg_type *arg;
+    AidlArgument* arg;
+    std::vector<std::unique_ptr<AidlArgument>>* arg_list;
     method_type* method;
     interface_item_type* interface_item;
     interface_type* interface_obj;
@@ -39,7 +40,8 @@ static int count_brackets(const char*);
 %type<interface_obj> interface_decl interface_header
 %type<method> method_decl
 %type<type> type
-%type<arg> arg_list arg
+%type<arg_list> arg_list
+%type<arg> arg
 %type<buffer> direction
 
 %type<buffer> error
@@ -265,38 +267,23 @@ method_decl:
     ;
 
 arg_list:
-                                { $$ = NULL; }
-    |   arg                     { $$ = $1; }
-    |   arg_list ',' arg        {
-                                    if ($$ != NULL) {
-                                        // only NULL on error
-                                        $$ = $1;
-                                        arg_type *p = $1;
-                                        while (p && p->next) {
-                                            p=p->next;
-                                        }
-                                        $3->comma_token = $2;
-                                        p->next = $3;
-                                    }
-                                }
-    |   error                   {
-                                    fprintf(stderr, "%s:%d: syntax error in parameter list\n",
-                                            ps->FileName().c_str(), $1.lineno);
-                                    $$ = NULL;
-                                }
-    ;
+  { $$ = new std::vector<std::unique_ptr<AidlArgument>>(); }
+ | arg {
+    $$ = new std::vector<std::unique_ptr<AidlArgument>>();
+    $$->push_back(std::unique_ptr<AidlArgument>($1));
+  }
+ | arg_list ',' arg {
+    $$ = $1;
+    $$->push_back(std::unique_ptr<AidlArgument>($3));
+  }
+ | error {
+    fprintf(stderr, "%s:%d: syntax error in parameter list\n",
+            ps->FileName().c_str(), $1.lineno);
+    $$ = new std::vector<std::unique_ptr<AidlArgument>>();
+  };
 
-arg:
-        direction type IDENTIFIER     {
-                                                arg_type* arg = (arg_type*)malloc(sizeof(arg_type));
-                                                memset(&arg->comma_token, 0, sizeof(buffer_type));
-                                                arg->direction = $1;
-                                                arg->type = $2;
-                                                arg->name = $3;
-                                                arg->next = NULL;
-                                                $$ = arg;
-                                      }
-    ;
+arg: direction type IDENTIFIER
+  { $$ = new AidlArgument($1, $2, $3); };
 
 type:
         IDENTIFIER              {

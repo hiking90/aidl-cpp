@@ -1,7 +1,9 @@
 #ifndef AIDL_AIDL_LANGUAGE_H_
 #define AIDL_AIDL_LANGUAGE_H_
 
+#include <memory>
 #include <string>
+#include <vector>
 
 #include <base/macros.h>
 
@@ -43,12 +45,26 @@ struct type_type {
   std::string Brackets() const;
 };
 
-struct arg_type {
-  buffer_type comma_token; // empty in the first one in the list
+class AidlNode {
+ public:
+  AidlNode() = default;
+  virtual ~AidlNode() = default;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AidlNode);
+};
+
+class AidlArgument : public AidlNode {
+ public:
+  AidlArgument(buffer_type direction, type_type type, buffer_type name);
+  virtual ~AidlArgument() = default;
+
   buffer_type direction;
-  type_type type;
   buffer_type name;
-  struct arg_type *next;
+  type_type type;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AidlArgument);
 };
 
 enum {
@@ -67,7 +83,7 @@ struct method_type {
     buffer_type oneway_token;
     buffer_type name;
     buffer_type open_paren_token;
-    arg_type* args;
+    std::vector<std::unique_ptr<AidlArgument>>* args;
     buffer_type close_paren_token;
     bool hasId;
     buffer_type equals_token;

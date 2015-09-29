@@ -113,7 +113,7 @@ unique_ptr<CppDocument> BuildClientHeader(interface_type* parsed_doc) {
 
     vector<string> args;
 
-    for (arg_type *arg = m_item->args; arg; arg = arg->next)
+    for (const std::unique_ptr<AidlArgument>& arg : *m_item->args)
       args.push_back(GetCPPVarDec(&arg->type, arg->name.Literal(),
                                   convert_direction(arg->direction.data)));
 

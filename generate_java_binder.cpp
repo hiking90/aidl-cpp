@@ -266,7 +266,6 @@ generate_method(const method_type* method, Class* interface,
                 StubClass* stubClass, ProxyClass* proxyClass, int index,
                 JavaTypeNamespace* types)
 {
-    arg_type* arg;
     int i;
     bool hasOutParams = false;
 
@@ -292,12 +291,10 @@ generate_method(const method_type* method, Class* interface,
         decl->returnTypeDimension = method->type.dimension;
         decl->name = method->name.data;
 
-    arg = method->args;
-    while (arg != NULL) {
+    for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
         decl->parameters.push_back(new Variable(
                             types->Find(arg->type.type.data), arg->name.data,
                             arg->type.dimension));
-        arg = arg->next;
     }
 
     decl->exceptions.push_back(types->RemoteExceptionType());
@@ -317,8 +314,7 @@ generate_method(const method_type* method, Class* interface,
     // args
     Variable* cl = NULL;
     VariableFactory stubArgs("_arg");
-    arg = method->args;
-    while (arg != NULL) {
+    for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
         const Type* t = types->Find(arg->type.type.data);
         Variable* v = stubArgs.Get(t);
         v->dimension = arg->type.dimension;
@@ -343,8 +339,6 @@ generate_method(const method_type* method, Class* interface,
         }
 
         realCall->arguments.push_back(v);
-
-        arg = arg->next;
     }
 
     // the real call
@@ -378,8 +372,7 @@ generate_method(const method_type* method, Class* interface,
 
     // out parameters
     i = 0;
-    arg = method->args;
-    while (arg != NULL) {
+    for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
         const Type* t = types->Find(arg->type.type.data);
         Variable* v = stubArgs.Get(i++);
 
@@ -389,8 +382,6 @@ generate_method(const method_type* method, Class* interface,
                                 Type::PARCELABLE_WRITE_RETURN_VALUE);
             hasOutParams = true;
         }
-
-        arg = arg->next;
     }
 
     // return true
@@ -405,12 +396,10 @@ generate_method(const method_type* method, Class* interface,
         proxy->returnTypeDimension = method->type.dimension;
         proxy->name = method->name.data;
         proxy->statements = new StatementBlock;
-        arg = method->args;
-        while (arg != NULL) {
+        for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
             proxy->parameters.push_back(new Variable(
                             types->Find(arg->type.type.data), arg->name.data,
                             arg->type.dimension));
-            arg = arg->next;
         }
         proxy->exceptions.push_back(types->RemoteExceptionType());
     proxyClass->elements.push_back(proxy);
@@ -447,8 +436,7 @@ generate_method(const method_type* method, Class* interface,
             1, new LiteralExpression("DESCRIPTOR")));
 
     // the parameters
-    arg = method->args;
-    while (arg != NULL) {
+    for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
         const Type* t = types->Find(arg->type.type.data);
         Variable* v = new Variable(t, arg->name.data, arg->type.dimension);
         int dir = convert_direction(arg->direction.data);
@@ -465,7 +453,6 @@ generate_method(const method_type* method, Class* interface,
         else if (dir & IN_PARAMETER) {
             generate_write_to_parcel(t, tryStatement->statements, v, _data, 0);
         }
-        arg = arg->next;
     }
 
     // the transact call
@@ -490,15 +477,13 @@ generate_method(const method_type* method, Class* interface,
         }
 
         // the out/inout parameters
-        arg = method->args;
-        while (arg != NULL) {
+        for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
             const Type* t = types->Find(arg->type.type.data);
             Variable* v = new Variable(t, arg->name.data, arg->type.dimension);
             if (convert_direction(arg->direction.data) & OUT_PARAMETER) {
                 generate_read_from_parcel(t, tryStatement->statements,
                                             v, _reply, &cl);
             }
-            arg = arg->next;
         }
 
         finallyStatement->statements->Add(new MethodCall(_reply, "recycle"));

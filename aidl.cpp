@@ -219,9 +219,9 @@ int check_types(const string& filename,
     }
 
     int index = 1;
-    for (arg_type* arg = m->args; arg; ++index, arg = arg->next) {
+    for (const std::unique_ptr<AidlArgument>& arg : *m->args) {
       if (!types->AddContainerType(arg->type.type.data) ||
-          !types->IsValidArg(arg, index, filename)) {
+          !types->IsValidArg(*arg, index, filename)) {
         err = 1;
       }
     }
