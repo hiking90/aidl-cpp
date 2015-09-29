@@ -98,7 +98,7 @@ declaration:
 
 parcelable_decl:
         PARCELABLE IDENTIFIER ';'                   {
-                                                        user_data_type* b = new user_data_type();
+                                                        user_data_type* b = (user_data_type*)malloc(sizeof(user_data_type));
                                                         b->document_item.item_type = USER_DATA_TYPE;
                                                         b->document_item.next = NULL;
                                                         b->keyword_token = $1;
@@ -123,7 +123,7 @@ parcelable_decl:
 
 interface_header:
         INTERFACE                                  {
-                                                        interface_type* c = new interface_type();
+                                                        interface_type* c = (interface_type*)malloc(sizeof(interface_type));
                                                         c->document_item.item_type = INTERFACE_TYPE_BINDER;
                                                         c->document_item.next = NULL;
                                                         c->interface_token = $1;
@@ -133,7 +133,7 @@ interface_header:
                                                         $$ = c;
                                                    }
     |   ONEWAY INTERFACE                           {
-                                                        interface_type* c = new interface_type();
+                                                        interface_type* c = (interface_type*)malloc(sizeof(interface_type));
                                                         c->document_item.item_type = INTERFACE_TYPE_BINDER;
                                                         c->document_item.next = NULL;
                                                         c->interface_token = $2;
@@ -191,7 +191,7 @@ interface_items:
 
 method_decl:
         type IDENTIFIER '(' arg_list ')' ';'  {
-                                                        method_type *method = new method_type();
+                                                        method_type *method = (method_type*)malloc(sizeof(method_type));
                                                         method->interface_item.item_type = METHOD_TYPE;
                                                         method->interface_item.next = NULL;
                                                         method->oneway = false;
@@ -209,7 +209,7 @@ method_decl:
                                                         $$ = method;
                                                     }
     |   ONEWAY type IDENTIFIER '(' arg_list ')' ';'  {
-                                                        method_type *method = new method_type();
+                                                        method_type *method = (method_type*)malloc(sizeof(method_type));
                                                         method->interface_item.item_type = METHOD_TYPE;
                                                         method->interface_item.next = NULL;
                                                         method->oneway = true;
@@ -227,7 +227,7 @@ method_decl:
                                                         $$ = method;
                                                     }
     |    type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';'  {
-                                                        method_type *method = new method_type();
+                                                        method_type *method = (method_type*)malloc(sizeof(method_type));
                                                         method->interface_item.item_type = METHOD_TYPE;
                                                         method->interface_item.next = NULL;
                                                         method->oneway = false;
@@ -245,7 +245,7 @@ method_decl:
                                                         $$ = method;
                                                     }
     |   ONEWAY type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';'  {
-                                                        method_type *method = new method_type();
+                                                        method_type *method = (method_type*)malloc(sizeof(method_type));
                                                         method->interface_item.item_type = METHOD_TYPE;
                                                         method->interface_item.next = NULL;
                                                         method->oneway = true;
@@ -288,7 +288,7 @@ arg_list:
 
 arg:
         direction type IDENTIFIER     {
-                                                arg_type* arg = new arg_type();
+                                                arg_type* arg = (arg_type*)malloc(sizeof(arg_type));
                                                 memset(&arg->comma_token, 0, sizeof(buffer_type));
                                                 arg->direction = $1;
                                                 arg->type = $2;

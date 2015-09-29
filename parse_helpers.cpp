@@ -47,7 +47,7 @@ char* parse_import_statement(const char* text) {
   }
   len = end - text;
 
-  char* rv = new char[len + 1];
+  char* rv = (char*)malloc(len + 1);
   memcpy(rv, text, len);
   rv[len] = '\0';
 

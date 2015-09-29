@@ -88,7 +88,7 @@ void Parser::SetFileContents(const std::string& contents) {
 bool Parser::RunParser() {
   int ret = yy::parser(this).parse();
 
-  delete[] g_currentPackage;
+  free((void *)g_currentPackage);
   g_currentPackage = NULL;
 
   return ret == 0 && error_ == 0;
@@ -101,7 +101,7 @@ void Parser::SetDocument(document_item_type *d)
 
 void Parser::AddImport(const buffer_type& statement)
 {
-  import_info* import = new import_info();
+  import_info* import = (import_info*)malloc(sizeof(import_info));
   memset(import, 0, sizeof(import_info));
   import->from = strdup(this->FileName().c_str());
   import->statement.lineno = statement.lineno;

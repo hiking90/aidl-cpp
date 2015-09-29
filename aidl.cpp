@@ -403,7 +403,8 @@ int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
         document_item_type* doc;
 
         if (0 == strcmp("parcelable", type)) {
-            user_data_type* parcl = new user_data_type();
+            user_data_type* parcl = (user_data_type*)malloc(
+                    sizeof(user_data_type));
             memset(parcl, 0, sizeof(user_data_type));
             parcl->document_item.item_type = USER_DATA_TYPE;
             parcl->keyword_token.lineno = lineno;
@@ -417,7 +418,8 @@ int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
             doc = (document_item_type*)parcl;
         }
         else if (0 == strcmp("interface", type)) {
-            interface_type* iface = new interface_type();
+            interface_type* iface = (interface_type*)malloc(
+                    sizeof(interface_type));
             memset(iface, 0, sizeof(interface_type));
             iface->document_item.item_type = INTERFACE_TYPE_BINDER;
             iface->interface_token.lineno = lineno;
