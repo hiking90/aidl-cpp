@@ -552,13 +552,10 @@ generate_binder_interface_class(const interface_type* iface,
 
     // all the declared methods of the interface
     int index = 0;
-    interface_item_type* item = iface->interface_items;
+    method_type* item = iface->interface_items;
     while (item != NULL) {
-        if (item->item_type == METHOD_TYPE) {
-            method_type * method_item = (method_type*) item;
-            generate_method(method_item, interface, stub, proxy,
-                            method_item->assigned_id, types);
-        }
+        generate_method(item, interface, stub, proxy,
+                        item->assigned_id, types);
         item = item->next;
         index++;
     }

@@ -67,17 +67,8 @@ class AidlArgument : public AidlNode {
   DISALLOW_COPY_AND_ASSIGN(AidlArgument);
 };
 
-enum {
-    METHOD_TYPE
-};
-
-struct interface_item_type {
-    unsigned item_type;
-    struct interface_item_type* next;
-};
-
 struct method_type {
-    interface_item_type interface_item;
+    struct method_type *next;
     type_type type;
     bool oneway;
     buffer_type oneway_token;
@@ -122,7 +113,7 @@ struct interface_type {
     char* package;
     buffer_type name;
     buffer_type open_brace_token;
-    interface_item_type* interface_items;
+    method_type* interface_items;
     buffer_type close_brace_token;
     buffer_type* comments_token; // points into this structure, DO NOT DELETE
 };

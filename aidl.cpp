@@ -204,15 +204,7 @@ int check_types(const string& filename,
                 TypeNamespace* types) {
   int err = 0;
   map<string,method_type*> method_names;
-  for (interface_item_type* member = c->interface_items;
-       member;
-       member = member->next) {
-    if (member->item_type != METHOD_TYPE) {
-      continue;
-    }
-    method_type* m = (method_type*)member;
-
-
+  for (method_type* m = c->interface_items; m; m = m->next) {
     if (!types->AddContainerType(m->type.type.data) ||
         !types->IsValidReturnType(&m->type, filename)) {
       err = 1;  // return type is invalid
@@ -456,49 +448,46 @@ int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
 }
 
 int check_and_assign_method_ids(const char * filename,
-                                interface_item_type* first_item) {
+                                method_type* first_item) {
     // Check whether there are any methods with manually assigned id's and any that are not.
     // Either all method id's must be manually assigned or all of them must not.
     // Also, check for duplicates of user set id's and that the id's are within the proper bounds.
     set<int> usedIds;
-    interface_item_type* item = first_item;
+    method_type* item = first_item;
     bool hasUnassignedIds = false;
     bool hasAssignedIds = false;
     while (item != NULL) {
-        if (item->item_type == METHOD_TYPE) {
-            method_type* method_item = (method_type*)item;
-            if (method_item->hasId) {
-                hasAssignedIds = true;
-                method_item->assigned_id = atoi(method_item->id.data);
-                // Ensure that the user set id is not duplicated.
-                if (usedIds.find(method_item->assigned_id) != usedIds.end()) {
-                    // We found a duplicate id, so throw an error.
-                    fprintf(stderr,
-                            "%s:%d Found duplicate method id (%d) for method: %s\n",
-                            filename, method_item->id.lineno,
-                            method_item->assigned_id, method_item->name.data);
-                    return 1;
-                }
-                // Ensure that the user set id is within the appropriate limits
-                if (method_item->assigned_id < kMinUserSetMethodId ||
-                        method_item->assigned_id > kMaxUserSetMethodId) {
-                    fprintf(stderr, "%s:%d Found out of bounds id (%d) for method: %s\n",
-                            filename, method_item->id.lineno,
-                            method_item->assigned_id, method_item->name.data);
-                    fprintf(stderr, "    Value for id must be between %d and %d inclusive.\n",
-                            kMinUserSetMethodId, kMaxUserSetMethodId);
-                    return 1;
-                }
-                usedIds.insert(method_item->assigned_id);
-            } else {
-                hasUnassignedIds = true;
-            }
-            if (hasAssignedIds && hasUnassignedIds) {
+        if (item->hasId) {
+            hasAssignedIds = true;
+            item->assigned_id = atoi(item->id.data);
+            // Ensure that the user set id is not duplicated.
+            if (usedIds.find(item->assigned_id) != usedIds.end()) {
+                // We found a duplicate id, so throw an error.
                 fprintf(stderr,
-                        "%s: You must either assign id's to all methods or to none of them.\n",
-                        filename);
+                        "%s:%d Found duplicate method id (%d) for method: %s\n",
+                        filename, item->id.lineno,
+                        item->assigned_id, item->name.data);
                 return 1;
             }
+            // Ensure that the user set id is within the appropriate limits
+            if (item->assigned_id < kMinUserSetMethodId ||
+                    item->assigned_id > kMaxUserSetMethodId) {
+                fprintf(stderr, "%s:%d Found out of bounds id (%d) for method: %s\n",
+                        filename, item->id.lineno,
+                        item->assigned_id, item->name.data);
+                fprintf(stderr, "    Value for id must be between %d and %d inclusive.\n",
+                        kMinUserSetMethodId, kMaxUserSetMethodId);
+                return 1;
+            }
+            usedIds.insert(item->assigned_id);
+        } else {
+            hasUnassignedIds = true;
+        }
+        if (hasAssignedIds && hasUnassignedIds) {
+            fprintf(stderr,
+                    "%s: You must either assign id's to all methods or to none of them.\n",
+                    filename);
+            return 1;
         }
         item = item->next;
     }
@@ -508,10 +497,7 @@ int check_and_assign_method_ids(const char * filename,
         int newId = 0;
         item = first_item;
         while (item != NULL) {
-            if (item->item_type == METHOD_TYPE) {
-                method_type* method_item = (method_type*)item;
-                method_item->assigned_id = newId++;
-            }
+            item->assigned_id = newId++;
             item = item->next;
         }
     }

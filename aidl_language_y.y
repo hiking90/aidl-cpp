@@ -28,7 +28,6 @@ using android::aidl::cpp_strdup;
     AidlArgument* arg;
     std::vector<std::unique_ptr<AidlArgument>>* arg_list;
     method_type* method;
-    interface_item_type* interface_item;
     interface_type* interface_obj;
     user_data_type* user_data;
     document_item_type* document_item;
@@ -39,7 +38,7 @@ using android::aidl::cpp_strdup;
 
 %type<document_item> document_items declaration
 %type<user_data> parcelable_decl
-%type<interface_item> interface_items
+%type<method> interface_items
 %type<interface_obj> interface_decl interface_header
 %type<method> method_decl
 %type<type> type
@@ -176,15 +175,15 @@ interface_decl:
 interface_items:
                                                     { $$ = NULL; }
     |   interface_items method_decl                 {
-                                                        interface_item_type* p=$1;
+                                                        method_type* p=$1;
                                                         while (p && p->next) {
                                                             p=p->next;
                                                         }
                                                         if (p) {
-                                                            p->next = (interface_item_type*)$2;
+                                                            p->next = $2;
                                                             $$ = $1;
                                                         } else {
-                                                            $$ = (interface_item_type*)$2;
+                                                            $$ = $2;
                                                         }
                                                     }
     |   interface_items error ';'                   {
@@ -197,8 +196,6 @@ interface_items:
 method_decl:
         type IDENTIFIER '(' arg_list ')' ';'  {
                                                         method_type *method = new method_type();
-                                                        method->interface_item.item_type = METHOD_TYPE;
-                                                        method->interface_item.next = NULL;
                                                         method->oneway = false;
                                                         method->type = $1;
                                                         memset(&method->oneway_token, 0, sizeof(buffer_type));
@@ -215,8 +212,6 @@ method_decl:
                                                     }
     |   ONEWAY type IDENTIFIER '(' arg_list ')' ';'  {
                                                         method_type *method = new method_type();
-                                                        method->interface_item.item_type = METHOD_TYPE;
-                                                        method->interface_item.next = NULL;
                                                         method->oneway = true;
                                                         method->oneway_token = $1;
                                                         method->type = $2;
@@ -233,8 +228,6 @@ method_decl:
                                                     }
     |    type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';'  {
                                                         method_type *method = new method_type();
-                                                        method->interface_item.item_type = METHOD_TYPE;
-                                                        method->interface_item.next = NULL;
                                                         method->oneway = false;
                                                         memset(&method->oneway_token, 0, sizeof(buffer_type));
                                                         method->type = $1;
@@ -251,8 +244,6 @@ method_decl:
                                                     }
     |   ONEWAY type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';'  {
                                                         method_type *method = new method_type();
-                                                        method->interface_item.item_type = METHOD_TYPE;
-                                                        method->interface_item.next = NULL;
                                                         method->oneway = true;
                                                         method->oneway_token = $1;
                                                         method->type = $2;

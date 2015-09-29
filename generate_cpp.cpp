@@ -98,23 +98,16 @@ unique_ptr<Document> BuildClientHeader(interface_type* parsed_doc) {
   publics.push_back(std::move(constructor));
   publics.push_back(std::move(destructor));
 
-  for (interface_item_type *item = parsed_doc->interface_items;
+  for (method_type *item = parsed_doc->interface_items;
        item;
        item = item->next) {
-    if (item->item_type != METHOD_TYPE) {
-      LOG(FATAL) << "Unknown interface item type";
-      return nullptr;
-    }
-
-    method_type *m_item = (method_type *)item;
-
-    string method_name = m_item->name.Literal();
-    string return_arg = GetCPPVarDec(&m_item->type, "_aidl_return",
+    string method_name = item->name.Literal();
+    string return_arg = GetCPPVarDec(&item->type, "_aidl_return",
                                      OUT_PARAMETER);
 
     vector<string> args;
 
-    for (const std::unique_ptr<AidlArgument>& arg : *m_item->args)
+    for (const std::unique_ptr<AidlArgument>& arg : *item->args)
       args.push_back(GetCPPVarDec(&arg->type, arg->name.Literal(),
                                   convert_direction(arg->direction.data)));
 
