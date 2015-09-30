@@ -139,8 +139,23 @@ unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
 
 unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& types,
                                           const interface_type& parsed_doc) {
-  unique_ptr<CppNamespace> ns{new CppNamespace{"android"}};
-  return unique_ptr<Document>{new CppSource{ {}, std::move(ns)}};
+  const string i_name = ClassName(parsed_doc, ClassNames::INTERFACE);
+  const string bp_name = ClassName(parsed_doc, ClassNames::CLIENT);
+  vector<string> include_list{i_name + ".h", bp_name + ".h"};
+
+  string fq_name = i_name;
+  if (parsed_doc.package != nullptr && strlen(parsed_doc.package) > 0) {
+    fq_name = StringPrintf("%s.%s", parsed_doc.package, i_name.c_str());
+  }
+
+  unique_ptr<ConstructorDecl> meta_if{new ConstructorDecl{
+      "IMPLEMENT_META_INTERFACE",
+      {ClassName(parsed_doc, ClassNames::BASE), '"' + fq_name + '"'}
+  }};
+
+  return unique_ptr<Document>{new CppSource{
+      include_list,
+      NestInNamespaces(std::move(meta_if))}};
 }
 
 unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,

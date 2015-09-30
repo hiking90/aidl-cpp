@@ -31,6 +31,8 @@ namespace aidl {
 namespace cpp {
 
 namespace internals {
+unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& types,
+                                          const interface_type& parsed_doc);
 unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
                                        const interface_type& parsed_doc);
 unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
@@ -92,6 +94,21 @@ enum Call {
 }  // namespace android
 )";
 
+const char kExpectedTrivialInterfaceSourceOutput[] =
+R"(#include <IPingResponder.h>
+#include <BpPingResponder.h>
+
+namespace android {
+
+namespace generated {
+
+IMPLEMENT_META_INTERFACE(PingResponder, "IPingResponder");
+
+}  // namespace generated
+
+}  // namespace android
+)";
+
 }  // namespace
 
 class TrivialInterfaceASTTest : public ::testing::Test {
@@ -136,6 +153,14 @@ TEST_F(TrivialInterfaceASTTest, GeneratesInterfaceHeader) {
   TypeNamespace types;
   unique_ptr<Document> doc = internals::BuildInterfaceHeader(types, *interface);
   Compare(doc.get(), kExpectedTrivialInterfaceHeaderOutput);
+}
+
+TEST_F(TrivialInterfaceASTTest, GeneratesInterfaceSource) {
+  interface_type* interface = Parse();
+  ASSERT_NE(interface, nullptr);
+  TypeNamespace types;
+  unique_ptr<Document> doc = internals::BuildInterfaceSource(types, *interface);
+  Compare(doc.get(), kExpectedTrivialInterfaceSourceOutput);
 }
 
 }  // namespace cpp
