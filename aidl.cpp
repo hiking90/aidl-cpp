@@ -206,14 +206,14 @@ int check_types(const string& filename,
   int err = 0;
   map<string,method_type*> method_names;
   for (method_type* m = c->interface_items; m; m = m->next) {
-    if (!types->AddContainerType(m->type.type.data) ||
-        !types->IsValidReturnType(&m->type, filename)) {
+    if (!types->AddContainerType(m->type->type.data) ||
+        !types->IsValidReturnType(*m->type, filename)) {
       err = 1;  // return type is invalid
     }
 
     int index = 1;
     for (const std::unique_ptr<AidlArgument>& arg : *m->args) {
-      if (!types->AddContainerType(arg->type.type.data) ||
+      if (!types->AddContainerType(arg->GetType().type.data) ||
           !types->IsValidArg(*arg, index, filename)) {
         err = 1;
       }

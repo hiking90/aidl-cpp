@@ -56,7 +56,7 @@ class TypeNamespace {
   virtual bool HasType(const std::string& type_name) const;
 
   // Returns true iff |raw_type| is a valid return type.
-  virtual bool IsValidReturnType(const type_type* raw_type,
+  virtual bool IsValidReturnType(const AidlType& raw_type,
                                  const std::string& filename) const;
 
   // Returns true iff |arg_type| is a valid method argument.

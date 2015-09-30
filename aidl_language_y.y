@@ -24,7 +24,7 @@ using android::aidl::cpp_strdup;
 
 %union {
     buffer_type buffer;
-    type_type* type;
+    AidlType* type;
     AidlArgument* arg;
     AidlArgument::Direction direction;
     std::vector<std::unique_ptr<AidlArgument>>* arg_list;
@@ -199,7 +199,7 @@ method_decl:
         type IDENTIFIER '(' arg_list ')' ';'  {
                                                         method_type *method = new method_type();
                                                         method->oneway = false;
-                                                        method->type = *$1;
+                                                        method->type = $1;
                                                         memset(&method->oneway_token, 0, sizeof(buffer_type));
                                                         method->name = $2;
                                                         method->open_paren_token = $3;
@@ -209,14 +209,14 @@ method_decl:
                                                         memset(&method->equals_token, 0, sizeof(buffer_type));
                                                         memset(&method->id, 0, sizeof(buffer_type));
                                                         method->semicolon_token = $6;
-                                                        method->comments_token = &method->type.type;
+                                                        method->comments_token = &method->type->type;
                                                         $$ = method;
                                                     }
     |   ONEWAY type IDENTIFIER '(' arg_list ')' ';'  {
                                                         method_type *method = new method_type();
                                                         method->oneway = true;
                                                         method->oneway_token = $1;
-                                                        method->type = *$2;
+                                                        method->type = $2;
                                                         method->name = $3;
                                                         method->open_paren_token = $4;
                                                         method->args = $5;
@@ -232,7 +232,7 @@ method_decl:
                                                         method_type *method = new method_type();
                                                         method->oneway = false;
                                                         memset(&method->oneway_token, 0, sizeof(buffer_type));
-                                                        method->type = *$1;
+                                                        method->type = $1;
                                                         method->name = $2;
                                                         method->open_paren_token = $3;
                                                         method->args = $4;
@@ -241,14 +241,14 @@ method_decl:
                                                         method->equals_token = $6;
                                                         method->id = $7;
                                                         method->semicolon_token = $8;
-                                                        method->comments_token = &method->type.type;
+                                                        method->comments_token = &method->type->type;
                                                         $$ = method;
                                                     }
     |   ONEWAY type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';'  {
                                                         method_type *method = new method_type();
                                                         method->oneway = true;
                                                         method->oneway_token = $1;
-                                                        method->type = *$2;
+                                                        method->type = $2;
                                                         method->name = $3;
                                                         method->open_paren_token = $4;
                                                         method->args = $5;
@@ -279,25 +279,25 @@ arg_list:
   };
 
 arg: direction type IDENTIFIER
-  { $$ = new AidlArgument($1, *$2, $3); };
+  { $$ = new AidlArgument($1, $2, $3); };
  | type IDENTIFIER
-  { $$ = new AidlArgument(*$1, $2); };
+  { $$ = new AidlArgument($1, $2); };
 
 type:
         IDENTIFIER              {
-				    $$ = new type_type();
+				    $$ = new AidlType();
                                     $$->type = $1;
                                     init_buffer_type(&$$->array_token, $1.lineno);
                                     $$->dimension = 0;
                                 }
     |   IDENTIFIER ARRAY        {
-				    $$ = new type_type();
+				    $$ = new AidlType();
                                     $$->type = $1;
                                     $$->array_token = $2;
                                     $$->dimension = count_brackets($2.data);
                                 }
     |   GENERIC                 {
-				    $$ = new type_type();
+				    $$ = new AidlType();
                                     $$->type = $1;
                                     init_buffer_type(&$$->array_token, $1.lineno);
                                     $$->dimension = 0;

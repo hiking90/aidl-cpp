@@ -51,9 +51,9 @@ string UpperCase(const std::string& s) {
   return result;
 }
 
-string GetCPPVarDec(const TypeNamespace& types, const type_type* type,
+string GetCPPVarDec(const TypeNamespace& types, const AidlType& type,
                     const string& var_name, bool use_pointer) {
-  const Type* cpp_type = types.Find(type->type.data);
+  const Type* cpp_type = types.Find(type.type.data);
   if (cpp_type == nullptr) {
     // We should have caught this in type resolution.
     LOG(FATAL) << "internal error";
@@ -62,7 +62,7 @@ string GetCPPVarDec(const TypeNamespace& types, const type_type* type,
                       cpp_type->CppType().c_str(),
                       (use_pointer) ? "*" : "",
                       var_name.c_str(),
-                      type->Brackets().c_str());
+                      type.Brackets().c_str());
 }
 
 unique_ptr<Declaration> BuildMethodDecl(const method_type* method,
@@ -71,11 +71,11 @@ unique_ptr<Declaration> BuildMethodDecl(const method_type* method,
   vector<string> args;
   for (const unique_ptr<AidlArgument>& arg : *method->args) {
     args.push_back(GetCPPVarDec(
-          types, &arg->type, arg->GetName(),
+          types, arg->GetType(), arg->GetName(),
           AidlArgument::OUT_DIR & arg->GetDirection()));
   }
 
-  string return_arg = GetCPPVarDec(types, &method->type, "_aidl_return", true);
+  string return_arg = GetCPPVarDec(types, *method->type, "_aidl_return", true);
   args.push_back(return_arg);
 
   uint32_t modifiers = 0;

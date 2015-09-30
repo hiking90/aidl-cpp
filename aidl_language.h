@@ -37,14 +37,6 @@ struct buffer_type {
   }
 };
 
-struct type_type {
-  buffer_type type;
-  buffer_type array_token;
-  int dimension;
-
-  std::string Brackets() const;
-};
-
 class AidlNode {
  public:
   AidlNode() = default;
@@ -54,24 +46,39 @@ class AidlNode {
   DISALLOW_COPY_AND_ASSIGN(AidlNode);
 };
 
+class AidlType : public AidlNode {
+ public:
+  AidlType() = default;
+  virtual ~AidlType() = default;
+
+  buffer_type type;
+  buffer_type array_token;
+  int dimension;
+
+  std::string Brackets() const;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AidlType);
+};
+
 class AidlArgument : public AidlNode {
  public:
   enum Direction { IN_DIR = 1, OUT_DIR = 2, INOUT_DIR = 3 };
 
-  AidlArgument(AidlArgument::Direction direction, type_type type, buffer_type name);
-  AidlArgument(type_type type, buffer_type name);
+  AidlArgument(AidlArgument::Direction direction, AidlType* type, buffer_type name);
+  AidlArgument(AidlType *type, buffer_type name);
   virtual ~AidlArgument() = default;
 
   Direction GetDirection() const { return direction_; }
   bool DirectionWasSpecified() const { return direction_specified_; }
   std::string GetName() const { return name_; }
   int GetLine() const { return line_; }
+  const AidlType& GetType() const { return *type_; }
 
   std::string ToString() const;
 
-  type_type type;
-
  private:
+  std::unique_ptr<AidlType> type_;
   Direction direction_;
   bool direction_specified_;
   std::string name_;
@@ -82,7 +89,7 @@ class AidlArgument : public AidlNode {
 
 struct method_type {
     struct method_type *next;
-    type_type type;
+    AidlType* type;
     bool oneway;
     buffer_type oneway_token;
     buffer_type name;
