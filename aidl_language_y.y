@@ -26,6 +26,7 @@ using android::aidl::cpp_strdup;
     buffer_type buffer;
     type_type* type;
     AidlArgument* arg;
+    AidlArgument::Direction direction;
     std::vector<std::unique_ptr<AidlArgument>>* arg_list;
     method_type* method;
     interface_type* interface_obj;
@@ -34,7 +35,8 @@ using android::aidl::cpp_strdup;
 }
 
 %token<buffer> IMPORT PACKAGE IDENTIFIER IDVALUE GENERIC ARRAY PARCELABLE
-%token<buffer> ONEWAY INTERFACE IN OUT INOUT ';' '{' '}' '(' ')' ',' '='
+%token<buffer> ONEWAY INTERFACE ';' '{' '}' '(' ')' ',' '='
+%token IN OUT INOUT 
 
 %type<document_item> document_items declaration
 %type<user_data> parcelable_decl
@@ -44,7 +46,7 @@ using android::aidl::cpp_strdup;
 %type<type> type
 %type<arg_list> arg_list
 %type<arg> arg
-%type<buffer> direction
+%type<direction> direction
 
 %type<buffer> error
 %%
@@ -278,6 +280,8 @@ arg_list:
 
 arg: direction type IDENTIFIER
   { $$ = new AidlArgument($1, *$2, $3); };
+ | type IDENTIFIER
+  { $$ = new AidlArgument(*$1, $2); };
 
 type:
         IDENTIFIER              {
@@ -300,12 +304,12 @@ type:
                                 }
     ;
 
-direction:
-                    { init_buffer_type(&$$, $$.lineno); }
-    |   IN          { $$ = $1; }
-    |   OUT         { $$ = $1; }
-    |   INOUT       { $$ = $1; }
-    ;
+direction: IN
+  { $$ = AidlArgument::IN_DIR; }
+ | OUT
+  { $$ = AidlArgument::OUT_DIR; }
+ | INOUT
+  { $$ = AidlArgument::INOUT_DIR; };
 
 %%
 

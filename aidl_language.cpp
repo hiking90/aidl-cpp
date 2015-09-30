@@ -43,22 +43,20 @@ Parser::~Parser() {
   yylex_destroy(scanner_);
 }
 
-AidlArgument::AidlArgument(buffer_type direction, type_type type, buffer_type name)
+AidlArgument::AidlArgument(AidlArgument::Direction direction, type_type type,
+                           buffer_type name)
     : type(type),
+      direction_(direction),
+      direction_specified_(true),
       name_(name.data),
-      line_(name.lineno) {
-  direction_specified_ = direction.data != nullptr;
+      line_(name.lineno) {}
 
-  if (! direction_specified_) {
-    direction_ = AidlArgument::IN_DIR;
-  } else if (! strcmp(direction.data, "in")) {
-    direction_ = AidlArgument::IN_DIR;
-  } else if (! strcmp(direction.data, "out")) {
-    direction_ = AidlArgument::OUT_DIR;
-  } else {
-    direction_ = AidlArgument::INOUT_DIR;
-  }
-}
+AidlArgument::AidlArgument(type_type type, buffer_type name)
+    : type(type),
+      direction_(AidlArgument::IN_DIR),
+      direction_specified_(false),
+      name_(name.data),
+      line_(name.lineno) {}
 
 string AidlArgument::ToString() const {
   string ret;

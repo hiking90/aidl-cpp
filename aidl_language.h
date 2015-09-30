@@ -58,7 +58,8 @@ class AidlArgument : public AidlNode {
  public:
   enum Direction { IN_DIR = 1, OUT_DIR = 2, INOUT_DIR = 3 };
 
-  AidlArgument(buffer_type direction, type_type type, buffer_type name);
+  AidlArgument(AidlArgument::Direction direction, type_type type, buffer_type name);
+  AidlArgument(type_type type, buffer_type name);
   virtual ~AidlArgument() = default;
 
   Direction GetDirection() const { return direction_; }

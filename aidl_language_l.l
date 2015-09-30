@@ -95,10 +95,11 @@ idvalue     (0|[1-9][0-9]*)
     /* keywords */
 parcelable      { SET_BUFFER(yy::parser::token::PARCELABLE); return yy::parser::token::PARCELABLE; }
 interface       { SET_BUFFER(yy::parser::token::INTERFACE); return yy::parser::token::INTERFACE; }
-in              { SET_BUFFER(yy::parser::token::IN); return yy::parser::token::IN; }
-out             { SET_BUFFER(yy::parser::token::OUT); return yy::parser::token::OUT; }
-inout           { SET_BUFFER(yy::parser::token::INOUT); return yy::parser::token::INOUT; }
 oneway          { SET_BUFFER(yy::parser::token::ONEWAY); return yy::parser::token::ONEWAY; }
+
+in              { return yy::parser::token::IN; }
+out             { return yy::parser::token::OUT; }
+inout           { return yy::parser::token::INOUT; }
 
 {brackets}+     { SET_BUFFER(yy::parser::token::ARRAY); return yy::parser::token::ARRAY; }
 {idvalue}       { SET_BUFFER(yy::parser::token::IDVALUE); return yy::parser::token::IDVALUE; }
