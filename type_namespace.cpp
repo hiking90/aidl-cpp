@@ -71,7 +71,7 @@ bool TypeNamespace::IsValidArg(const AidlArgument& a,
                                const string& filename) const {
   string error_prefix = StringPrintf(
       "In file %s line %d parameter %s (%d):\n    ",
-      filename.c_str(), a.name.lineno, a.name.data, arg_index);
+      filename.c_str(), a.GetLine(), a.GetName().c_str(), arg_index);
 
   // check the arg type
   const ValidatableType* t = GetValidatableType(a.type.type.data);
@@ -83,7 +83,7 @@ bool TypeNamespace::IsValidArg(const AidlArgument& a,
   if (!t->CanWriteToParcel()) {
     cerr << error_prefix
          << StringPrintf("'%s %s' can't be marshalled.",
-                         a.type.type.data, a.name.data) << endl;
+                         a.type.type.data, a.GetName().c_str()) << endl;
     return false;
   }
 
@@ -91,7 +91,7 @@ bool TypeNamespace::IsValidArg(const AidlArgument& a,
       (a.type.dimension != 0 || t->CanBeOutParameter())) {
     cerr << error_prefix << StringPrintf(
         "'%s %s' can be an out parameter, so you must declare it as in,"
-        " out or inout.", a.type.type.data, a.name.data) << endl;
+        " out or inout.", a.type.type.data, a.GetName().c_str()) << endl;
     return false;
   }
 
@@ -118,14 +118,14 @@ bool TypeNamespace::IsValidArg(const AidlArgument& a,
   }
 
   // check that the name doesn't match a keyword
-  if (is_java_keyword(a.name.data)) {
+  if (is_java_keyword(a.GetName().c_str())) {
     cerr << error_prefix << "Argument name is a C++, Java, or aidl keyword"
          << endl;
     return false;
   }
 
   // Reserve a namespace for internal use
-  if (!strncmp(a.name.data, "_aidl", 5)) {
+  if (a.GetName().substr(0, 5)  == "_aidl") {
     cerr << error_prefix << "Argument name cannot begin with '_aidl'"
          << endl;
     return false;

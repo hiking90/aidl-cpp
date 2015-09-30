@@ -294,7 +294,7 @@ generate_method(const method_type* method, Class* interface,
 
     for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
         decl->parameters.push_back(new Variable(
-                            types->Find(arg->type.type.data), arg->name.data,
+                            types->Find(arg->type.type.data), arg->GetName(),
                             arg->type.dimension));
     }
 
@@ -399,7 +399,7 @@ generate_method(const method_type* method, Class* interface,
         proxy->statements = new StatementBlock;
         for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
             proxy->parameters.push_back(new Variable(
-                            types->Find(arg->type.type.data), arg->name.data,
+                            types->Find(arg->type.type.data), arg->GetName(),
                             arg->type.dimension));
         }
         proxy->exceptions.push_back(types->RemoteExceptionType());
@@ -439,7 +439,7 @@ generate_method(const method_type* method, Class* interface,
     // the parameters
     for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
         const Type* t = types->Find(arg->type.type.data);
-        Variable* v = new Variable(t, arg->name.data, arg->type.dimension);
+        Variable* v = new Variable(t, arg->GetName(), arg->type.dimension);
         AidlArgument::Direction dir = arg->GetDirection();
         if (dir == AidlArgument::OUT_DIR && arg->type.dimension != 0) {
             IfStatement* checklen = new IfStatement();
@@ -480,7 +480,7 @@ generate_method(const method_type* method, Class* interface,
         // the out/inout parameters
         for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
             const Type* t = types->Find(arg->type.type.data);
-            Variable* v = new Variable(t, arg->name.data, arg->type.dimension);
+            Variable* v = new Variable(t, arg->GetName(), arg->type.dimension);
             if (arg->GetDirection() & AidlArgument::OUT_DIR) {
                 generate_read_from_parcel(t, tryStatement->statements,
                                             v, _reply, &cl);

@@ -44,8 +44,9 @@ Parser::~Parser() {
 }
 
 AidlArgument::AidlArgument(buffer_type direction, type_type type, buffer_type name)
-    : name(name),
-      type(type) {
+    : type(type),
+      name_(name.data),
+      line_(name.lineno) {
   direction_specified_ = direction.data != nullptr;
 
   if (! direction_specified_) {
@@ -57,7 +58,6 @@ AidlArgument::AidlArgument(buffer_type direction, type_type type, buffer_type na
   } else {
     direction_ = AidlArgument::INOUT_DIR;
   }
-
 }
 
 string AidlArgument::ToString() const {
@@ -81,7 +81,7 @@ string AidlArgument::ToString() const {
   if (type.array_token.data)
     ret += string(type.array_token.data);
   ret += " ";
-  ret += string(name.data);
+  ret += name_;
 
   return ret;
 }

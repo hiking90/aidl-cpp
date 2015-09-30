@@ -71,7 +71,7 @@ unique_ptr<Declaration> BuildMethodDecl(const method_type* method,
   vector<string> args;
   for (const unique_ptr<AidlArgument>& arg : *method->args) {
     args.push_back(GetCPPVarDec(
-          types, &arg->type, arg->name.Literal(),
+          types, &arg->type, arg->GetName(),
           AidlArgument::OUT_DIR & arg->GetDirection()));
   }
 

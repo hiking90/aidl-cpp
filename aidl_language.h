@@ -63,14 +63,18 @@ class AidlArgument : public AidlNode {
 
   Direction GetDirection() const { return direction_; }
   bool DirectionWasSpecified() const { return direction_specified_; }
+  std::string GetName() const { return name_; }
+  int GetLine() const { return line_; }
+
   std::string ToString() const;
 
-  buffer_type name;
   type_type type;
 
  private:
   Direction direction_;
   bool direction_specified_;
+  std::string name_;
+  int line_;
 
   DISALLOW_COPY_AND_ASSIGN(AidlArgument);
 };
