@@ -44,7 +44,7 @@ namespace android {
 namespace aidl {
 namespace {
 
-const char kDiffTemplate[] = "diff %s %s";
+const char kDiffTemplate[] = "diff -u %s %s";
 const char kStubInterfaceTemplate[] = "package %s;\ninterface %s { }";
 const char kStubParcelableTemplate[] = "package %s;\nparcelable %s;";
 
