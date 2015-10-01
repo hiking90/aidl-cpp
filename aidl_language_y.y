@@ -287,19 +287,16 @@ type:
         IDENTIFIER              {
 				    $$ = new AidlType();
                                     $$->type = $1;
-                                    init_buffer_type(&$$->array_token, $1.lineno);
                                     $$->dimension = 0;
                                 }
     |   IDENTIFIER ARRAY        {
 				    $$ = new AidlType();
                                     $$->type = $1;
-                                    $$->array_token = $2;
                                     $$->dimension = count_brackets($2.data);
                                 }
     |   GENERIC                 {
 				    $$ = new AidlType();
                                     $$->type = $1;
-                                    init_buffer_type(&$$->array_token, $1.lineno);
                                     $$->dimension = 0;
                                 }
     ;

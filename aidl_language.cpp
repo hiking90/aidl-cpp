@@ -43,6 +43,19 @@ Parser::~Parser() {
   yylex_destroy(scanner_);
 }
 
+string AidlType::ToString() const {
+  return string(type.data) + Brackets();
+}
+
+std::string AidlType::Brackets() const {
+  std::string result;
+
+  for (int i = 0; i < dimension; i++)
+    result += "[]";
+
+  return result;
+}
+
 AidlArgument::AidlArgument(AidlArgument::Direction direction, AidlType* type,
                            buffer_type name)
     : type_(type),
@@ -75,9 +88,7 @@ string AidlArgument::ToString() const {
     }
   }
 
-  ret += string(type_->type.data);
-  if (type_->array_token.data)
-    ret += string(type_->array_token.data);
+  ret += type_->ToString();
   ret += " ";
   ret += name_;
 
@@ -164,11 +175,3 @@ import_info *Parser::GetImports() const
   return imports_;
 }
 
-std::string AidlType::Brackets() const {
-  std::string result;
-
-  for (int i = 0; i < dimension; i++)
-    result += "[]";
-
-  return result;
-}

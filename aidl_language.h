@@ -52,9 +52,9 @@ class AidlType : public AidlNode {
   virtual ~AidlType() = default;
 
   buffer_type type;
-  buffer_type array_token;
   int dimension;
 
+  std::string ToString() const;
   std::string Brackets() const;
 
  private:
