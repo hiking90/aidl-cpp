@@ -87,10 +87,11 @@ idvalue     (0|[1-9][0-9]*)
 ;               { SET_BUFFER(';'); return ';'; }
 \{              { SET_BUFFER('{'); return '{'; }
 \}              { SET_BUFFER('}'); return '}'; }
-\(              { SET_BUFFER('('); return '('; }
-\)              { SET_BUFFER(')'); return ')'; }
 ,               { SET_BUFFER(','); return ','; }
 =               { SET_BUFFER('='); return '='; }
+
+\(              { return '('; }
+\)              { return ')'; }
 
     /* keywords */
 parcelable      { SET_BUFFER(yy::parser::token::PARCELABLE); return yy::parser::token::PARCELABLE; }

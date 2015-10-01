@@ -87,22 +87,24 @@ class AidlArgument : public AidlNode {
   DISALLOW_COPY_AND_ASSIGN(AidlArgument);
 };
 
-struct method_type {
-    struct method_type *next;
-    AidlType* type;
-    bool oneway;
-    buffer_type oneway_token;
-    buffer_type name;
-    buffer_type open_paren_token;
-    std::vector<std::unique_ptr<AidlArgument>>* args;
-    buffer_type close_paren_token;
-    bool hasId;
-    buffer_type equals_token;
-    buffer_type id;
-    // XXX missing comments/copy text here
-    buffer_type semicolon_token;
-    buffer_type* comments_token; // points into this structure, DO NOT DELETE
-    int assigned_id;
+class AidlMethod {
+ public:
+  AidlMethod() = default;
+  virtual ~AidlMethod() = default;
+
+  AidlType* type;
+  bool oneway;
+  buffer_type oneway_token;
+  buffer_type name;
+  std::vector<std::unique_ptr<AidlArgument>>* args;
+  bool hasId;
+  buffer_type id;
+  buffer_type semicolon_token;
+  buffer_type* comments_token; // points into this structure, DO NOT DELETE
+  int assigned_id;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AidlMethod);
 };
 
 enum {
@@ -133,7 +135,7 @@ struct interface_type {
     char* package;
     buffer_type name;
     buffer_type open_brace_token;
-    method_type* interface_items;
+    std::vector<std::unique_ptr<AidlMethod>>* methods;
     buffer_type close_brace_token;
     buffer_type* comments_token; // points into this structure, DO NOT DELETE
 };

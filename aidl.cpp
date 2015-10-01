@@ -204,8 +204,8 @@ int check_types(const string& filename,
                 interface_type* c,
                 TypeNamespace* types) {
   int err = 0;
-  map<string,method_type*> method_names;
-  for (method_type* m = c->interface_items; m; m = m->next) {
+  set<string> method_names;
+  for (const auto& m : *c->methods) {
     if (!types->AddContainerType(m->type->type.data) ||
         !types->IsValidReturnType(*m->type, filename)) {
       err = 1;  // return type is invalid
@@ -221,7 +221,7 @@ int check_types(const string& filename,
 
     // prevent duplicate methods
     if (method_names.find(m->name.data) == method_names.end()) {
-      method_names[m->name.data] = m;
+      method_names.insert(m->name.data);
     } else {
       cerr << filename << ":" << m->name.lineno
            << " attempt to redefine method " << m->name.data << "," << endl
@@ -449,15 +449,14 @@ int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
 }
 
 int check_and_assign_method_ids(const char * filename,
-                                method_type* first_item) {
+                                const std::vector<std::unique_ptr<AidlMethod>>& items) {
     // Check whether there are any methods with manually assigned id's and any that are not.
     // Either all method id's must be manually assigned or all of them must not.
     // Also, check for duplicates of user set id's and that the id's are within the proper bounds.
     set<int> usedIds;
-    method_type* item = first_item;
     bool hasUnassignedIds = false;
     bool hasAssignedIds = false;
-    while (item != NULL) {
+    for (const auto& item : items) {
         if (item->hasId) {
             hasAssignedIds = true;
             item->assigned_id = atoi(item->id.data);
@@ -490,16 +489,13 @@ int check_and_assign_method_ids(const char * filename,
                     filename);
             return 1;
         }
-        item = item->next;
     }
 
     // In the case that all methods have unassigned id's, set a unique id for them.
     if (hasUnassignedIds) {
         int newId = 0;
-        item = first_item;
-        while (item != NULL) {
+        for (const auto& item : items) {
             item->assigned_id = newId++;
-            item = item->next;
         }
     }
 
@@ -593,7 +589,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
 
   // assign method ids and validate.
   err |= check_and_assign_method_ids(input_file_name.c_str(),
-                                     interface->interface_items);
+                                     *interface->methods);
 
   // after this, there shouldn't be any more errors because of the
   // input.

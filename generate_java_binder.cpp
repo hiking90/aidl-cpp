@@ -263,18 +263,18 @@ generate_read_from_parcel(const Type* t, StatementBlock* addTo, Variable* v,
 
 
 static void
-generate_method(const method_type* method, Class* interface,
+generate_method(const AidlMethod& method, Class* interface,
                 StubClass* stubClass, ProxyClass* proxyClass, int index,
                 JavaTypeNamespace* types)
 {
     int i;
     bool hasOutParams = false;
 
-    const bool oneway = proxyClass->mOneWay || method->oneway;
+    const bool oneway = proxyClass->mOneWay || method.oneway;
 
     // == the TRANSACT_ constant =============================================
     string transactCodeName = "TRANSACTION_";
-    transactCodeName += method->name.data;
+    transactCodeName += method.name.data;
 
     char transactCodeValue[60];
     sprintf(transactCodeValue, "(android.os.IBinder.FIRST_CALL_TRANSACTION + %d)", index);
@@ -286,13 +286,13 @@ generate_method(const method_type* method, Class* interface,
 
     // == the declaration in the interface ===================================
     Method* decl = new Method;
-        decl->comment = gather_comments(method->comments_token->extra);
+        decl->comment = gather_comments(method.comments_token->extra);
         decl->modifiers = PUBLIC;
-        decl->returnType = types->Find(method->type->type.data);
-        decl->returnTypeDimension = method->type->dimension;
-        decl->name = method->name.data;
+        decl->returnType = types->Find(method.type->type.data);
+        decl->returnTypeDimension = method.type->dimension;
+        decl->name = method.name.data;
 
-    for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
+    for (const std::unique_ptr<AidlArgument>& arg : *method.args) {
         decl->parameters.push_back(new Variable(
                             types->Find(arg->GetType().type.data), arg->GetName(),
                             arg->GetType().dimension));
@@ -306,7 +306,7 @@ generate_method(const method_type* method, Class* interface,
 
     Case* c = new Case(transactCodeName);
 
-    MethodCall* realCall = new MethodCall(THIS_VALUE, method->name.data);
+    MethodCall* realCall = new MethodCall(THIS_VALUE, method.name.data);
 
     // interface token validation is the very first thing we do
     c->statements->Add(new MethodCall(stubClass->transact_data,
@@ -315,7 +315,7 @@ generate_method(const method_type* method, Class* interface,
     // args
     Variable* cl = NULL;
     VariableFactory stubArgs("_arg");
-    for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
+    for (const std::unique_ptr<AidlArgument>& arg : *method.args) {
         const Type* t = types->Find(arg->GetType().type.data);
         Variable* v = stubArgs.Get(t);
         v->dimension = arg->GetType().dimension;
@@ -344,7 +344,7 @@ generate_method(const method_type* method, Class* interface,
 
     // the real call
     Variable* _result = NULL;
-    if (0 == strcmp(method->type->type.data, "void")) {
+    if (0 == strcmp(method.type->type.data, "void")) {
         c->statements->Add(realCall);
 
         if (!oneway) {
@@ -373,7 +373,7 @@ generate_method(const method_type* method, Class* interface,
 
     // out parameters
     i = 0;
-    for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
+    for (const std::unique_ptr<AidlArgument>& arg : *method.args) {
         const Type* t = types->Find(arg->GetType().type.data);
         Variable* v = stubArgs.Get(i++);
 
@@ -391,13 +391,13 @@ generate_method(const method_type* method, Class* interface,
 
     // == the proxy method ===================================================
     Method* proxy = new Method;
-        proxy->comment = gather_comments(method->comments_token->extra);
+        proxy->comment = gather_comments(method.comments_token->extra);
         proxy->modifiers = PUBLIC | OVERRIDE;
-        proxy->returnType = types->Find(method->type->type.data);
-        proxy->returnTypeDimension = method->type->dimension;
-        proxy->name = method->name.data;
+        proxy->returnType = types->Find(method.type->type.data);
+        proxy->returnTypeDimension = method.type->dimension;
+        proxy->name = method.name.data;
         proxy->statements = new StatementBlock;
-        for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
+        for (const std::unique_ptr<AidlArgument>& arg : *method.args) {
             proxy->parameters.push_back(new Variable(
                             types->Find(arg->GetType().type.data), arg->GetName(),
                             arg->GetType().dimension));
@@ -420,9 +420,9 @@ generate_method(const method_type* method, Class* interface,
 
     // the return value
     _result = NULL;
-    if (0 != strcmp(method->type->type.data, "void")) {
+    if (0 != strcmp(method.type->type.data, "void")) {
         _result = new Variable(proxy->returnType, "_result",
-                method->type->dimension);
+                method.type->dimension);
         proxy->statements->Add(new VariableDeclaration(_result));
     }
 
@@ -437,7 +437,7 @@ generate_method(const method_type* method, Class* interface,
             1, new LiteralExpression("DESCRIPTOR")));
 
     // the parameters
-    for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
+    for (const std::unique_ptr<AidlArgument>& arg : *method.args) {
         const Type* t = types->Find(arg->GetType().type.data);
         Variable* v = new Variable(t, arg->GetName(), arg->GetType().dimension);
         AidlArgument::Direction dir = arg->GetDirection();
@@ -478,7 +478,7 @@ generate_method(const method_type* method, Class* interface,
         }
 
         // the out/inout parameters
-        for (const std::unique_ptr<AidlArgument>& arg : *method->args) {
+        for (const std::unique_ptr<AidlArgument>& arg : *method.args) {
             const Type* t = types->Find(arg->GetType().type.data);
             Variable* v = new Variable(t, arg->GetName(), arg->GetType().dimension);
             if (arg->GetDirection() & AidlArgument::OUT_DIR) {
@@ -552,11 +552,9 @@ generate_binder_interface_class(const interface_type* iface,
 
     // all the declared methods of the interface
     int index = 0;
-    method_type* item = iface->interface_items;
-    while (item != NULL) {
-        generate_method(item, interface, stub, proxy,
+    for (const auto& item : *iface->methods) {
+        generate_method(*item, interface, stub, proxy,
                         item->assigned_id, types);
-        item = item->next;
         index++;
     }
 

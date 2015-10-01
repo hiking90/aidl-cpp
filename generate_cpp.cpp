@@ -65,17 +65,17 @@ string GetCPPVarDec(const TypeNamespace& types, const AidlType& type,
                       type.Brackets().c_str());
 }
 
-unique_ptr<Declaration> BuildMethodDecl(const method_type* method,
+unique_ptr<Declaration> BuildMethodDecl(const AidlMethod& method,
                                         const TypeNamespace& types,
                                         bool for_interface) {
   vector<string> args;
-  for (const unique_ptr<AidlArgument>& arg : *method->args) {
+  for (const unique_ptr<AidlArgument>& arg : *method.args) {
     args.push_back(GetCPPVarDec(
           types, arg->GetType(), arg->GetName(),
           AidlArgument::OUT_DIR & arg->GetDirection()));
   }
 
-  string return_arg = GetCPPVarDec(types, *method->type, "_aidl_return", true);
+  string return_arg = GetCPPVarDec(types, *method.type, "_aidl_return", true);
   args.push_back(return_arg);
 
   uint32_t modifiers = 0;
@@ -88,7 +88,7 @@ unique_ptr<Declaration> BuildMethodDecl(const method_type* method,
 
   return unique_ptr<Declaration>{
       new MethodDecl{kAndroidStatusLiteral,
-                     method->name.Literal(),
+                     method.name.Literal(),
                      args,
                      modifiers}};
 }
@@ -171,10 +171,8 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
   publics.push_back(std::move(constructor));
   publics.push_back(std::move(destructor));
 
-  for (method_type *item = parsed_doc.interface_items;
-       item;
-       item = item->next) {
-    publics.push_back(BuildMethodDecl(item, types, false));
+  for (const auto& item : *parsed_doc.methods) {
+    publics.push_back(BuildMethodDecl(*item, types, false));
   }
 
   unique_ptr<ClassDecl> bp_class{
@@ -234,10 +232,8 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
           {ClassName(parsed_doc, ClassNames::BASE)}}});
 
   unique_ptr<Enum> call_enum{new Enum{"Call"}};
-  for (const method_type* method = parsed_doc.interface_items;
-       method;
-       method = method->next) {
-    if_class->AddPublic(BuildMethodDecl(method, types, true));
+  for (const auto& method : *parsed_doc.methods) {
+    if_class->AddPublic(BuildMethodDecl(*method, types, true));
     call_enum->AddValue(
         UpperCase(method->name.data),
         StringPrintf("android::IBinder::FIRST_CALL_TRANSACTION + %d",
