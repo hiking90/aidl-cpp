@@ -503,12 +503,14 @@ int check_and_assign_method_ids(const char * filename,
     return 0;
 }
 
-int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
-                           const std::vector<std::string> import_paths,
-                           const std::string& input_file_name,
-                           TypeNamespace* types,
-                           interface_type** returned_interface,
-                           import_info** returned_imports) {
+int load_and_validate_aidl_internal(const std::vector<std::string> preprocessed_files,
+                                    const std::vector<std::string> import_paths,
+                                    const std::string& input_file_name,
+                                    TypeNamespace* types,
+                                    interface_type** returned_interface,
+                                    import_info** returned_imports,
+                                    bool use_data,
+                                    std::string data) {
   int err = 0;
 
   set_import_paths(import_paths);
@@ -523,9 +525,14 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
 
   // parse the input file
   Parser p{input_file_name};
-  if (!p.OpenFileFromDisk() || !p.RunParser()) {
+  if (use_data)
+    p.SetFileContents(data);
+  else if (!p.OpenFileFromDisk())
     return 1;
-  }
+
+  if (!p.RunParser())
+    return 1;
+
   document_item_type* parsed_doc = p.GetDocument();
   // We could in theory declare parcelables in the same file as the interface.
   // In practice, those parcelables would have to have the same name as
@@ -559,7 +566,9 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
       err |= 1;
       continue;
     }
+
     Parser p{import->filename};
+
     if (!p.OpenFileFromDisk() || !p.RunParser() || p.GetDocument() == nullptr) {
       cerr << "error while parsing import for class "
            << import->neededClass << endl;
@@ -602,7 +611,38 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
   return 0;
 }
 
+int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
+                           const std::vector<std::string> import_paths,
+                           const std::string& input_file_name,
+                           TypeNamespace* types,
+                           interface_type** returned_interface,
+                           import_info** returned_imports) {
+    return load_and_validate_aidl_internal(preprocessed_files,
+                                           import_paths,
+                                           input_file_name,
+                                           types,
+                                           returned_interface,
+                                           returned_imports,
+                                           false,
+                                           "");
+}
+
 }  // namespace
+
+namespace internals {
+
+int load_aidl_for_test(const std::string& input_file_name,
+                       const std::string& data,
+                       TypeNamespace* types,
+                       interface_type** returned_interface) {
+    import_info *throwaway;
+    int ret = load_and_validate_aidl_internal({}, {}, input_file_name, types,
+                                              returned_interface, &throwaway,
+                                              true, data);
+    return ret;
+}
+
+} // namespace internals
 
 int compile_aidl_to_cpp(const CppOptions& options) {
   interface_type* interface = nullptr;

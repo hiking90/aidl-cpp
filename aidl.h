@@ -17,7 +17,9 @@
 #ifndef AIDL_AIDL_H_
 #define AIDL_AIDL_H_
 
+#include "aidl_language.h"
 #include "options.h"
+#include "type_namespace.h"
 
 namespace android {
 namespace aidl {
@@ -25,6 +27,15 @@ namespace aidl {
 int compile_aidl_to_cpp(const CppOptions& options);
 int compile_aidl_to_java(const JavaOptions& options);
 int preprocess_aidl(const JavaOptions& options);
+
+namespace internals {
+
+int load_aidl_for_test(const std::string& input_file_name,
+                       const std::string& data,
+                       TypeNamespace* types,
+                       interface_type** returned_interface);
+
+} // namespace internals
 
 }  // namespace android
 }  // namespace aidl

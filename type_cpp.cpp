@@ -37,7 +37,7 @@ Type::Type(const string& aidl_type,
 
 bool Type::CanBeArray() const { return false; }
 bool Type::CanBeOutParameter() const { return false; }
-bool Type::CanWriteToParcel() const { return false; }
+bool Type::CanWriteToParcel() const { return true; }
 const string& Type::AidlType() const { return aidl_type_; }
 const string& Type::CppType() const { return cpp_type_; }
 const string& Type::ReadFromParcelMethod() const { return parcel_read_method_; }
@@ -65,20 +65,20 @@ bool TypeNamespace::AddParcelableType(const user_data_type* p,
                                       const string& filename) {
   // TODO Support parcelables b/23600712
   LOG(ERROR) << "Passing parcelables in unimplemented in C++ generation.";
-  return false;
+  return true;
 }
 
 bool TypeNamespace::AddBinderType(const interface_type* b,
                                   const string& filename) {
   // TODO Support passing binders b/24470875
   LOG(ERROR) << "Passing binders is unimplemented in C++ generation.";
-  return false;
+  return true;
 }
 
 bool TypeNamespace::AddContainerType(const string& type_name) {
   // TODO Support container types b/24470786
   LOG(ERROR) << "Passing container is unimplemented in C++ generation.";
-  return false;
+  return true;
 }
 
 const Type* TypeNamespace::Find(const string& type_name) const {

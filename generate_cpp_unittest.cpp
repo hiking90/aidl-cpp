@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 
+#include "aidl.h"
 #include "aidl_language.h"
 #include "ast_cpp.h"
 #include "code_writer.h"
@@ -28,6 +29,9 @@ using std::unique_ptr;
 
 namespace android {
 namespace aidl {
+
+using namespace internals;
+
 namespace cpp {
 
 namespace internals {
@@ -117,16 +121,16 @@ class TrivialInterfaceASTTest : public ::testing::Test {
     Parser p{"BpExampleInterface.h"};
     p.SetFileContents(kTrivialInterfaceAIDL);
 
-    EXPECT_TRUE(p.RunParser());
+    interface_type* ret = nullptr;
 
-    document_item_type *parsed_doc = p.GetDocument();
-    if (parsed_doc == nullptr) return nullptr;
+    int err = load_aidl_for_test("IPingResponder.aidl",
+                                 kTrivialInterfaceAIDL,
+                                 new cpp::TypeNamespace(),
+                                 &ret);
+    if (err)
+      return nullptr;
 
-    EXPECT_NE(nullptr, parsed_doc);
-    EXPECT_EQ(nullptr, parsed_doc->next);
-    EXPECT_EQ(INTERFACE_TYPE_BINDER, parsed_doc->item_type);
-
-    return (interface_type*)parsed_doc;
+    return ret;
    }
 
   void Compare(Document* doc, const char* expected) {
