@@ -17,6 +17,10 @@
 #ifndef AIDL_PARSE_HELPERS_H_
 #define AIDL_PARSE_HELPERS_H_
 
+#include <string>
+
+#include "aidl_language.h"
+
 namespace android {
 namespace aidl {
 
@@ -28,6 +32,8 @@ char* parse_import_statement(const char* text);
 bool is_java_keyword(const char* str);
 
 char* cpp_strdup(const char* in);
+
+std::string gather_comments(extra_text_type* extra);
 
 }  // namespace android
 }  // namespace aidl

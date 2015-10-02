@@ -286,16 +286,16 @@ generate_method(const AidlMethod& method, Class* interface,
 
     // == the declaration in the interface ===================================
     Method* decl = new Method;
-        decl->comment = gather_comments(method.comments_token->extra);
+        decl->comment = method.GetComments();
         decl->modifiers = PUBLIC;
-        decl->returnType = types->Find(method.type->type.data);
-        decl->returnTypeDimension = method.type->dimension;
+        decl->returnType = types->Find(method.type->GetName());
+        decl->returnTypeDimension = method.type->GetDimension();
         decl->name = method.name.data;
 
     for (const std::unique_ptr<AidlArgument>& arg : *method.args) {
         decl->parameters.push_back(new Variable(
-                            types->Find(arg->GetType().type.data), arg->GetName(),
-                            arg->GetType().dimension));
+                            types->Find(arg->GetType().GetName()), arg->GetName(),
+                            arg->GetType().GetDimension()));
     }
 
     decl->exceptions.push_back(types->RemoteExceptionType());
@@ -316,9 +316,9 @@ generate_method(const AidlMethod& method, Class* interface,
     Variable* cl = NULL;
     VariableFactory stubArgs("_arg");
     for (const std::unique_ptr<AidlArgument>& arg : *method.args) {
-        const Type* t = types->Find(arg->GetType().type.data);
+        const Type* t = types->Find(arg->GetType().GetName());
         Variable* v = stubArgs.Get(t);
-        v->dimension = arg->GetType().dimension;
+        v->dimension = arg->GetType().GetDimension();
 
         c->statements->Add(new VariableDeclaration(v));
 
@@ -326,10 +326,10 @@ generate_method(const AidlMethod& method, Class* interface,
             generate_create_from_parcel(t, c->statements, v,
                     stubClass->transact_data, &cl);
         } else {
-            if (arg->GetType().dimension == 0) {
+            if (arg->GetType().GetDimension() == 0) {
                 c->statements->Add(new Assignment(v, new NewExpression(v->type)));
             }
-            else if (arg->GetType().dimension == 1) {
+            else if (arg->GetType().GetDimension() == 1) {
                 generate_new_array(v->type, c->statements, v,
                         stubClass->transact_data, types);
             }
@@ -344,7 +344,7 @@ generate_method(const AidlMethod& method, Class* interface,
 
     // the real call
     Variable* _result = NULL;
-    if (0 == strcmp(method.type->type.data, "void")) {
+    if (method.type->GetName() == "void") {
         c->statements->Add(realCall);
 
         if (!oneway) {
@@ -374,7 +374,7 @@ generate_method(const AidlMethod& method, Class* interface,
     // out parameters
     i = 0;
     for (const std::unique_ptr<AidlArgument>& arg : *method.args) {
-        const Type* t = types->Find(arg->GetType().type.data);
+        const Type* t = types->Find(arg->GetType().GetName());
         Variable* v = stubArgs.Get(i++);
 
         if (arg->GetDirection() & AidlArgument::OUT_DIR) {
@@ -391,16 +391,16 @@ generate_method(const AidlMethod& method, Class* interface,
 
     // == the proxy method ===================================================
     Method* proxy = new Method;
-        proxy->comment = gather_comments(method.comments_token->extra);
+        proxy->comment = method.GetComments();
         proxy->modifiers = PUBLIC | OVERRIDE;
-        proxy->returnType = types->Find(method.type->type.data);
-        proxy->returnTypeDimension = method.type->dimension;
+        proxy->returnType = types->Find(method.type->GetName());
+        proxy->returnTypeDimension = method.type->GetDimension();
         proxy->name = method.name.data;
         proxy->statements = new StatementBlock;
         for (const std::unique_ptr<AidlArgument>& arg : *method.args) {
             proxy->parameters.push_back(new Variable(
-                            types->Find(arg->GetType().type.data), arg->GetName(),
-                            arg->GetType().dimension));
+                            types->Find(arg->GetType().GetName()), arg->GetName(),
+                            arg->GetType().GetDimension()));
         }
         proxy->exceptions.push_back(types->RemoteExceptionType());
     proxyClass->elements.push_back(proxy);
@@ -420,9 +420,9 @@ generate_method(const AidlMethod& method, Class* interface,
 
     // the return value
     _result = NULL;
-    if (0 != strcmp(method.type->type.data, "void")) {
+    if (method.type->GetName() != "void") {
         _result = new Variable(proxy->returnType, "_result",
-                method.type->dimension);
+                method.type->GetDimension());
         proxy->statements->Add(new VariableDeclaration(_result));
     }
 
@@ -438,10 +438,10 @@ generate_method(const AidlMethod& method, Class* interface,
 
     // the parameters
     for (const std::unique_ptr<AidlArgument>& arg : *method.args) {
-        const Type* t = types->Find(arg->GetType().type.data);
-        Variable* v = new Variable(t, arg->GetName(), arg->GetType().dimension);
+        const Type* t = types->Find(arg->GetType().GetName());
+        Variable* v = new Variable(t, arg->GetName(), arg->GetType().GetDimension());
         AidlArgument::Direction dir = arg->GetDirection();
-        if (dir == AidlArgument::OUT_DIR && arg->GetType().dimension != 0) {
+        if (dir == AidlArgument::OUT_DIR && arg->GetType().GetDimension() != 0) {
             IfStatement* checklen = new IfStatement();
             checklen->expression = new Comparison(v, "==", NULL_VALUE);
             checklen->statements->Add(new MethodCall(_data, "writeInt", 1,
@@ -479,8 +479,8 @@ generate_method(const AidlMethod& method, Class* interface,
 
         // the out/inout parameters
         for (const std::unique_ptr<AidlArgument>& arg : *method.args) {
-            const Type* t = types->Find(arg->GetType().type.data);
-            Variable* v = new Variable(t, arg->GetName(), arg->GetType().dimension);
+            const Type* t = types->Find(arg->GetType().GetName());
+            Variable* v = new Variable(t, arg->GetName(), arg->GetType().GetDimension());
             if (arg->GetDirection() & AidlArgument::OUT_DIR) {
                 generate_read_from_parcel(t, tryStatement->statements,
                                             v, _reply, &cl);

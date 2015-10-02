@@ -24,7 +24,6 @@ android::aidl::java::Class* generate_binder_interface_class(
 
 }  // namespace java
 
-string gather_comments(extra_text_type* extra);
 string append(const char* a, const char* b);
 
 class VariableFactory

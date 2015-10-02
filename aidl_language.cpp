@@ -43,14 +43,25 @@ Parser::~Parser() {
   yylex_destroy(scanner_);
 }
 
+AidlType::AidlType(const std::string& name, unsigned line,
+                   const std::string& comments, unsigned dimension)
+    : name_(name),
+      line_(line),
+      dimension_(dimension),
+      comments_(comments) {}
+
+AidlType::AidlType(const std::string& name, unsigned line,
+                   const std::string& comments)
+    : AidlType(name, line, comments, 0) {}
+
 string AidlType::ToString() const {
-  return string(type.data) + Brackets();
+  return name_ + Brackets();
 }
 
 std::string AidlType::Brackets() const {
   std::string result;
 
-  for (int i = 0; i < dimension; i++)
+  for (unsigned i = 0; i < dimension_; i++)
     result += "[]";
 
   return result;
@@ -94,6 +105,9 @@ string AidlArgument::ToString() const {
 
   return ret;
 }
+
+AidlMethod::AidlMethod(std::string comments)
+    : comments_(comments) {}
 
 string Parser::FileName() {
   return filename_;

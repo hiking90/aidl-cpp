@@ -40,10 +40,10 @@ bool TypeNamespace::IsValidReturnType(const AidlType& raw_type,
                                       const string& filename) const {
   const string error_prefix = StringPrintf(
       "In file %s line %d return type %s%s:\n    ",
-      filename.c_str(), raw_type.type.lineno, raw_type.type.data,
+      filename.c_str(), raw_type.GetLine(), raw_type.GetName().c_str(),
       raw_type.Brackets().c_str());
 
-  const ValidatableType* return_type = GetValidatableType(raw_type.type.data);
+  const ValidatableType* return_type = GetValidatableType(raw_type.GetName());
   if (return_type == nullptr) {
     cerr << error_prefix << "unknown return type" << endl;
     return false;
@@ -54,12 +54,12 @@ bool TypeNamespace::IsValidReturnType(const AidlType& raw_type,
     return false;
   }
 
-  if (raw_type.dimension > 0 && !return_type->CanBeArray()) {
+  if (raw_type.GetDimension() > 0 && !return_type->CanBeArray()) {
     cerr << error_prefix << "return type cannot be an array" << endl;
     return false;
   }
 
-  if (raw_type.dimension > 1) {
+  if (raw_type.GetDimension() > 1) {
     cerr << error_prefix << "only one dimensional arrays are supported" << endl;
     return false;
   }
@@ -74,44 +74,44 @@ bool TypeNamespace::IsValidArg(const AidlArgument& a,
       filename.c_str(), a.GetLine(), a.GetName().c_str(), arg_index);
 
   // check the arg type
-  const ValidatableType* t = GetValidatableType(a.GetType().type.data);
+  const ValidatableType* t = GetValidatableType(a.GetType().GetName());
   if (t == nullptr) {
-    cerr << error_prefix << "unknown type " << a.GetType().type.data << endl;
+    cerr << error_prefix << "unknown type " << a.GetType().GetName().c_str() << endl;
     return false;
   }
 
   if (!t->CanWriteToParcel()) {
     cerr << error_prefix
          << StringPrintf("'%s %s' can't be marshalled.",
-                         a.GetType().type.data, a.GetName().c_str()) << endl;
+                         a.GetType().GetName().c_str(), a.GetName().c_str()) << endl;
     return false;
   }
 
   if (!a.DirectionWasSpecified() &&
-      (a.GetType().dimension != 0 || t->CanBeOutParameter())) {
+      (a.GetType().GetDimension() != 0 || t->CanBeOutParameter())) {
     cerr << error_prefix << StringPrintf(
         "'%s %s' can be an out parameter, so you must declare it as in,"
-        " out or inout.", a.GetType().type.data, a.GetName().c_str()) << endl;
+        " out or inout.", a.GetType().GetName().c_str(), a.GetName().c_str()) << endl;
     return false;
   }
 
   if (a.GetDirection() != AidlArgument::IN_DIR &&
       !t->CanBeOutParameter() &&
-      a.GetType().dimension == 0) {
+      a.GetType().GetDimension() == 0) {
     cerr << error_prefix << StringPrintf(
         "'%s' can only be an in parameter.",
         a.ToString().c_str()) << endl;
     return false;
   }
 
-  if (a.GetType().dimension > 0 && !t->CanBeArray()) {
+  if (a.GetType().GetDimension() > 0 && !t->CanBeArray()) {
     cerr << error_prefix << StringPrintf(
         "'%s' cannot be an array.",
         a.ToString().c_str()) << endl;
     return false;
   }
 
-  if (a.GetType().dimension > 1) {
+  if (a.GetType().GetDimension() > 1) {
     cerr << error_prefix << "Only one dimensional arrays are supported."
          << endl;
     return false;

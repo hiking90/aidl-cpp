@@ -48,16 +48,26 @@ class AidlNode {
 
 class AidlType : public AidlNode {
  public:
-  AidlType() = default;
+  AidlType(const std::string& name, unsigned line,
+           const std::string& comments, unsigned dimension);
+  AidlType(const std::string& name, unsigned line,
+           const std::string& comments);
   virtual ~AidlType() = default;
 
-  buffer_type type;
-  int dimension;
+  const std::string& GetName() const { return name_; }
+  unsigned GetLine() const { return line_; }
+  unsigned GetDimension() const { return dimension_; }
+  const std::string& GetComments() const { return comments_; }
 
   std::string ToString() const;
   std::string Brackets() const;
 
  private:
+  std::string name_;
+  unsigned line_;
+  unsigned dimension_;
+  std::string comments_;
+
   DISALLOW_COPY_AND_ASSIGN(AidlType);
 };
 
@@ -65,7 +75,8 @@ class AidlArgument : public AidlNode {
  public:
   enum Direction { IN_DIR = 1, OUT_DIR = 2, INOUT_DIR = 3 };
 
-  AidlArgument(AidlArgument::Direction direction, AidlType* type, buffer_type name);
+  AidlArgument(AidlArgument::Direction direction, AidlType* type,
+               buffer_type name);
   AidlArgument(AidlType *type, buffer_type name);
   virtual ~AidlArgument() = default;
 
@@ -89,8 +100,10 @@ class AidlArgument : public AidlNode {
 
 class AidlMethod {
  public:
-  AidlMethod() = default;
+  AidlMethod(std::string comments);
   virtual ~AidlMethod() = default;
+
+  std::string GetComments() const { return comments_; }
 
   AidlType* type;
   bool oneway;
@@ -100,10 +113,11 @@ class AidlMethod {
   bool hasId;
   buffer_type id;
   buffer_type semicolon_token;
-  buffer_type* comments_token; // points into this structure, DO NOT DELETE
   int assigned_id;
 
  private:
+  std::string comments_;
+
   DISALLOW_COPY_AND_ASSIGN(AidlMethod);
 };
 

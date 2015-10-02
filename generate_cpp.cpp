@@ -53,7 +53,7 @@ string UpperCase(const std::string& s) {
 
 string GetCPPVarDec(const TypeNamespace& types, const AidlType& type,
                     const string& var_name, bool use_pointer) {
-  const Type* cpp_type = types.Find(type.type.data);
+  const Type* cpp_type = types.Find(type.GetName());
   if (cpp_type == nullptr) {
     // We should have caught this in type resolution.
     LOG(FATAL) << "internal error";

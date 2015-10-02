@@ -38,24 +38,6 @@ VariableFactory::Get(int index)
 
 // =================================================
 string
-gather_comments(extra_text_type* extra)
-{
-    string s;
-    while (extra) {
-        if (extra->which == SHORT_COMMENT) {
-            s += extra->data;
-        }
-        else if (extra->which == LONG_COMMENT) {
-            s += "/*";
-            s += extra->data;
-            s += "*/";
-        }
-        extra = extra->next;
-    }
-    return s;
-}
-
-string
 append(const char* a, const char* b)
 {
     string s = a;

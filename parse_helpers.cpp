@@ -79,5 +79,20 @@ char* cpp_strdup(const char* in)
   return out;
 }
 
+std::string gather_comments(extra_text_type* extra) {
+  std::string s;
+  for (; extra; extra = extra->next) {
+    if (extra->which == SHORT_COMMENT) {
+      s += extra->data;
+    }
+    else if (extra->which == LONG_COMMENT) {
+      s += "/*";
+      s += extra->data;
+      s += "*/";
+    }
+  }
+  return s;
+}
+
 }  // namespace android
 }  // namespace aidl
