@@ -36,8 +36,8 @@ using android::aidl::cpp_strdup;
 }
 
 %token<buffer> IMPORT PACKAGE IDENTIFIER IDVALUE GENERIC ARRAY PARCELABLE
-%token<buffer> ONEWAY INTERFACE ';' '{' '}' ',' '='
-%token IN OUT INOUT '(' ')'
+%token<buffer> ONEWAY INTERFACE ';' '{' '}'
+%token IN OUT INOUT '(' ')' ',' '='
 
 %type<document_item> document_items declaration
 %type<user_data> parcelable_decl
@@ -187,58 +187,24 @@ methods
     $$ = $1;
   };
 
-method_decl:
-        type IDENTIFIER '(' arg_list ')' ';'  {
-                                                        AidlMethod *method = new AidlMethod($1->GetComments());
-                                                        method->oneway = false;
-                                                        method->type = $1;
-                                                        memset(&method->oneway_token, 0, sizeof(buffer_type));
-                                                        method->name = $2;
-                                                        method->args = $4;
-                                                        method->hasId = false;
-                                                        memset(&method->id, 0, sizeof(buffer_type));
-                                                        method->semicolon_token = $6;
-                                                        $$ = method;
-                                                    }
-    |   ONEWAY type IDENTIFIER '(' arg_list ')' ';'  {
-                                                        AidlMethod *method =
-                                                            new AidlMethod(android::aidl::gather_comments($1.extra));
-                                                        method->oneway = true;
-                                                        method->oneway_token = $1;
-                                                        method->type = $2;
-                                                        method->name = $3;
-                                                        method->args = $5;
-                                                        method->hasId = false;
-                                                        memset(&method->id, 0, sizeof(buffer_type));
-                                                        method->semicolon_token = $7;
-                                                        $$ = method;
-                                                    }
-    |    type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';'  {
-                                                        AidlMethod *method = new AidlMethod($1->GetComments());
-                                                        method->oneway = false;
-                                                        memset(&method->oneway_token, 0, sizeof(buffer_type));
-                                                        method->type = $1;
-                                                        method->name = $2;
-                                                        method->args = $4;
-                                                        method->hasId = true;
-                                                        method->id = $7;
-                                                        method->semicolon_token = $8;
-                                                        $$ = method;
-                                                    }
-    |   ONEWAY type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';'  {
-                                                        AidlMethod *method =
-                                                            new AidlMethod(android::aidl::gather_comments($1.extra));
-                                                        method->oneway = true;
-                                                        method->oneway_token = $1;
-                                                        method->type = $2;
-                                                        method->name = $3;
-                                                        method->args = $5;
-                                                        method->hasId = true;
-                                                        method->id = $8;
-                                                        method->semicolon_token = $9;
-                                                        $$ = method;
-                                                    }
-    ;
+method_decl
+ : type IDENTIFIER '(' arg_list ')' ';' {
+    $$ = new AidlMethod(false, $1, $2.Literal(), $4, @2.begin.line,
+                        $1->GetComments());
+  }
+ | ONEWAY type IDENTIFIER '(' arg_list ')' ';' {
+    $$ = new AidlMethod(true, $2, $3.Literal(), $5, @3.begin.line,
+                        android::aidl::gather_comments($1.extra));
+  }
+ | type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';' {
+    $$ = new AidlMethod(false, $1, $2.Literal(), $4, @2.begin.line,
+                        $1->GetComments(), std::stoi($7.data));
+  }
+ | ONEWAY type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';' {
+    $$ = new AidlMethod(true, $2, $3.Literal(), $5, @3.begin.line,
+                        android::aidl::gather_comments($1.extra),
+                        std::stoi($8.data));
+  };
 
 arg_list
  :

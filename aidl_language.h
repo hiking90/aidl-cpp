@@ -100,23 +100,36 @@ class AidlArgument : public AidlNode {
 
 class AidlMethod {
  public:
-  AidlMethod(std::string comments);
+  AidlMethod(bool oneway, AidlType* type, std::string name,
+             std::vector<std::unique_ptr<AidlArgument>>* args,
+             unsigned line, std::string comments);
+  AidlMethod(bool oneway, AidlType* type, std::string name,
+             std::vector<std::unique_ptr<AidlArgument>>* args,
+             unsigned line, std::string comments, int id);
   virtual ~AidlMethod() = default;
 
-  std::string GetComments() const { return comments_; }
+  const std::string& GetComments() const { return comments_; }
+  const AidlType& GetType() const { return *type_; }
+  bool IsOneway() const { return oneway_; }
+  const std::string& GetName() const { return name_; }
+  unsigned GetLine() const { return line_; }
+  bool HasId() const { return has_id_; }
+  int GetId() { return id_; }
+  void SetId(unsigned id) { id_ = id; }
 
-  AidlType* type;
-  bool oneway;
-  buffer_type oneway_token;
-  buffer_type name;
-  std::vector<std::unique_ptr<AidlArgument>>* args;
-  bool hasId;
-  buffer_type id;
-  buffer_type semicolon_token;
-  int assigned_id;
+  const std::vector<std::unique_ptr<AidlArgument>>& GetArguments() const {
+      return arguments_;
+  }
 
  private:
+  bool oneway_;
   std::string comments_;
+  std::unique_ptr<AidlType> type_;
+  std::string name_;
+  unsigned line_;
+  std::vector<std::unique_ptr<AidlArgument>> arguments_;
+  bool has_id_;
+  int id_;
 
   DISALLOW_COPY_AND_ASSIGN(AidlMethod);
 };

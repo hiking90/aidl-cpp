@@ -106,8 +106,26 @@ string AidlArgument::ToString() const {
   return ret;
 }
 
-AidlMethod::AidlMethod(std::string comments)
-    : comments_(comments) {}
+AidlMethod::AidlMethod(bool oneway, AidlType* type, std::string name,
+                       std::vector<std::unique_ptr<AidlArgument>>* args,
+                       unsigned line, std::string comments, int id)
+    : oneway_(oneway),
+      comments_(comments),
+      type_(type),
+      name_(name),
+      line_(line),
+      arguments_(std::move(*args)),
+      id_(id) {
+  has_id_ = true;
+  delete args;
+}
+
+AidlMethod::AidlMethod(bool oneway, AidlType* type, std::string name,
+                       std::vector<std::unique_ptr<AidlArgument>>* args,
+                       unsigned line, std::string comments)
+    : AidlMethod(oneway, type, name, args, line, comments, 0) {
+  has_id_ = false;
+}
 
 string Parser::FileName() {
   return filename_;
@@ -188,4 +206,3 @@ import_info *Parser::GetImports() const
 {
   return imports_;
 }
-

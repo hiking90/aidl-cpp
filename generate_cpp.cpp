@@ -69,13 +69,13 @@ unique_ptr<Declaration> BuildMethodDecl(const AidlMethod& method,
                                         const TypeNamespace& types,
                                         bool for_interface) {
   vector<string> args;
-  for (const unique_ptr<AidlArgument>& arg : *method.args) {
+  for (const unique_ptr<AidlArgument>& arg : method.GetArguments()) {
     args.push_back(GetCPPVarDec(
           types, arg->GetType(), arg->GetName(),
           AidlArgument::OUT_DIR & arg->GetDirection()));
   }
 
-  string return_arg = GetCPPVarDec(types, *method.type, "_aidl_return", true);
+  string return_arg = GetCPPVarDec(types, method.GetType(), "_aidl_return", true);
   args.push_back(return_arg);
 
   uint32_t modifiers = 0;
@@ -88,7 +88,7 @@ unique_ptr<Declaration> BuildMethodDecl(const AidlMethod& method,
 
   return unique_ptr<Declaration>{
       new MethodDecl{kAndroidStatusLiteral,
-                     method.name.Literal(),
+                     method.GetName(),
                      args,
                      modifiers}};
 }
@@ -235,9 +235,9 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
   for (const auto& method : *parsed_doc.methods) {
     if_class->AddPublic(BuildMethodDecl(*method, types, true));
     call_enum->AddValue(
-        UpperCase(method->name.data),
+        UpperCase(method->GetName()),
         StringPrintf("android::IBinder::FIRST_CALL_TRANSACTION + %d",
-                     method->assigned_id));
+                     method->GetId()));
   }
   if_class->AddPublic(std::move(call_enum));
 

@@ -204,28 +204,31 @@ int check_types(const string& filename,
                 interface_type* c,
                 TypeNamespace* types) {
   int err = 0;
-  set<string> method_names;
+
+  // Has to be a pointer due to deleting copy constructor. No idea why.
+  map<string, const AidlMethod*> method_names;
   for (const auto& m : *c->methods) {
-    if (!types->AddContainerType(m->type->GetName()) ||
-        !types->IsValidReturnType(*m->type, filename)) {
+    if (!types->AddContainerType(m->GetType().GetName()) ||
+        !types->IsValidReturnType(m->GetType(), filename)) {
       err = 1;  // return type is invalid
     }
 
     int index = 1;
-    for (const auto& arg : *m->args) {
+    for (const auto& arg : m->GetArguments()) {
       if (!types->AddContainerType(arg->GetType().GetName()) ||
           !types->IsValidArg(*arg, index, filename)) {
         err = 1;
       }
     }
 
+    auto it = method_names.find(m->GetName());
     // prevent duplicate methods
-    if (method_names.find(m->name.data) == method_names.end()) {
-      method_names.insert(m->name.data);
+    if (it == method_names.end()) {
+      method_names[m->GetName()] = m.get();
     } else {
-      cerr << filename << ":" << m->name.lineno
-           << " attempt to redefine method " << m->name.data << "," << endl
-           << filename << ":" << m->name.lineno
+      cerr << filename << ":" << m->GetLine()
+           << " attempt to redefine method " << m->GetName() << "," << endl
+           << filename << ":" << it->second->GetLine()
            << "    previously defined here." << endl;
       err = 1;
     }
@@ -457,29 +460,28 @@ int check_and_assign_method_ids(const char * filename,
     bool hasUnassignedIds = false;
     bool hasAssignedIds = false;
     for (const auto& item : items) {
-        if (item->hasId) {
+        if (item->HasId()) {
             hasAssignedIds = true;
-            item->assigned_id = atoi(item->id.data);
             // Ensure that the user set id is not duplicated.
-            if (usedIds.find(item->assigned_id) != usedIds.end()) {
+            if (usedIds.find(item->GetId()) != usedIds.end()) {
                 // We found a duplicate id, so throw an error.
                 fprintf(stderr,
                         "%s:%d Found duplicate method id (%d) for method: %s\n",
-                        filename, item->id.lineno,
-                        item->assigned_id, item->name.data);
+                        filename, item->GetLine(),
+                        item->GetId(), item->GetName().c_str());
                 return 1;
             }
             // Ensure that the user set id is within the appropriate limits
-            if (item->assigned_id < kMinUserSetMethodId ||
-                    item->assigned_id > kMaxUserSetMethodId) {
+            if (item->GetId() < kMinUserSetMethodId ||
+                    item->GetId() > kMaxUserSetMethodId) {
                 fprintf(stderr, "%s:%d Found out of bounds id (%d) for method: %s\n",
-                        filename, item->id.lineno,
-                        item->assigned_id, item->name.data);
+                        filename, item->GetLine(),
+                        item->GetId(), item->GetName().c_str());
                 fprintf(stderr, "    Value for id must be between %d and %d inclusive.\n",
                         kMinUserSetMethodId, kMaxUserSetMethodId);
                 return 1;
             }
-            usedIds.insert(item->assigned_id);
+            usedIds.insert(item->GetId());
         } else {
             hasUnassignedIds = true;
         }
@@ -495,7 +497,7 @@ int check_and_assign_method_ids(const char * filename,
     if (hasUnassignedIds) {
         int newId = 0;
         for (const auto& item : items) {
-            item->assigned_id = newId++;
+            item->SetId(newId++);
         }
     }
 

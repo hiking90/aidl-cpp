@@ -87,9 +87,9 @@ idvalue     (0|[1-9][0-9]*)
 ;               { SET_BUFFER(';'); return ';'; }
 \{              { SET_BUFFER('{'); return '{'; }
 \}              { SET_BUFFER('}'); return '}'; }
-,               { SET_BUFFER(','); return ','; }
-=               { SET_BUFFER('='); return '='; }
 
+=               { return '='; }
+,               { return ','; }
 \(              { return '('; }
 \)              { return ')'; }
 
