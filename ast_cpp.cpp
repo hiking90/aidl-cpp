@@ -1,13 +1,51 @@
+/*
+ * Copyright (C) 2015, The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "ast_cpp.h"
 
+#include <algorithm>
+
 #include "code_writer.h"
+#include "logging.h"
 
 using std::string;
 using std::unique_ptr;
+using std::vector;
 
 namespace android {
 namespace aidl {
 namespace cpp {
+namespace {
+
+void WriteArgList(CodeWriter* to, const vector<string>& arguments_) {
+  bool first = true;
+
+  to->Write("(");
+
+  for (const auto& arg : arguments_) {
+    if (!first)
+      to->Write(", ");
+    to->Write("%s", arg.c_str());
+    first = false;
+  }
+
+  to->Write(")");
+}
+
+}  // namespace
 
 ClassDecl::ClassDecl(const std::string& name, const std::string& parent)
     : name_(name),
@@ -129,18 +167,9 @@ void MethodDecl::Write(CodeWriter* to) const {
   if (is_virtual_)
     to->Write("virtual ");
 
-  to->Write("%s %s(", return_type_.c_str(), name_.c_str());
+  to->Write("%s %s", return_type_.c_str(), name_.c_str());
 
-  bool not_first = false;
-
-  for (const auto& arg : arguments_) {
-    if (not_first)
-      to->Write(", ");
-    not_first = true;
-    to->Write("%s", arg.c_str());
-  }
-
-  to->Write(")");
+  WriteArgList(to, arguments_);
 
   if (is_const_)
     to->Write(" const");
@@ -152,6 +181,88 @@ void MethodDecl::Write(CodeWriter* to) const {
     to->Write(" = 0");
 
   to->Write(";\n");
+}
+
+void StatementBlock::AddStatement(unique_ptr<AstNode> statement) {
+  statements_.push_back(std::move(statement));
+}
+
+void StatementBlock::AddLiteral(const std::string& expression,
+                                bool add_semicolon) {
+  statements_.push_back(unique_ptr<AstNode>{
+      new LiteralStatement{expression, add_semicolon}});
+}
+
+void StatementBlock::Write(CodeWriter* to) const {
+  to->Write("{\n");
+  for (const auto& statement : statements_) {
+    statement->Write(to);
+  }
+  to->Write("}\n");
+}
+
+MethodImpl::MethodImpl(const string& return_type,
+                       const string& class_name,
+                       const string& method_name,
+                       vector<string> arguments,
+                       bool is_const_method)
+    : return_type_(return_type),
+      method_name_(method_name),
+      arguments_(arguments),
+      is_const_method_(is_const_method) {
+  if (!class_name.empty()) {
+    method_name_ = class_name + "::" + method_name;
+  }
+}
+
+void MethodImpl::AddStatement(unique_ptr<AstNode> statement) {
+  statements_.AddStatement(std::move(statement));
+}
+
+void MethodImpl::Write(CodeWriter* to) const {
+  to->Write("%s %s", return_type_.c_str(), method_name_.c_str());
+  WriteArgList(to, arguments_);
+  to->Write("%s ", (is_const_method_) ? " const" : "");
+  statements_.Write(to);
+}
+
+SwitchStatement::SwitchStatement(const std::string& expression)
+    : switch_expression_(expression) {}
+
+StatementBlock* SwitchStatement::AddCase(const string& value_expression) {
+  auto it = std::find(case_values_.begin(), case_values_.end(), value_expression);
+  if (it != case_values_.end()) {
+    LOG(ERROR) << "internal error: duplicate switch case labels";
+    return nullptr;
+  }
+  StatementBlock* ret = new StatementBlock();
+  case_values_.push_back(value_expression);
+  case_logic_.push_back(unique_ptr<StatementBlock>{ret});
+  return ret;
+}
+
+void SwitchStatement::Write(CodeWriter* to) const {
+  to->Write("switch (%s) {\n", switch_expression_.c_str());
+  for (size_t i = 0; i < case_values_.size(); ++i) {
+    const string& case_value = case_values_[i];
+    const unique_ptr<StatementBlock>& statements = case_logic_[i];
+    if (case_value.empty()) {
+      to->Write("default:\n");
+    } else {
+      to->Write("case %s:\n", case_value.c_str());
+    }
+    statements->Write(to);
+    to->Write("break;\n");
+  }
+  to->Write("}\n");
+}
+
+LiteralStatement::LiteralStatement(const string& expression, bool use_semicolon)
+    : expression_(expression),
+      use_semicolon_(use_semicolon) {}
+
+void LiteralStatement::Write(CodeWriter* to) const {
+  to->Write("%s%s\n", expression_.c_str(), (use_semicolon_) ? ";" : "");
 }
 
 CppNamespace::CppNamespace(const std::string& name,

@@ -65,9 +65,43 @@ R"(enum Foo {
 }
 )";
 
+const char kExpectedSwitchOutput[] =
+R"(switch (var) {
+case 2:
+{
+baz;
+}
+break;
+case 1:
+{
+foo;
+bar;
+}
+break;
+}
+)";
+
+const char kExpectedMethodImplOutput[] =
+R"(return_type ClassName::MethodName(arg 1, arg 2) const {
+foo;
+bar;
+}
+)";
 }  // namespace
 
-TEST(AstCppTests, GeneratesHeader) {
+class AstCppTests : public ::testing::Test {
+ protected:
+  void CompareGenereratedCode(const AstNode* node,
+                              const string& expected_output) {
+    string actual_output;
+    CodeWriterPtr writer = GetStringWriter(&actual_output);
+    node->Write(writer.get());
+    EXPECT_EQ(expected_output, actual_output);
+  }
+};  // class AstCppTests
+
+
+TEST_F(AstCppTests, GeneratesHeader) {
   unique_ptr<MethodDecl> norm{
       new MethodDecl("void", "NormalMethod",
                      { "int normalarg", "float normal2" })};
@@ -106,20 +140,46 @@ TEST(AstCppTests, GeneratesHeader) {
 
   CppHeader cpp_header{"HEADER_INCLUDE_GUARD_H_", {"string", "memory"},
       std::move(android_ns) };
-  string actual_output;
-  CodeWriterPtr writer = GetStringWriter(&actual_output);
-  cpp_header.Write(writer.get());
-  EXPECT_EQ(string(kExpectedHeaderOutput), actual_output);
+  CompareGenereratedCode(&cpp_header, kExpectedHeaderOutput);
 }
 
-TEST(AstCppTests, GeneratesEnum) {
+TEST_F(AstCppTests, GeneratesEnum) {
   Enum e("Foo");
   e.AddValue("BAR", "42");
   e.AddValue("BAZ", "");
-  string actual_output;
-  CodeWriterPtr writer = GetStringWriter(&actual_output);
-  e.Write(writer.get());
-  EXPECT_EQ(string(kExpectedEnumOutput), actual_output);
+  CompareGenereratedCode(&e, kExpectedEnumOutput);
+}
+
+TEST_F(AstCppTests, GeneratesLiteralStatement) {
+  LiteralStatement s("foo");
+  CompareGenereratedCode(&s, "foo;\n");
+}
+
+TEST_F(AstCppTests, GeneratesStatementBlock) {
+  StatementBlock block;
+  block.AddStatement(unique_ptr<AstNode>(new LiteralStatement("foo")));
+  block.AddStatement(unique_ptr<AstNode>(new LiteralStatement("bar")));
+  CompareGenereratedCode(&block, "{\nfoo;\nbar;\n}\n");
+}
+
+TEST_F(AstCppTests, GeneratesSwitchStatement) {
+  SwitchStatement s("var");
+  // These are intentionally out of alphanumeric order.  We're testing
+  // that switch respects case addition order.
+  auto case2 = s.AddCase("2");
+  case2->AddStatement(unique_ptr<AstNode>{new LiteralStatement{"baz"}});
+  auto case1 = s.AddCase("1");
+  case1->AddStatement(unique_ptr<AstNode>{new LiteralStatement{"foo"}});
+  case1->AddStatement(unique_ptr<AstNode>{new LiteralStatement{"bar"}});
+  CompareGenereratedCode(&s, kExpectedSwitchOutput);
+}
+
+TEST_F(AstCppTests, GeneratesMethodImpl) {
+  MethodImpl m{"return_type", "ClassName", "MethodName",
+               {"arg 1", "arg 2"}, true};
+  m.AddStatement(unique_ptr<AstNode>{new LiteralStatement{"foo"}});
+  m.AddStatement(unique_ptr<AstNode>{new LiteralStatement{"bar"}});
+  CompareGenereratedCode(&m, kExpectedMethodImplOutput);
 }
 
 }  // namespace cpp

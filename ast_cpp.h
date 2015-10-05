@@ -117,7 +117,7 @@ class ConstructorDecl : public Declaration {
   bool is_virtual_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(ConstructorDecl);
-};
+};  // class ConstructorDecl
 
 class MethodDecl : public Declaration {
  public:
@@ -149,7 +149,81 @@ class MethodDecl : public Declaration {
   bool is_pure_virtual_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(MethodDecl);
-};
+};  // class MethodDecl
+
+class StatementBlock : public Declaration {
+ public:
+  StatementBlock() = default;
+  virtual ~StatementBlock() = default;
+
+  void AddStatement(std::unique_ptr<AstNode> statement);
+  void AddLiteral(const std::string& expression, bool add_semicolon = true);
+
+  void Write(CodeWriter* to) const override;
+
+ private:
+  std::vector<std::unique_ptr<AstNode>> statements_;
+
+  DISALLOW_COPY_AND_ASSIGN(StatementBlock);
+};  // class StatementBlock
+
+class MethodImpl : public Declaration {
+ public:
+  // Passing an empty class name causes the method to be declared as a normal
+  // function (ie. no ClassName:: qualifier).
+  MethodImpl(const std::string& return_type,
+             const std::string& class_name,
+             const std::string& method_name,
+             std::vector<std::string> arguments,
+             bool is_const_method = false);
+  virtual ~MethodImpl() = default;
+
+  void AddStatement(std::unique_ptr<AstNode> statement);
+  void Write(CodeWriter* to) const override;
+
+ private:
+  std::string return_type_;
+  std::string method_name_;
+  std::vector<std::string> arguments_;
+  StatementBlock statements_;
+  bool is_const_method_ = false;
+
+  DISALLOW_COPY_AND_ASSIGN(MethodImpl);
+};  // class MethodImpl
+
+class SwitchStatement : public AstNode {
+ public:
+  explicit SwitchStatement(const std::string& expression);
+  virtual ~SwitchStatement() = default;
+
+  // Add a case statement and return a pointer code block corresponding
+  // to the case.  The switch statement will add a break statement
+  // after the code block by default to prevent accidental fall-through.
+  // Returns nullptr on duplicate value expressions (by strcmp, not value
+  // equivalence).
+  StatementBlock* AddCase(const std::string& value_expression);
+  void Write(CodeWriter* to) const override;
+
+ private:
+  const std::string switch_expression_;
+  std::vector<std::string> case_values_;
+  std::vector<std::unique_ptr<StatementBlock>> case_logic_;
+
+  DISALLOW_COPY_AND_ASSIGN(SwitchStatement);
+};  // class SwitchStatement
+
+class LiteralStatement : public AstNode {
+ public:
+  LiteralStatement(const std::string& expression, bool use_semicolon = true);
+  ~LiteralStatement() = default;
+  void Write(CodeWriter* to) const override;
+
+ private:
+  const std::string expression_;
+  bool use_semicolon_;
+
+  DISALLOW_COPY_AND_ASSIGN(LiteralStatement);
+};  // class LiteralStatement
 
 class CppNamespace : public Declaration {
  public:
