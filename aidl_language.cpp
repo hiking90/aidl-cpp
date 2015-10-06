@@ -55,19 +55,19 @@ string AidlType::ToString() const {
 }
 
 AidlArgument::AidlArgument(AidlArgument::Direction direction, AidlType* type,
-                           buffer_type name)
+                           std::string name, unsigned line)
     : type_(type),
       direction_(direction),
       direction_specified_(true),
-      name_(name.data),
-      line_(name.lineno) {}
+      name_(name),
+      line_(line) {}
 
-AidlArgument::AidlArgument(AidlType* type, buffer_type name)
+AidlArgument::AidlArgument(AidlType* type, std::string name, unsigned line)
     : type_(type),
       direction_(AidlArgument::IN_DIR),
       direction_specified_(false),
-      name_(name.data),
-      line_(name.lineno) {}
+      name_(name),
+      line_(line) {}
 
 string AidlArgument::ToString() const {
   string ret;

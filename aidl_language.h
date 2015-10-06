@@ -73,8 +73,8 @@ class AidlArgument : public AidlNode {
   enum Direction { IN_DIR = 1, OUT_DIR = 2, INOUT_DIR = 3 };
 
   AidlArgument(AidlArgument::Direction direction, AidlType* type,
-               buffer_type name);
-  AidlArgument(AidlType *type, buffer_type name);
+               std::string name, unsigned line);
+  AidlArgument(AidlType *type, std::string name, unsigned line);
   virtual ~AidlArgument() = default;
 
   Direction GetDirection() const { return direction_; }
@@ -90,7 +90,7 @@ class AidlArgument : public AidlNode {
   Direction direction_;
   bool direction_specified_;
   std::string name_;
-  int line_;
+  unsigned line_;
 
   DISALLOW_COPY_AND_ASSIGN(AidlArgument);
 };

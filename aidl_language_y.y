@@ -225,9 +225,9 @@ arg_list
 
 arg
  : direction type IDENTIFIER
-  { $$ = new AidlArgument($1, $2, $3); };
+  { $$ = new AidlArgument($1, $2, $3.data, @3.begin.line); };
  | type IDENTIFIER
-  { $$ = new AidlArgument($1, $2); };
+  { $$ = new AidlArgument($1, $2.data, @2.begin.line); };
 
 type
  : IDENTIFIER {
