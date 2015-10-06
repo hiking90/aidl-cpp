@@ -29,14 +29,14 @@ using android::aidl::cpp_strdup;
     std::vector<std::unique_ptr<AidlArgument>>* arg_list;
     AidlMethod* method;
     std::vector<std::unique_ptr<AidlMethod>>* methods;
+    std::vector<std::string>* strvec;
     interface_type* interface_obj;
     user_data_type* user_data;
     document_item_type* document_item;
 }
 
-%token<buffer> IMPORT PACKAGE IDENTIFIER IDVALUE GENERIC PARCELABLE
-%token<buffer> ONEWAY INTERFACE ';' '{' '}'
-%token IN OUT INOUT '(' ')' ',' '=' '[' ']' '<' '>'
+%token<buffer> IDENTIFIER IDVALUE GENERIC PARCELABLE ONEWAY INTERFACE ';' '{' '}'
+%token IN OUT INOUT '(' ')' ',' '=' '[' ']' '<' '>' '.' PACKAGE IMPORT
 
 %type<document_item> document_items declaration
 %type<user_data> parcelable_decl
@@ -48,28 +48,35 @@ using android::aidl::cpp_strdup;
 %type<arg> arg
 %type<direction> direction
 %type<str> generic_list
+%type<strvec> package_name
 
 %type<buffer> error
 %%
-document:
-        document_items                          { ps->SetDocument($1); }
-    |   headers document_items                  { ps->SetDocument($2); }
-    ;
+document
+ : package imports document_items
+  { ps->SetDocument($3); };
 
-headers:
-        package                                 { }
-    |   imports                                 { }
-    |   package imports                         { }
-    ;
+package
+ : {}
+ | PACKAGE package_name ';'
+  { ps->SetPackage($2); };
 
-package:
-        PACKAGE                                 { }
-    ;
+imports
+ : {}
+ | import imports {};
 
-imports:
-        IMPORT                                  { ps->AddImport($1); }
-    |   IMPORT imports                          { ps->AddImport($1); }
-    ;
+import
+ : IMPORT package_name ';'
+  { ps->AddImport($2, @1.begin.line); };
+
+package_name
+ : IDENTIFIER
+  {
+    $$ = new std::vector<std::string>();
+    $$->push_back($1.data);
+  }
+ | package_name '.' IDENTIFIER
+  { $$->push_back($3.data); };
 
 document_items:
                                                 { $$ = NULL; }

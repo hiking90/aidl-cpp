@@ -20,11 +20,6 @@ using std::cerr;
 using std::endl;
 using android::aidl::cpp_strdup;
 
-Parser *psGlobal = NULL;
-ParserCallbacks* g_callbacks = NULL; // &k_parserCallbacks;
-char const* g_currentPackage = NULL;
-
-
 void yylex_init(void **);
 void yylex_destroy(void *);
 void yyset_in(FILE *f, void *);
@@ -114,14 +109,6 @@ AidlMethod::AidlMethod(bool oneway, AidlType* type, std::string name,
   has_id_ = false;
 }
 
-string Parser::FileName() {
-  return filename_;
-}
-
-string Parser::Package() {
-  return g_currentPackage ? g_currentPackage : "";
-}
-
 void Parser::ReportError(const string& err) {
   /* FIXME: We're printing out the line number as -1. We used to use yylineno
    * (which was NEVER correct even before reentrant parsing). Now we'll need
@@ -129,14 +116,6 @@ void Parser::ReportError(const string& err) {
    */
   cerr << filename_ << ":" << -1 << ": " << err << endl;
   error_ = 1;
-}
-
-bool Parser::FoundNoErrors() {
-  return error_ == 0;
-}
-
-void *Parser::Scanner() {
-  return scanner_;
 }
 
 bool Parser::OpenFileFromDisk() {
@@ -160,36 +139,44 @@ void Parser::SetFileContents(const std::string& contents) {
 bool Parser::RunParser() {
   int ret = yy::parser(this).parse();
 
-  delete[] g_currentPackage;
-  g_currentPackage = NULL;
-
   return ret == 0 && error_ == 0;
 }
 
-void Parser::SetDocument(document_item_type *d)
-{
-  document_ = d;
-}
+void Parser::AddImport(std::vector<std::string>* terms, unsigned line) {
+  std::string data;
+  bool first = true;
 
-void Parser::AddImport(const buffer_type& statement)
-{
+  /* NOTE: This string building code is duplicated from below. We haven't
+   * factored it out into a function because it's hoped that when import_info
+   * becomes a class we won't need this anymore.
+   **/
+  for (const auto& term : *terms) {
+      if (first)
+          data = term;
+      else
+          data += '.' + term;
+  }
+
   import_info* import = new import_info();
   memset(import, 0, sizeof(import_info));
   import->from = cpp_strdup(this->FileName().c_str());
-  import->statement.lineno = statement.lineno;
-  import->statement.data = cpp_strdup(statement.data);
-  import->statement.extra = NULL;
   import->next = imports_;
-  import->neededClass = android::aidl::parse_import_statement(statement.data);
+  import->line = line;
+  import->neededClass = cpp_strdup(data.c_str());
   imports_ = import;
+
+  delete terms;
 }
 
-document_item_type *Parser::GetDocument() const
-{
-  return document_;
-}
+void Parser::SetPackage(std::vector<std::string> *terms) {
+    bool first = true;
 
-import_info *Parser::GetImports() const
-{
-  return imports_;
+    for (const auto& term : *terms) {
+        if (first)
+            package_ = term;
+        else
+            package_ += '.' + term;
+    }
+
+    delete terms;
 }

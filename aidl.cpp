@@ -562,7 +562,7 @@ int load_and_validate_aidl_internal(const std::vector<std::string> preprocessed_
     }
     import->filename = find_import_file(import->neededClass);
     if (!import->filename) {
-      cerr << import->from << ":" << import->statement.lineno
+      cerr << import->from << ":" << import->line
            << ": couldn't find import for class "
            << import->neededClass << endl;
       err |= 1;

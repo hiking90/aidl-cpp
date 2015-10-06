@@ -24,11 +24,6 @@
 namespace android {
 namespace aidl {
 
-// strips off the leading whitespace, the "import" text
-// also returns whether it's a local or system import
-// we rely on the input matching the import regex from below
-char* parse_import_statement(const char* text);
-
 bool is_java_keyword(const char* str);
 
 char* cpp_strdup(const char* in);

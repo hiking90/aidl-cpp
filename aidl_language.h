@@ -176,11 +176,6 @@ struct ParserCallbacks {
     void (*import)(buffer_type* statement);
 };
 
-extern ParserCallbacks* g_callbacks;
-
-// the package name for our current file
-extern char const* g_currentPackage;
-
 enum error_type {
     STATEMENT_INSIDE_INTERFACE
 };
@@ -190,8 +185,8 @@ void init_buffer_type(buffer_type* buf, int lineno);
 struct import_info {
     const char* from;
     const char* filename;
-    buffer_type statement;
     const char* neededClass;
+    unsigned line;
     document_item_type* doc;
     struct import_info* next;
 };
@@ -210,16 +205,18 @@ class Parser {
   bool RunParser();
   void ReportError(const std::string& err);
 
-  bool FoundNoErrors();
-  std::string FileName();
-  std::string Package();
-  void *Scanner();
+  bool FoundNoErrors() const { return error_ == 0; }
+  const std::string& FileName() const { return filename_; }
+  const std::string& Package() const { return package_; }
+  void *Scanner() const { return scanner_; }
 
-  void SetDocument(document_item_type *items);
-  void AddImport(const buffer_type& statement);
+  void SetDocument(document_item_type *items) { document_ = items; };
 
-  document_item_type *GetDocument() const;
-  import_info *GetImports() const;
+  void AddImport(std::vector<std::string>* terms, unsigned line);
+  void SetPackage(std::vector<std::string>* terms);
+
+  document_item_type *GetDocument() const { return document_; }
+  import_info *GetImports() const { return imports_; }
 
  private:
   int error_ = 0;

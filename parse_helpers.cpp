@@ -28,32 +28,6 @@
 namespace android {
 namespace aidl {
 
-char* parse_import_statement(const char* text) {
-  const char* end;
-  int len;
-
-  while (isspace(*text)) {
-    text++;
-  }
-  while (!isspace(*text)) {
-    text++;
-  }
-  while (isspace(*text)) {
-    text++;
-  }
-  end = text;
-  while (!isspace(*end) && *end != ';') {
-    end++;
-  }
-  len = end - text;
-
-  char* rv = new char[len + 1];
-  memcpy(rv, text, len);
-  rv[len] = '\0';
-
-  return rv;
-}
-
 bool is_java_keyword(const char* str) {
   static const std::vector<std::string> kJavaKeywords{
       "abstract",   "assert",       "boolean",   "break",      "byte",
