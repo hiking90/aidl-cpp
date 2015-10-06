@@ -80,8 +80,7 @@ idvalue     (0|[1-9][0-9]*)
 
 \n+ { yylloc->lines(yyleng); yylloc->step(); }
 
-{whitespace}    { /* begin_extra_text(yylineno, WHITESPACE);
-                    append_extra_text(yytext); */ }
+{whitespace}    {}
 
 ;               { SET_BUFFER(';'); return ';'; }
 \{              { SET_BUFFER('{'); return '{'; }
@@ -93,6 +92,8 @@ idvalue     (0|[1-9][0-9]*)
 \)              { return ')'; }
 \[              { return '['; }
 \]              { return ']'; }
+\<              { return '<'; }
+\>              { return '>'; }
 
     /* keywords */
 parcelable      { SET_BUFFER(yy::parser::token::PARCELABLE); return yy::parser::token::PARCELABLE; }
@@ -105,8 +106,6 @@ inout           { return yy::parser::token::INOUT; }
 
 {idvalue}       { SET_BUFFER(yy::parser::token::IDVALUE); return yy::parser::token::IDVALUE; }
 {identifier}    { SET_BUFFER(yy::parser::token::IDENTIFIER); return yy::parser::token::IDENTIFIER; }
-{identifier}\<{whitespace}*{identifier}({whitespace}*,{whitespace}*{identifier})*{whitespace}*\>    {
-                                                      SET_BUFFER(yy::parser::token::GENERIC); return yy::parser::token::GENERIC; }
 
     /* syntax error! */
 .               { printf("UNKNOWN(%s)", yytext);

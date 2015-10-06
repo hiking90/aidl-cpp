@@ -22,6 +22,7 @@ using android::aidl::cpp_strdup;
 
 %union {
     buffer_type buffer;
+    std::string *str;
     AidlType* type;
     AidlArgument* arg;
     AidlArgument::Direction direction;
@@ -35,7 +36,7 @@ using android::aidl::cpp_strdup;
 
 %token<buffer> IMPORT PACKAGE IDENTIFIER IDVALUE GENERIC PARCELABLE
 %token<buffer> ONEWAY INTERFACE ';' '{' '}'
-%token IN OUT INOUT '(' ')' ',' '=' '[' ']'
+%token IN OUT INOUT '(' ')' ',' '=' '[' ']' '<' '>'
 
 %type<document_item> document_items declaration
 %type<user_data> parcelable_decl
@@ -46,6 +47,7 @@ using android::aidl::cpp_strdup;
 %type<arg_list> arg_list
 %type<arg> arg
 %type<direction> direction
+%type<str> generic_list
 
 %type<buffer> error
 %%
@@ -237,9 +239,18 @@ type
                       @1.begin.line, android::aidl::gather_comments($1.extra),
                       true);
   }
- | GENERIC {
-    $$ = new AidlType($1.data, @1.begin.line,
+ | IDENTIFIER '<' generic_list '>' {
+    $$ = new AidlType(std::string($1.data) + "<" + *$3 + ">", @1.begin.line,
                       android::aidl::gather_comments($1.extra), false);
+    delete $3;
+  };
+
+generic_list
+ : IDENTIFIER
+  { $$ = new std::string($1.data); }
+ | generic_list ',' IDENTIFIER {
+    $$ = new std::string(*$1 + "," + std::string($3.data));
+    delete $1;
   };
 
 direction
