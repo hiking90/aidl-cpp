@@ -62,7 +62,7 @@ string GetCPPVarDec(const TypeNamespace& types, const AidlType& type,
                       cpp_type->CppType().c_str(),
                       (use_pointer) ? "*" : "",
                       var_name.c_str(),
-                      type.Brackets().c_str());
+                      type.IsArray() ? "[]" : "");
 }
 
 unique_ptr<Declaration> BuildMethodDecl(const AidlMethod& method,

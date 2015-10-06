@@ -44,27 +44,14 @@ Parser::~Parser() {
 }
 
 AidlType::AidlType(const std::string& name, unsigned line,
-                   const std::string& comments, unsigned dimension)
+                   const std::string& comments, bool is_array)
     : name_(name),
       line_(line),
-      dimension_(dimension),
+      is_array_(is_array),
       comments_(comments) {}
 
-AidlType::AidlType(const std::string& name, unsigned line,
-                   const std::string& comments)
-    : AidlType(name, line, comments, 0) {}
-
 string AidlType::ToString() const {
-  return name_ + Brackets();
-}
-
-std::string AidlType::Brackets() const {
-  std::string result;
-
-  for (unsigned i = 0; i < dimension_; i++)
-    result += "[]";
-
-  return result;
+  return name_ + (is_array_ ? "[]" : "");
 }
 
 AidlArgument::AidlArgument(AidlArgument::Direction direction, AidlType* type,

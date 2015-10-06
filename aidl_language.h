@@ -49,23 +49,20 @@ class AidlNode {
 class AidlType : public AidlNode {
  public:
   AidlType(const std::string& name, unsigned line,
-           const std::string& comments, unsigned dimension);
-  AidlType(const std::string& name, unsigned line,
-           const std::string& comments);
+           const std::string& comments, bool is_array);
   virtual ~AidlType() = default;
 
   const std::string& GetName() const { return name_; }
   unsigned GetLine() const { return line_; }
-  unsigned GetDimension() const { return dimension_; }
+  bool IsArray() const { return is_array_; }
   const std::string& GetComments() const { return comments_; }
 
   std::string ToString() const;
-  std::string Brackets() const;
 
  private:
   std::string name_;
   unsigned line_;
-  unsigned dimension_;
+  bool is_array_;
   std::string comments_;
 
   DISALLOW_COPY_AND_ASSIGN(AidlType);

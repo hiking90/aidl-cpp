@@ -8,8 +8,6 @@
 
 int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
 
-static int count_brackets(const char*);
-
 #define lex_scanner ps->Scanner()
 
 using android::aidl::cpp_strdup;
@@ -35,9 +33,9 @@ using android::aidl::cpp_strdup;
     document_item_type* document_item;
 }
 
-%token<buffer> IMPORT PACKAGE IDENTIFIER IDVALUE GENERIC ARRAY PARCELABLE
+%token<buffer> IMPORT PACKAGE IDENTIFIER IDVALUE GENERIC PARCELABLE
 %token<buffer> ONEWAY INTERFACE ';' '{' '}'
-%token IN OUT INOUT '(' ')' ',' '='
+%token IN OUT INOUT '(' ')' ',' '=' '[' ']'
 
 %type<document_item> document_items declaration
 %type<user_data> parcelable_decl
@@ -232,16 +230,16 @@ arg
 type
  : IDENTIFIER {
     $$ = new AidlType($1.data, @1.begin.line,
-                      android::aidl::gather_comments($1.extra));
+                      android::aidl::gather_comments($1.extra), false);
   }
- | IDENTIFIER ARRAY {
+ | IDENTIFIER '[' ']' {
     $$ = new AidlType($1.data,
                       @1.begin.line, android::aidl::gather_comments($1.extra),
-                      count_brackets($2.data));
+                      true);
   }
  | GENERIC {
     $$ = new AidlType($1.data, @1.begin.line,
-                      android::aidl::gather_comments($1.extra));
+                      android::aidl::gather_comments($1.extra), false);
   };
 
 direction
@@ -263,16 +261,6 @@ void init_buffer_type(buffer_type* buf, int lineno)
     buf->token = 0;
     buf->data = NULL;
     buf->extra = NULL;
-}
-
-static int count_brackets(const char* s)
-{
-    int n=0;
-    while (*s) {
-        if (*s == '[') n++;
-        s++;
-    }
-    return n;
 }
 
 void yy::parser::error(const yy::parser::location_type& l, const std::string& errstr)

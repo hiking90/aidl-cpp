@@ -289,13 +289,13 @@ generate_method(const AidlMethod& method, Class* interface,
         decl->comment = method.GetComments();
         decl->modifiers = PUBLIC;
         decl->returnType = types->Find(method.GetType().GetName());
-        decl->returnTypeDimension = method.GetType().GetDimension();
+        decl->returnTypeDimension = method.GetType().IsArray() ? 1 : 0;
         decl->name = method.GetName();
 
     for (const std::unique_ptr<AidlArgument>& arg : method.GetArguments()) {
         decl->parameters.push_back(new Variable(
                             types->Find(arg->GetType().GetName()), arg->GetName(),
-                            arg->GetType().GetDimension()));
+                            arg->GetType().IsArray() ? 1 : 0));
     }
 
     decl->exceptions.push_back(types->RemoteExceptionType());
@@ -318,7 +318,7 @@ generate_method(const AidlMethod& method, Class* interface,
     for (const std::unique_ptr<AidlArgument>& arg : method.GetArguments()) {
         const Type* t = types->Find(arg->GetType().GetName());
         Variable* v = stubArgs.Get(t);
-        v->dimension = arg->GetType().GetDimension();
+        v->dimension = arg->GetType().IsArray() ? 1 : 0;
 
         c->statements->Add(new VariableDeclaration(v));
 
@@ -326,16 +326,11 @@ generate_method(const AidlMethod& method, Class* interface,
             generate_create_from_parcel(t, c->statements, v,
                     stubClass->transact_data, &cl);
         } else {
-            if (arg->GetType().GetDimension() == 0) {
+            if (!arg->GetType().IsArray()) {
                 c->statements->Add(new Assignment(v, new NewExpression(v->type)));
-            }
-            else if (arg->GetType().GetDimension() == 1) {
+            } else {
                 generate_new_array(v->type, c->statements, v,
                         stubClass->transact_data, types);
-            }
-            else {
-                fprintf(stderr, "aidl:internal error %s:%d\n", __FILE__,
-                        __LINE__);
             }
         }
 
@@ -394,13 +389,13 @@ generate_method(const AidlMethod& method, Class* interface,
         proxy->comment = method.GetComments();
         proxy->modifiers = PUBLIC | OVERRIDE;
         proxy->returnType = types->Find(method.GetType().GetName());
-        proxy->returnTypeDimension = method.GetType().GetDimension();
+        proxy->returnTypeDimension = method.GetType().IsArray() ? 1 : 0;
         proxy->name = method.GetName();
         proxy->statements = new StatementBlock;
         for (const std::unique_ptr<AidlArgument>& arg : method.GetArguments()) {
             proxy->parameters.push_back(new Variable(
                             types->Find(arg->GetType().GetName()), arg->GetName(),
-                            arg->GetType().GetDimension()));
+                            arg->GetType().IsArray() ? 1 : 0));
         }
         proxy->exceptions.push_back(types->RemoteExceptionType());
     proxyClass->elements.push_back(proxy);
@@ -422,7 +417,7 @@ generate_method(const AidlMethod& method, Class* interface,
     _result = NULL;
     if (method.GetType().GetName() != "void") {
         _result = new Variable(proxy->returnType, "_result",
-                method.GetType().GetDimension());
+                method.GetType().IsArray() ? 1 : 0);
         proxy->statements->Add(new VariableDeclaration(_result));
     }
 
@@ -439,9 +434,9 @@ generate_method(const AidlMethod& method, Class* interface,
     // the parameters
     for (const std::unique_ptr<AidlArgument>& arg : method.GetArguments()) {
         const Type* t = types->Find(arg->GetType().GetName());
-        Variable* v = new Variable(t, arg->GetName(), arg->GetType().GetDimension());
+        Variable* v = new Variable(t, arg->GetName(), arg->GetType().IsArray() ? 1 : 0);
         AidlArgument::Direction dir = arg->GetDirection();
-        if (dir == AidlArgument::OUT_DIR && arg->GetType().GetDimension() != 0) {
+        if (dir == AidlArgument::OUT_DIR && arg->GetType().IsArray()) {
             IfStatement* checklen = new IfStatement();
             checklen->expression = new Comparison(v, "==", NULL_VALUE);
             checklen->statements->Add(new MethodCall(_data, "writeInt", 1,
@@ -480,7 +475,7 @@ generate_method(const AidlMethod& method, Class* interface,
         // the out/inout parameters
         for (const std::unique_ptr<AidlArgument>& arg : method.GetArguments()) {
             const Type* t = types->Find(arg->GetType().GetName());
-            Variable* v = new Variable(t, arg->GetName(), arg->GetType().GetDimension());
+            Variable* v = new Variable(t, arg->GetName(), arg->GetType().IsArray() ? 1 : 0);
             if (arg->GetDirection() & AidlArgument::OUT_DIR) {
                 generate_read_from_parcel(t, tryStatement->statements,
                                             v, _reply, &cl);

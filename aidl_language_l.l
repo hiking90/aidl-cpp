@@ -41,7 +41,6 @@ using android::aidl::cpp_strdup;
 
 identifier  [_a-zA-Z][_a-zA-Z0-9\.]*
 whitespace  ([ \t\r]+)
-brackets    \[{whitespace}?\]
 idvalue     (0|[1-9][0-9]*)
 
 %%
@@ -92,6 +91,8 @@ idvalue     (0|[1-9][0-9]*)
 ,               { return ','; }
 \(              { return '('; }
 \)              { return ')'; }
+\[              { return '['; }
+\]              { return ']'; }
 
     /* keywords */
 parcelable      { SET_BUFFER(yy::parser::token::PARCELABLE); return yy::parser::token::PARCELABLE; }
@@ -102,9 +103,8 @@ in              { return yy::parser::token::IN; }
 out             { return yy::parser::token::OUT; }
 inout           { return yy::parser::token::INOUT; }
 
-{brackets}+     { SET_BUFFER(yy::parser::token::ARRAY); return yy::parser::token::ARRAY; }
 {idvalue}       { SET_BUFFER(yy::parser::token::IDVALUE); return yy::parser::token::IDVALUE; }
-{identifier}                                        { SET_BUFFER(yy::parser::token::IDENTIFIER); return yy::parser::token::IDENTIFIER; }
+{identifier}    { SET_BUFFER(yy::parser::token::IDENTIFIER); return yy::parser::token::IDENTIFIER; }
 {identifier}\<{whitespace}*{identifier}({whitespace}*,{whitespace}*{identifier})*{whitespace}*\>    {
                                                       SET_BUFFER(yy::parser::token::GENERIC); return yy::parser::token::GENERIC; }
 
