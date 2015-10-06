@@ -92,6 +92,10 @@ AidlMethod::AidlMethod(bool oneway, AidlType* type, std::string name,
       id_(id) {
   has_id_ = true;
   delete args;
+  for (const unique_ptr<AidlArgument>& a : arguments_) {
+    if (a->IsIn()) { in_arguments_.push_back(a.get()); }
+    if (a->IsOut()) { out_arguments_.push_back(a.get()); }
+  }
 }
 
 AidlMethod::AidlMethod(bool oneway, AidlType* type, std::string name,

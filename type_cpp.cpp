@@ -24,6 +24,18 @@ using std::unique_ptr;
 namespace android {
 namespace aidl {
 namespace cpp {
+namespace {
+
+class VoidType : public Type {
+ public:
+  VoidType() : Type("void", "void", "XXX", "XXX") {}
+  virtual ~VoidType() = default;
+  bool CanBeArray() const override { return false; }
+  bool CanBeOutParameter() const override { return false; }
+  bool CanWriteToParcel() const override { return false; }
+};  // class VoidType
+
+}  // namespace
 
 Type::Type(const string& aidl_type,
            const string& cpp_type,
@@ -59,6 +71,9 @@ TypeNamespace::TypeNamespace() {
       new Type("float", "float", "readFloat", "writeFloat"));
   types_.emplace_back(
       new Type("double", "double", "readDouble", "writeDouble"));
+
+  void_type_ = new class VoidType();
+  types_.emplace_back(void_type_);
 }
 
 bool TypeNamespace::AddParcelableType(const AidlParcelable* p,

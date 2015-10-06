@@ -18,6 +18,7 @@
 #define AIDL_GENERATE_CPP_H_
 
 #include "aidl_language.h"
+#include "ast_cpp.h"
 #include "options.h"
 #include "type_cpp.h"
 
@@ -29,6 +30,18 @@ bool GenerateCpp(const CppOptions& options,
                  const cpp::TypeNamespace& types,
                  const AidlInterface& parsed_doc);
 
+namespace internals {
+std::unique_ptr<Document> BuildClientSource(const TypeNamespace& types,
+                                            const AidlInterface& parsed_doc);
+std::unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
+                                            const AidlInterface& parsed_doc);
+std::unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& types,
+                                               const AidlInterface& parsed_doc);
+std::unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
+                                            const AidlInterface& parsed_doc);
+std::unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
+                                               const AidlInterface& parsed_doc);
+}
 }  // namespace cpp
 }  // namespace aidl
 }  // namespace android

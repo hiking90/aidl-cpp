@@ -72,12 +72,16 @@ class TypeNamespace : public ::android::aidl::TypeNamespace {
 
   const Type* Find(const std::string& type_name) const;
 
+  const Type* VoidType() const { return void_type_; }
+
  protected:
   const ValidatableType* GetValidatableType(
       const std::string& type_name) const override;
 
  private:
   std::vector<std::unique_ptr<Type>> types_;
+
+  Type* void_type_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(TypeNamespace);
 };  // class TypeNamespace

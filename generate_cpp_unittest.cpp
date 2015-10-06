@@ -22,6 +22,7 @@
 #include "aidl_language.h"
 #include "ast_cpp.h"
 #include "code_writer.h"
+#include "generate_cpp.h"
 #include "tests/fake_io_delegate.h"
 #include "type_cpp.h"
 
@@ -32,21 +33,47 @@ using std::unique_ptr;
 namespace android {
 namespace aidl {
 namespace cpp {
-namespace internals {
-unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& types,
-                                          const AidlInterface& parsed_doc);
-unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
-                                       const AidlInterface& parsed_doc);
-unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
-                                          const AidlInterface& parsed_doc);
-}
-
 namespace {
 
 const char kTrivialInterfaceAIDL[] =
 R"(interface IPingResponder {
   int Ping(int token);
 })";
+
+const char kExpectedTrivialServerSourceOutput[] =
+R"(#include <BnPingResponder.h>
+#include <binder/Parcel.h>
+
+namespace android {
+
+namespace generated {
+
+android::status_t BnPingResponder::onTransact(uint32_t code, const android::Parcel& data, android::Parcel* reply, uint32_t flags) {
+switch (code) {
+case Call::PING:
+{
+int32_t in_token;
+int32_t _aidl_return;
+android::status_t status;
+status = data.readInt32(&in_token);
+if (status != android::OK) { break; }
+status = Ping(in_token, &_aidl_return);
+if (status != android::OK) { break; }
+}
+break;
+default:
+{
+status = android::BBinder::onTransact(code, data, reply, flags);
+}
+break;
+}
+return status;
+}
+
+}  // namespace generated
+
+}  // namespace android
+)";
 
 const char kExpectedTrivialClientHeaderOutput[] =
 R"(#ifndef BpPingResponder_H
@@ -154,6 +181,14 @@ TEST_F(TrivialInterfaceASTTest, GeneratesClientHeader) {
   TypeNamespace types;
   unique_ptr<Document> doc = internals::BuildClientHeader(types, *interface);
   Compare(doc.get(), kExpectedTrivialClientHeaderOutput);
+}
+
+TEST_F(TrivialInterfaceASTTest, GeneratesServerSource) {
+  AidlInterface* interface = Parse();
+  ASSERT_NE(interface, nullptr);
+  TypeNamespace types;
+  unique_ptr<Document> doc = internals::BuildServerSource(types, *interface);
+  Compare(doc.get(), kExpectedTrivialServerSourceOutput);
 }
 
 TEST_F(TrivialInterfaceASTTest, GeneratesInterfaceHeader) {

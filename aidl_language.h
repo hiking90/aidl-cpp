@@ -80,7 +80,10 @@ class AidlArgument : public AidlNode {
   virtual ~AidlArgument() = default;
 
   Direction GetDirection() const { return direction_; }
+  bool IsOut() const { return direction_ & OUT_DIR; }
+  bool IsIn() const { return direction_ & IN_DIR; }
   bool DirectionWasSpecified() const { return direction_specified_; }
+
   std::string GetName() const { return name_; }
   int GetLine() const { return line_; }
   const AidlType& GetType() const { return *type_; }
@@ -117,7 +120,16 @@ class AidlMethod {
   void SetId(unsigned id) { id_ = id; }
 
   const std::vector<std::unique_ptr<AidlArgument>>& GetArguments() const {
-      return arguments_;
+    return arguments_;
+  }
+  // An inout parameter will appear in both GetInArguments()
+  // and GetOutArguments().  AidlMethod retains ownership of the argument
+  // pointers returned in this way.
+  const std::vector<const AidlArgument*>& GetInArguments() const {
+    return in_arguments_;
+  }
+  const std::vector<const AidlArgument*>& GetOutArguments() const {
+    return out_arguments_;
   }
 
  private:
@@ -126,7 +138,9 @@ class AidlMethod {
   std::unique_ptr<AidlType> type_;
   std::string name_;
   unsigned line_;
-  std::vector<std::unique_ptr<AidlArgument>> arguments_;
+  const std::vector<std::unique_ptr<AidlArgument>> arguments_;
+  std::vector<const AidlArgument*> in_arguments_;
+  std::vector<const AidlArgument*> out_arguments_;
   bool has_id_;
   int id_;
 
