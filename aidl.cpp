@@ -36,11 +36,11 @@
 #include "aidl_language.h"
 #include "generate_cpp.h"
 #include "generate_java.h"
+#include "import_resolver.h"
 #include "logging.h"
 #include "options.h"
 #include "os.h"
 #include "parse_helpers.h"
-#include "search_path.h"
 #include "type_cpp.h"
 #include "type_java.h"
 #include "type_namespace.h"
@@ -518,8 +518,6 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
                            import_info** returned_imports) {
   int err = 0;
 
-  set_import_paths(import_paths);
-
   // import the preprocessed file
   for (const string& s : preprocessed_files) {
     err |= parse_preprocessed_file(s, types);
@@ -552,6 +550,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
                         interface->package, &interface->name);
 
   // parse the imports of the input file
+  ImportResolver import_resolver{io_delegate, import_paths};
   for (import_info* import = p.GetImports(); import; import = import->next) {
     if (types->HasType(import->neededClass)) {
       // There are places in the Android tree where an import doesn't resolve,
@@ -559,14 +558,15 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
       // This seems like an error, but legacy support demands we support it...
       continue;
     }
-    import->filename = find_import_file(import->neededClass);
-    if (!import->filename) {
+    string import_path = import_resolver.FindImportFile(import->neededClass);
+    if (import_path.empty()) {
       cerr << import->from << ":" << import->line
            << ": couldn't find import for class "
            << import->neededClass << endl;
       err |= 1;
       continue;
     }
+    import->filename = cpp_strdup(import_path.c_str());
 
     Parser p{io_delegate};
     if (!p.ParseFile(import->filename)) {

@@ -14,35 +14,37 @@
  * limitations under the License.
  */
 
-#ifndef AIDL_IO_DELEGATE_H_
-#define AIDL_IO_DELEGATE_H_
+#ifndef AIDL_IMPORT_RESOLVER_H_
+#define AIDL_IMPORT_RESOLVER_H_
+
+#include <string>
+#include <vector>
 
 #include <base/macros.h>
 
-#include <memory>
-#include <string>
+#include "io_delegate.h"
 
 namespace android {
 namespace aidl {
 
-class IoDelegate {
+class ImportResolver {
  public:
-  IoDelegate() = default;
-  virtual ~IoDelegate() = default;
+  ImportResolver(const IoDelegate& io_delegate,
+                 const std::vector<std::string>& import_paths);
+  virtual ~ImportResolver() = default;
 
-  // Returns a unique_ptr to the contents of |filename|.
-  // Will append the optional |content_suffix| to the returned contents.
-  virtual std::unique_ptr<std::string> GetFileContents(
-      const std::string& filename,
-      const std::string& content_suffix = "") const;
-
-  virtual bool FileIsReadable(const std::string& path) const;
+  // Resolve the canonical name for a class to a file that exists
+  // in one of the import paths given to the ImportResolver.
+  std::string FindImportFile(const std::string& canonical_name) const;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(IoDelegate);
-};  // class IoDelegate
+  const IoDelegate& io_delegate_;
+  std::vector<std::string> import_paths_;
+
+  DISALLOW_COPY_AND_ASSIGN(ImportResolver);
+};
 
 }  // namespace android
 }  // namespace aidl
 
-#endif // AIDL_IO_DELEGATE_H_
+#endif // AIDL_IMPORT_RESOLVER_H_

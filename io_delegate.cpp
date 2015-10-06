@@ -46,5 +46,14 @@ unique_ptr<string> IoDelegate::GetFileContents(
   return contents;
 }
 
+bool IoDelegate::FileIsReadable(const string& path) const {
+#ifdef _WIN32
+  // check that the file exists and is not write-only
+  return (0 == _access(path.c_str(), 0)) &&  // mode 0=exist
+         (0 == _access(path.c_str(), 4));    // mode 4=readable
+#else
+  return (0 == access(path.c_str(), R_OK));
+#endif
+}
 }  // namespace android
 }  // namespace aidl

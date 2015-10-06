@@ -5,7 +5,6 @@
 #include "aidl_language.h"
 #include "aidl_language_y.hpp"
 #include "parse_helpers.h"
-#include "search_path.h"
 
 // comment and whitespace handling
 // these functions save a copy of the buffer

@@ -38,10 +38,10 @@ LOCAL_SRC_FILES := \
     generate_cpp.cpp \
     generate_java.cpp \
     generate_java_binder.cpp \
+    import_resolver.cpp \
     io_delegate.cpp \
     options.cpp \
     parse_helpers.cpp \
-    search_path.cpp \
     type_cpp.cpp \
     type_java.cpp \
     type_namespace.cpp \

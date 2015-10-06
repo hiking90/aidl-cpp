@@ -38,6 +38,10 @@ unique_ptr<string> FakeIoDelegate::GetFileContents(
   return contents;
 }
 
+bool FakeIoDelegate::FileIsReadable(const std::string& path) const {
+  return file_contents_.find(path) != file_contents_.end();
+}
+
 void FakeIoDelegate::SetFileContents(const string& filename,
                                      const string& contents) {
   file_contents_[filename] = contents;

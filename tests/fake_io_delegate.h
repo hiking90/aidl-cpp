@@ -39,6 +39,8 @@ class FakeIoDelegate : public IoDelegate {
       const std::string& filename,
       const std::string& append_content_suffix = "") const override;
 
+  bool FileIsReadable(const std::string& path) const override;
+
   void SetFileContents(const std::string& filename,
                        const std::string& contents);
 
