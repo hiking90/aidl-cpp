@@ -22,6 +22,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "io_delegate.h"
 
@@ -43,8 +44,16 @@ class FakeIoDelegate : public IoDelegate {
 
   void SetFileContents(const std::string& filename,
                        const std::string& contents);
+  void AddStubParcelable(const std::string& canonical_name);
+  void AddStubInterface(const std::string& canonical_name);
+  void AddCompoundParcelable(const std::string& canonical_name,
+                             const std::vector<std::string>& subclasses);
 
  private:
+  void AddStub(const std::string& canonical_name, const char* format_str);
+  // Remove leading "./" from |path|.
+  std::string CleanPath(const std::string& path) const;
+
   std::map<std::string, std::string> file_contents_;
 
   DISALLOW_COPY_AND_ASSIGN(FakeIoDelegate);

@@ -25,10 +25,13 @@
 #include <gtest/gtest.h>
 
 #include "aidl.h"
-#include "io_delegate.h"
 #include "options.h"
+#include "tests/fake_io_delegate.h"
 #include "tests/test_data.h"
+#include "tests/test_util.h"
 
+using android::aidl::test::CanonicalNameToPath;
+using android::aidl::test::FakeIoDelegate;
 using android::base::StringAppendF;
 using android::base::StringPrintf;
 using base::CreateDirectory;
@@ -46,29 +49,6 @@ namespace aidl {
 namespace {
 
 const char kDiffTemplate[] = "diff -u %s %s";
-const char kStubInterfaceTemplate[] = "package %s;\ninterface %s { }";
-const char kStubParcelableTemplate[] = "package %s;\nparcelable %s;";
-
-FilePath GetPathForPackageClass(const char* package_class,
-                                const char* extension) {
-  string rel_path{package_class};
-  for (char& c : rel_path) {
-    if (c == '.') {
-      c = FilePath::kSeparators[0];
-    }
-  }
-  rel_path += extension;
-  return FilePath(rel_path);
-}
-
-void SplitPackageClass(const string& package_class,
-                       FilePath* rel_path,
-                       string* package,
-                       string* class_name) {
-  *package = string{package_class, 0, package_class.rfind('.')};
-  *class_name = string{package_class, package_class.rfind('.') + 1};
-  *rel_path = GetPathForPackageClass(package_class.c_str(), ".aidl");
-}
 
 }  // namespace
 
@@ -77,9 +57,7 @@ class EndToEndTest : public ::testing::Test {
   virtual void SetUp() {
     ASSERT_TRUE(CreateNewTempDirectory(
         string{"end_to_end_testsyyyy"}, &tmpDir_));
-    inputDir_ = tmpDir_.Append("input");
     outputDir_ = tmpDir_.Append("output");
-    ASSERT_TRUE(CreateDirectory(inputDir_));
     ASSERT_TRUE(CreateDirectory(outputDir_));
   }
 
@@ -88,50 +66,13 @@ class EndToEndTest : public ::testing::Test {
         << "Failed to remove temp directory: " << tmpDir_.value();
   }
 
-  FilePath CreateInputFile(const FilePath& relative_path,
-                           const char contents[],
-                           int size) {
-    const FilePath created_file = inputDir_.Append(relative_path);
-    EXPECT_TRUE(CreateDirectory(created_file.DirName()));
-    EXPECT_TRUE(WriteFile(created_file, contents, size));
-    return created_file;
-  }
-
-  void CreateStubAidlFile(const string& package_class,
-                          const char* file_template) {
-    string package, class_name;
-    FilePath rel_path;
-    SplitPackageClass(package_class, &rel_path, &package, &class_name);
-    const size_t buf_len =
-        strlen(file_template) + package.length() + class_name.length() + 1;
-    unique_ptr<char[]> contents(new char[buf_len]);
-    const int written = snprintf(contents.get(), buf_len, file_template,
-                                 package.c_str(), class_name.c_str());
-    EXPECT_GT(written, 0);
-    CreateInputFile(rel_path, contents.get(), written);
-  }
-
-  void CreateCompoundParcelable(const string& package_class,
-                                const vector<string> subclasses) {
-    string package, class_name;
-    FilePath rel_path;
-    SplitPackageClass(package_class, &rel_path, &package, &class_name);
-    string contents = StringPrintf("package %s;\n", package.c_str());
-    for (const string& subclass : subclasses) {
-      StringAppendF(&contents, "parcelable %s.%s;\n",
-                    class_name.c_str(), subclass.c_str());
+  void AddStubAidls(const char** parcelables, const char** interfaces,
+                    FakeIoDelegate* io_delegate) {
+    for ( ; *parcelables; ++parcelables) {
+      io_delegate->AddStubParcelable(*parcelables);
     }
-    CreateInputFile(rel_path, contents.c_str(), contents.length());
-  }
-
-  void WriteStubAidls(const char** parcelables, const char** interfaces) {
-    while (*parcelables) {
-      CreateStubAidlFile(string{*parcelables}, kStubParcelableTemplate);
-      ++parcelables;
-    }
-    while (*interfaces) {
-      CreateStubAidlFile(string{*interfaces}, kStubInterfaceTemplate);
-      ++interfaces;
+    for ( ; *interfaces; ++interfaces) {
+      io_delegate->AddStubInterface(*interfaces);
     }
   }
 
@@ -165,25 +106,29 @@ class EndToEndTest : public ::testing::Test {
   }
 
   FilePath tmpDir_;
-  FilePath inputDir_;
   FilePath outputDir_;
 };
 
 TEST_F(EndToEndTest, IExampleInterface) {
+  FakeIoDelegate io_delegate;
   JavaOptions options;
   options.fail_on_parcelable_ = true;
-  options.import_paths_.push_back(inputDir_.value());
+  options.import_paths_.push_back("");
   options.input_file_name_ =
-      CreateInputFile(GetPathForPackageClass(kIExampleInterfaceClass, ".aidl"),
-                      kIExampleInterfaceContents,
-                      strlen(kIExampleInterfaceContents)).value();
+      CanonicalNameToPath(kIExampleInterfaceClass, ".aidl").value();
   options.output_base_folder_ = outputDir_.value();
-  WriteStubAidls(kIExampleInterfaceParcelables, kIExampleInterfaceInterfaces);
-  CreateCompoundParcelable("android.test.CompoundParcelable",
-                           {"Subclass1", "Subclass2"});
-  IoDelegate io_delegate;
+
+  // Load up our fake file system with data.
+  io_delegate.SetFileContents(options.input_file_name_,
+                              kIExampleInterfaceContents);
+  io_delegate.AddCompoundParcelable("android.test.CompoundParcelable", 
+                                    {"Subclass1", "Subclass2"});
+  AddStubAidls(kIExampleInterfaceParcelables, kIExampleInterfaceInterfaces,
+               &io_delegate);
+
+  // Check that we parse correctly.
   EXPECT_EQ(android::aidl::compile_aidl_to_java(options, io_delegate), 0);
-  CheckFileContents(GetPathForPackageClass(kIExampleInterfaceClass, ".java"),
+  CheckFileContents(CanonicalNameToPath(kIExampleInterfaceClass, ".java"),
                     kIExampleInterfaceJava);
   // We'd like to check the depends file, but it mentions unique file paths.
 }

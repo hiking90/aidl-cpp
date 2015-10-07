@@ -91,6 +91,7 @@ LOCAL_SRC_FILES := \
     tests/end_to_end_tests.cpp \
     tests/example_interface_test_data.cpp \
     tests/fake_io_delegate.cpp \
+    tests/test_util.cpp \
     type_cpp_unittest.cpp \
     type_java_unittest.cpp \
 
