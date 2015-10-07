@@ -40,7 +40,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
                            const IoDelegate& io_delegate,
                            TypeNamespace* types,
                            interface_type** returned_interface,
-                           import_info** returned_imports);
+                           std::vector<std::unique_ptr<AidlImport>>* returned_imports);
 
 } // namespace internals
 

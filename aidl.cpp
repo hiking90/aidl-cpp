@@ -67,7 +67,7 @@ namespace {
 const int kMinUserSetMethodId = 0;
 const int kMaxUserSetMethodId = 16777214;
 
-int check_filename(const char* filename,
+int check_filename(const std::string& filename,
                    const char* package,
                    buffer_type* name) {
     const char* p;
@@ -139,14 +139,14 @@ int check_filename(const char* filename,
     if (!valid) {
         fprintf(stderr, "%s:%d interface %s should be declared in a file"
                 " called %s.\n",
-                filename, name->lineno, name->data, expected.c_str());
+                filename.c_str(), name->lineno, name->data, expected.c_str());
         return 1;
     }
 
     return 0;
 }
 
-int check_filenames(const char* filename, document_item_type* items) {
+int check_filenames(const std::string& filename, const document_item_type* items) {
     int err = 0;
     while (items) {
         if (items->item_type == USER_DATA_TYPE) {
@@ -178,15 +178,12 @@ char* rfind(char* str, char c) {
     return NULL;
 }
 
-bool gather_types(const char* raw_filename,
-                  document_item_type* all_items,
+bool gather_types(const std::string& filename,
+                  const document_item_type* all_items,
                   TypeNamespace* types) {
   bool success = true;
-  if (raw_filename == nullptr)
-    raw_filename = "";
-  const std::string filename{raw_filename};
 
-  for (document_item_type* item = all_items; item; item = item->next) {
+  for (const document_item_type* item = all_items; item; item = item->next) {
     if (item->item_type == USER_DATA_TYPE) {
       user_data_type* p = (user_data_type*)item;
       success &= types->AddParcelableType(p, filename);
@@ -238,47 +235,56 @@ int check_types(const string& filename,
 
 void generate_dep_file(const JavaOptions& options,
                        const document_item_type* items,
-                       import_info* import_head) {
+                       const std::vector<std::unique_ptr<AidlImport>>& imports) {
     /* we open the file in binary mode to ensure that the same output is
      * generated on all platforms !!
      */
     FILE* to = NULL;
+    string fileName;
+
     if (options.auto_dep_file_) {
-        string fileName = options.output_file_name_ + ".d";
-        to = fopen(fileName.c_str(), "wb");
+            fileName = options.output_file_name_ + ".d";
     } else {
-        to = fopen(options.dep_file_name_.c_str(), "wb");
+        fileName = options.dep_file_name_;
     }
 
+    string output_file_name;
+
+    // TODO: Mock IO and remove this weird stuff (b/24816077)
+    if (!options.output_file_name_for_deps_test_.empty())
+        output_file_name = options.output_file_name_for_deps_test_;
+    else
+        output_file_name = options.output_file_name_;
+
+    to = fopen(fileName.c_str(), "wb");
+
     if (to == NULL) {
+        cerr << "Could not open " << fileName << endl;
+        printf("%m\n");
         return;
     }
 
-    const char* slash = "\\";
-    import_info* import = import_head;
-    if (import == NULL) {
-        slash = "";
-    }
-
     if (items->item_type == INTERFACE_TYPE_BINDER) {
-        fprintf(to, "%s: \\\n", options.output_file_name_.c_str());
+        fprintf(to, "%s: \\\n", output_file_name.c_str());
     } else {
         // parcelable: there's no output file.
         fprintf(to, " : \\\n");
     }
-    fprintf(to, "  %s %s\n", options.input_file_name_.c_str(), slash);
+    fprintf(to, "  %s %s\n", options.input_file_name_.c_str(), imports.empty() ? "" : "\\");
 
-    while (import) {
-        if (import->next == NULL) {
-            slash = "";
+    bool first = true;
+    for (const auto& import : imports) {
+        if (! first) {
+          fprintf(to, " \\\n");
         }
-        if (import->filename) {
-            fprintf(to, "  %s %s\n", import->filename, slash);
+        first = false;
+
+        if (! import->GetFilename().empty()) {
+            fprintf(to, "  %s", import->GetFilename().c_str());
         }
-        import = import->next;
     }
 
-    fprintf(to, "\n");
+    fprintf(to, first ? "\n" : "\n\n");
 
     // Output "<input_aidl_file>: " so make won't fail if the input .aidl file
     // has been deleted, moved or renamed in incremental build.
@@ -286,12 +292,10 @@ void generate_dep_file(const JavaOptions& options,
 
     // Output "<imported_file>: " so make won't fail if the imported file has
     // been deleted, moved or renamed in incremental build.
-    import = import_head;
-    while (import) {
-        if (import->filename) {
-            fprintf(to, "%s :\n", import->filename);
+    for (const auto& import : imports) {
+        if (! import->GetFilename().empty()) {
+            fprintf(to, "%s :\n", import->GetFilename().c_str());
         }
-        import = import->next;
     }
 
     fclose(to);
@@ -515,7 +519,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
                            const IoDelegate& io_delegate,
                            TypeNamespace* types,
                            interface_type** returned_interface,
-                           import_info** returned_imports) {
+                           std::vector<std::unique_ptr<AidlImport>>* returned_imports) {
   int err = 0;
 
   // import the preprocessed file
@@ -551,33 +555,33 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
 
   // parse the imports of the input file
   ImportResolver import_resolver{io_delegate, import_paths};
-  for (import_info* import = p.GetImports(); import; import = import->next) {
-    if (types->HasType(import->neededClass)) {
+  for (auto& import : p.GetImports()) {
+    if (types->HasType(import->GetNeededClass())) {
       // There are places in the Android tree where an import doesn't resolve,
       // but we'll pick the type up through the preprocessed types.
       // This seems like an error, but legacy support demands we support it...
       continue;
     }
-    string import_path = import_resolver.FindImportFile(import->neededClass);
+    string import_path = import_resolver.FindImportFile(import->GetNeededClass());
     if (import_path.empty()) {
-      cerr << import->from << ":" << import->line
+      cerr << import->GetFileFrom() << ":" << import->GetLine()
            << ": couldn't find import for class "
-           << import->neededClass << endl;
+           << import->GetNeededClass() << endl;
       err |= 1;
       continue;
     }
-    import->filename = cpp_strdup(import_path.c_str());
+    import->SetFilename(import_path);
 
     Parser p{io_delegate};
-    if (!p.ParseFile(import->filename)) {
+    if (!p.ParseFile(import->GetFilename())) {
       cerr << "error while parsing import for class "
-           << import->neededClass << endl;
+           << import->GetNeededClass() << endl;
       err |= 1;
       continue;
     }
 
-    import->doc = p.GetDocument();
-    err |= check_filenames(import->filename, import->doc);
+    import->SetDocument(p.GetDocument());
+    err |= check_filenames(import->GetFilename(), import->GetDocument());
   }
   if (err != 0) {
     return err;
@@ -587,8 +591,8 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
   if (!gather_types(input_file_name.c_str(), parsed_doc, types)) {
     err |= 1;
   }
-  for (import_info* import = p.GetImports(); import; import = import->next) {
-    if (!gather_types(import->filename, import->doc, types)) {
+  for (const auto& import : p.GetImports()) {
+    if (!gather_types(import->GetFilename(), import->GetDocument(), types)) {
       err |= 1;
     }
   }
@@ -607,8 +611,14 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
     return err;
   }
 
-  *returned_interface = interface;
-  *returned_imports = p.GetImports();
+  if (returned_interface)
+      *returned_interface = interface;
+  else
+      delete interface;
+
+  if (returned_imports)
+    p.ReleaseImports(returned_imports);
+
   return 0;
 }
 
@@ -617,7 +627,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
 int compile_aidl_to_cpp(const CppOptions& options,
                         const IoDelegate& io_delegate) {
   interface_type* interface = nullptr;
-  import_info* imports = nullptr;
+  std::vector<std::unique_ptr<AidlImport>> imports;
   unique_ptr<cpp::TypeNamespace> types(new cpp::TypeNamespace());
   int err = internals::load_and_validate_aidl(
       std::vector<std::string>{},  // no preprocessed files
@@ -639,7 +649,7 @@ int compile_aidl_to_cpp(const CppOptions& options,
 int compile_aidl_to_java(const JavaOptions& options,
                          const IoDelegate& io_delegate) {
   interface_type* interface = nullptr;
-  import_info* imports = nullptr;
+  std::vector<std::unique_ptr<AidlImport>> imports;
   unique_ptr<java::JavaTypeNamespace> types(new java::JavaTypeNamespace());
   int err = internals::load_and_validate_aidl(
       options.preprocessed_files_,

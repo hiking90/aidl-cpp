@@ -167,30 +167,33 @@ struct interface_type {
 };
 
 
-#if __cplusplus
-extern "C" {
-#endif
-
-// callbacks from within the parser
-// these functions all take ownership of the strings
-struct ParserCallbacks {
-    void (*document)(document_item_type* items);
-    void (*import)(buffer_type* statement);
-};
-
-enum error_type {
-    STATEMENT_INSIDE_INTERFACE
-};
-
 void init_buffer_type(buffer_type* buf, int lineno);
 
-struct import_info {
-    const char* from;
-    const char* filename;
-    const char* neededClass;
-    unsigned line;
-    document_item_type* doc;
-    struct import_info* next;
+class AidlImport : public AidlNode {
+ public:
+  AidlImport(const std::string& from, const std::string& needed_class,
+             unsigned line);
+  virtual ~AidlImport() = default;
+
+  const std::string& GetFileFrom() const { return from_; }
+  const std::string& GetFilename() const { return filename_; }
+  const std::string& GetNeededClass() const { return needed_class_; }
+  unsigned GetLine() const { return line_; }
+  const AidlDocumentItem* GetDocument() { return document_.get(); };
+  void SetDocument(AidlDocumentItem* doc) {
+    document_.reset(doc);
+  }
+
+  void SetFilename(const std::string& filename) { filename_ = filename; }
+
+ private:
+  std::unique_ptr<document_item_type> document_;
+  std::string from_;
+  std::string filename_;
+  std::string needed_class_;
+  unsigned line_;
+
+  DISALLOW_COPY_AND_ASSIGN(AidlImport);
 };
 
 class Parser {
@@ -214,7 +217,12 @@ class Parser {
   void SetPackage(std::vector<std::string>* terms);
 
   document_item_type *GetDocument() const { return document_; }
-  import_info *GetImports() const { return imports_; }
+  const std::vector<std::unique_ptr<AidlImport>>& GetImports() { return imports_; }
+
+  void ReleaseImports(std::vector<std::unique_ptr<AidlImport>>* ret) {
+      *ret = std::move(imports_);
+      imports_.clear();
+  }
 
  private:
   const android::aidl::IoDelegate& io_delegate_;
@@ -223,15 +231,11 @@ class Parser {
   std::string package_;
   void *scanner_ = nullptr;
   document_item_type* document_ = nullptr;
-  import_info* imports_ = nullptr;
+  std::vector<std::unique_ptr<AidlImport>> imports_;
   std::unique_ptr<std::string> raw_buffer_;
   YY_BUFFER_STATE buffer_;
 
   DISALLOW_COPY_AND_ASSIGN(Parser);
 };
-
-#if __cplusplus
-}
-#endif
 
 #endif // AIDL_AIDL_LANGUAGE_H_

@@ -106,6 +106,12 @@ Parser::Parser(const IoDelegate& io_delegate)
   yylex_init(&scanner_);
 }
 
+AidlImport::AidlImport(const std::string& from,
+                       const std::string& needed_class, unsigned line)
+    : from_(from),
+      needed_class_(needed_class),
+      line_(line) {}
+
 Parser::~Parser() {
   if (raw_buffer_) {
     yy_delete_buffer(buffer_, scanner_);
@@ -136,7 +142,6 @@ bool Parser::ParseFile(const string& filename) {
   package_.clear();
   error_ = 0;
   document_ = nullptr;
-  imports_ = nullptr;
 
   buffer_ = yy_scan_buffer(&(*raw_buffer_)[0], raw_buffer_->length(), scanner_);
 
@@ -169,13 +174,7 @@ void Parser::AddImport(std::vector<std::string>* terms, unsigned line) {
           data += '.' + term;
   }
 
-  import_info* import = new import_info();
-  memset(import, 0, sizeof(import_info));
-  import->from = cpp_strdup(this->FileName().c_str());
-  import->next = imports_;
-  import->line = line;
-  import->neededClass = cpp_strdup(data.c_str());
-  imports_ = import;
+  imports_.emplace_back(new AidlImport(this->FileName(), data, line));
 
   delete terms;
 }

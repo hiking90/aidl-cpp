@@ -122,7 +122,7 @@ class TrivialInterfaceASTTest : public ::testing::Test {
 
   cpp::TypeNamespace types;
   interface_type* ret = nullptr;
-  import_info* imports = nullptr;
+  std::vector<std::unique_ptr<AidlImport>> imports;
   int err = ::android::aidl::internals::load_and_validate_aidl(
       {},  // no preprocessed files
       {},  // no import paths
