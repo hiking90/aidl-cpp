@@ -38,6 +38,7 @@ LOCAL_SRC_FILES := \
     generate_cpp.cpp \
     generate_java.cpp \
     generate_java_binder.cpp \
+    io_delegate.cpp \
     options.cpp \
     parse_helpers.cpp \
     search_path.cpp \
@@ -89,6 +90,7 @@ LOCAL_SRC_FILES := \
     test_main.cpp \
     tests/end_to_end_tests.cpp \
     tests/example_interface_test_data.cpp \
+    tests/fake_io_delegate.cpp \
     type_cpp_unittest.cpp \
     type_java_unittest.cpp \
 

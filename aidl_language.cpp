@@ -3,9 +3,11 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <string>
 
 #include "aidl_language_y.hpp"
+#include "logging.h"
 #include "parse_helpers.h"
 
 #ifdef _WIN32
@@ -15,28 +17,19 @@ int isatty(int  fd)
 }
 #endif
 
-using std::string;
+using android::aidl::IoDelegate;
+using android::aidl::cpp_strdup;
 using std::cerr;
 using std::endl;
-using android::aidl::cpp_strdup;
+using std::string;
+using std::unique_ptr;
 
 void yylex_init(void **);
 void yylex_destroy(void *);
 void yyset_in(FILE *f, void *);
 int yyparse(Parser*);
-YY_BUFFER_STATE yy_scan_string(const char *, void *);
+YY_BUFFER_STATE yy_scan_buffer(char *, size_t, void *);
 void yy_delete_buffer(YY_BUFFER_STATE, void *);
-
-Parser::Parser(const string& filename)
-    : filename_(filename) {
-  yylex_init(&scanner_);
-}
-
-Parser::~Parser() {
-  if (buffer_is_valid_)
-    yy_delete_buffer(buffer_, scanner_);
-  yylex_destroy(scanner_);
-}
 
 AidlType::AidlType(const std::string& name, unsigned line,
                    const std::string& comments, bool is_array)
@@ -45,8 +38,7 @@ AidlType::AidlType(const std::string& name, unsigned line,
       is_array_(is_array),
       comments_(comments) {}
 
-string AidlType::ToString() const {
-  return name_ + (is_array_ ? "[]" : "");
+string AidlType::ToString() const { return name_ + (is_array_ ? "[]" : "");
 }
 
 AidlArgument::AidlArgument(AidlArgument::Direction direction, AidlType* type,
@@ -109,6 +101,50 @@ AidlMethod::AidlMethod(bool oneway, AidlType* type, std::string name,
   has_id_ = false;
 }
 
+Parser::Parser(const IoDelegate& io_delegate)
+    : io_delegate_(io_delegate) {
+  yylex_init(&scanner_);
+}
+
+Parser::~Parser() {
+  if (raw_buffer_) {
+    yy_delete_buffer(buffer_, scanner_);
+    raw_buffer_.reset();
+  }
+  yylex_destroy(scanner_);
+}
+
+bool Parser::ParseFile(const string& filename) {
+  // Make sure we can read the file first, before trashing previous state.
+  unique_ptr<string> new_buffer = io_delegate_.GetFileContents(filename);
+  if (!new_buffer) {
+    LOG(ERROR) << "Error while opening file for parsing: '" << filename << "'";
+    return false;
+  }
+
+  // Throw away old parsing state if we have any.
+  if (raw_buffer_) {
+    yy_delete_buffer(buffer_, scanner_);
+    raw_buffer_.reset();
+  }
+
+  raw_buffer_ = std::move(new_buffer);
+  // We're going to scan this buffer in place, and yacc demands we put two
+  // nulls at the end.
+  raw_buffer_->append(2u, '\0');
+  filename_ = filename;
+  package_.clear();
+  error_ = 0;
+  document_ = nullptr;
+  imports_ = nullptr;
+
+  buffer_ = yy_scan_buffer(&(*raw_buffer_)[0], raw_buffer_->length(), scanner_);
+
+  int ret = yy::parser(this).parse();
+
+  return ret == 0 && error_ == 0;
+}
+
 void Parser::ReportError(const string& err) {
   /* FIXME: We're printing out the line number as -1. We used to use yylineno
    * (which was NEVER correct even before reentrant parsing). Now we'll need
@@ -116,30 +152,6 @@ void Parser::ReportError(const string& err) {
    */
   cerr << filename_ << ":" << -1 << ": " << err << endl;
   error_ = 1;
-}
-
-bool Parser::OpenFileFromDisk() {
-  FILE *in = fopen(FileName().c_str(), "r");
-
-  if (! in)
-    return false;
-
-  yyset_in(in, Scanner());
-  return true;
-}
-
-void Parser::SetFileContents(const std::string& contents) {
-  if (buffer_is_valid_)
-    yy_delete_buffer(buffer_, scanner_);
-
-  buffer_ = yy_scan_string(contents.c_str(), scanner_);
-  buffer_is_valid_ = true;
-}
-
-bool Parser::RunParser() {
-  int ret = yy::parser(this).parse();
-
-  return ret == 0 && error_ == 0;
 }
 
 void Parser::AddImport(std::vector<std::string>* terms, unsigned line) {

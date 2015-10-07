@@ -18,6 +18,7 @@
 #include <memory>
 
 #include "aidl.h"
+#include "io_delegate.h"
 #include "logging.h"
 #include "options.h"
 
@@ -31,11 +32,12 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  android::aidl::IoDelegate io_delegate;
   switch (options->task) {
     case JavaOptions::COMPILE_AIDL_TO_JAVA:
-      return android::aidl::compile_aidl_to_java(*options);
+      return android::aidl::compile_aidl_to_java(*options, io_delegate);
     case JavaOptions::PREPROCESS_AIDL:
-      return android::aidl::preprocess_aidl(*options);
+      return android::aidl::preprocess_aidl(*options, io_delegate);
   }
   std::cerr << "aidl: internal error" << std::endl;
   return 1;

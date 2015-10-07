@@ -22,18 +22,16 @@
 #include "aidl_language.h"
 #include "ast_cpp.h"
 #include "code_writer.h"
+#include "tests/fake_io_delegate.h"
 #include "type_cpp.h"
 
+using android::aidl::test::FakeIoDelegate;
 using std::string;
 using std::unique_ptr;
 
 namespace android {
 namespace aidl {
-
-using namespace internals;
-
 namespace cpp {
-
 namespace internals {
 unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& types,
                                           const interface_type& parsed_doc);
@@ -118,15 +116,22 @@ IMPLEMENT_META_INTERFACE(PingResponder, "IPingResponder");
 class TrivialInterfaceASTTest : public ::testing::Test {
  protected:
   interface_type* Parse() {
-    Parser p{"BpExampleInterface.h"};
-    p.SetFileContents(kTrivialInterfaceAIDL);
 
-    interface_type* ret = nullptr;
+  FakeIoDelegate io_delegate;
+  io_delegate.SetFileContents("IPingResponder.aidl", kTrivialInterfaceAIDL);
 
-    int err = load_aidl_for_test("IPingResponder.aidl",
-                                 kTrivialInterfaceAIDL,
-                                 new cpp::TypeNamespace(),
-                                 &ret);
+  cpp::TypeNamespace types;
+  interface_type* ret = nullptr;
+  import_info* imports = nullptr;
+  int err = ::android::aidl::internals::load_and_validate_aidl(
+      {},  // no preprocessed files
+      {},  // no import paths
+      "IPingResponder.aidl",
+      io_delegate,
+      &types,
+      &ret,
+      &imports);
+
     if (err)
       return nullptr;
 

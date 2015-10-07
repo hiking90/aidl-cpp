@@ -17,6 +17,7 @@
 #include <memory>
 
 #include "aidl.h"
+#include "io_delegate.h"
 #include "logging.h"
 #include "options.h"
 
@@ -31,5 +32,6 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  return android::aidl::compile_aidl_to_cpp(*options);
+  android::aidl::IoDelegate io_delegate;
+  return android::aidl::compile_aidl_to_cpp(*options, io_delegate);
 }

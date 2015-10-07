@@ -25,6 +25,7 @@
 #include <gtest/gtest.h>
 
 #include "aidl.h"
+#include "io_delegate.h"
 #include "options.h"
 #include "tests/test_data.h"
 
@@ -180,7 +181,8 @@ TEST_F(EndToEndTest, IExampleInterface) {
   WriteStubAidls(kIExampleInterfaceParcelables, kIExampleInterfaceInterfaces);
   CreateCompoundParcelable("android.test.CompoundParcelable",
                            {"Subclass1", "Subclass2"});
-  EXPECT_EQ(android::aidl::compile_aidl_to_java(options), 0);
+  IoDelegate io_delegate;
+  EXPECT_EQ(android::aidl::compile_aidl_to_java(options, io_delegate), 0);
   CheckFileContents(GetPathForPackageClass(kIExampleInterfaceClass, ".java"),
                     kIExampleInterfaceJava);
   // We'd like to check the depends file, but it mentions unique file paths.

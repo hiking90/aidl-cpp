@@ -505,14 +505,17 @@ int check_and_assign_method_ids(const char * filename,
     return 0;
 }
 
-int load_and_validate_aidl_internal(const std::vector<std::string> preprocessed_files,
-                                    const std::vector<std::string> import_paths,
-                                    const std::string& input_file_name,
-                                    TypeNamespace* types,
-                                    interface_type** returned_interface,
-                                    import_info** returned_imports,
-                                    bool use_data,
-                                    std::string data) {
+}  // namespace
+
+namespace internals {
+
+int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
+                           const std::vector<std::string> import_paths,
+                           const std::string& input_file_name,
+                           const IoDelegate& io_delegate,
+                           TypeNamespace* types,
+                           interface_type** returned_interface,
+                           import_info** returned_imports) {
   int err = 0;
 
   set_import_paths(import_paths);
@@ -526,14 +529,10 @@ int load_and_validate_aidl_internal(const std::vector<std::string> preprocessed_
   }
 
   // parse the input file
-  Parser p{input_file_name};
-  if (use_data)
-    p.SetFileContents(data);
-  else if (!p.OpenFileFromDisk())
+  Parser p{io_delegate};
+  if (!p.ParseFile(input_file_name)) {
     return 1;
-
-  if (!p.RunParser())
-    return 1;
+  }
 
   document_item_type* parsed_doc = p.GetDocument();
   // We could in theory declare parcelables in the same file as the interface.
@@ -569,14 +568,14 @@ int load_and_validate_aidl_internal(const std::vector<std::string> preprocessed_
       continue;
     }
 
-    Parser p{import->filename};
-
-    if (!p.OpenFileFromDisk() || !p.RunParser() || p.GetDocument() == nullptr) {
+    Parser p{io_delegate};
+    if (!p.ParseFile(import->filename)) {
       cerr << "error while parsing import for class "
            << import->neededClass << endl;
       err |= 1;
       continue;
     }
+
     import->doc = p.GetDocument();
     err |= check_filenames(import->filename, import->doc);
   }
@@ -613,49 +612,21 @@ int load_and_validate_aidl_internal(const std::vector<std::string> preprocessed_
   return 0;
 }
 
-int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
-                           const std::vector<std::string> import_paths,
-                           const std::string& input_file_name,
-                           TypeNamespace* types,
-                           interface_type** returned_interface,
-                           import_info** returned_imports) {
-    return load_and_validate_aidl_internal(preprocessed_files,
-                                           import_paths,
-                                           input_file_name,
-                                           types,
-                                           returned_interface,
-                                           returned_imports,
-                                           false,
-                                           "");
-}
-
-}  // namespace
-
-namespace internals {
-
-int load_aidl_for_test(const std::string& input_file_name,
-                       const std::string& data,
-                       TypeNamespace* types,
-                       interface_type** returned_interface) {
-    import_info *throwaway;
-    int ret = load_and_validate_aidl_internal({}, {}, input_file_name, types,
-                                              returned_interface, &throwaway,
-                                              true, data);
-    return ret;
-}
-
 } // namespace internals
 
-int compile_aidl_to_cpp(const CppOptions& options) {
+int compile_aidl_to_cpp(const CppOptions& options,
+                        const IoDelegate& io_delegate) {
   interface_type* interface = nullptr;
   import_info* imports = nullptr;
   unique_ptr<cpp::TypeNamespace> types(new cpp::TypeNamespace());
-  int err = load_and_validate_aidl(std::vector<std::string>{},
-                                   options.ImportPaths(),
-                                   options.InputFileName(),
-                                   types.get(),
-                                   &interface,
-                                   &imports);
+  int err = internals::load_and_validate_aidl(
+      std::vector<std::string>{},  // no preprocessed files
+      options.ImportPaths(),
+      options.InputFileName(),
+      io_delegate,
+      types.get(),
+      &interface,
+      &imports);
   if (err != 0) {
     return err;
   }
@@ -665,16 +636,19 @@ int compile_aidl_to_cpp(const CppOptions& options) {
   return (cpp::GenerateCpp(options, *types, *interface)) ? 0 : 1;
 }
 
-int compile_aidl_to_java(const JavaOptions& options) {
+int compile_aidl_to_java(const JavaOptions& options,
+                         const IoDelegate& io_delegate) {
   interface_type* interface = nullptr;
   import_info* imports = nullptr;
   unique_ptr<java::JavaTypeNamespace> types(new java::JavaTypeNamespace());
-  int err = load_and_validate_aidl(options.preprocessed_files_,
-                                   options.import_paths_,
-                                   options.input_file_name_,
-                                   types.get(),
-                                   &interface,
-                                   &imports);
+  int err = internals::load_and_validate_aidl(
+      options.preprocessed_files_,
+      options.import_paths_,
+      options.input_file_name_,
+      io_delegate,
+      types.get(),
+      &interface,
+      &imports);
   if (err != 0) {
     return err;
   }
@@ -704,17 +678,16 @@ int compile_aidl_to_java(const JavaOptions& options) {
   return err;
 }
 
-int preprocess_aidl(const JavaOptions& options) {
+int preprocess_aidl(const JavaOptions& options,
+                    const IoDelegate& io_delegate) {
     vector<string> lines;
 
     // read files
     int N = options.files_to_preprocess_.size();
     for (int i=0; i<N; i++) {
-        Parser p{options.files_to_preprocess_[i]};
-        if (!p.OpenFileFromDisk())
-            return 1;
-        if (!p.RunParser())
-            return 1;
+        Parser p{io_delegate};
+        if (!p.ParseFile(options.files_to_preprocess_[i]))
+          return 1;
         document_item_type* doc = p.GetDocument();
         string line;
         if (doc->item_type == USER_DATA_TYPE) {

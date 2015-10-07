@@ -18,22 +18,29 @@
 #define AIDL_AIDL_H_
 
 #include "aidl_language.h"
+#include "io_delegate.h"
 #include "options.h"
 #include "type_namespace.h"
 
 namespace android {
 namespace aidl {
 
-int compile_aidl_to_cpp(const CppOptions& options);
-int compile_aidl_to_java(const JavaOptions& options);
-int preprocess_aidl(const JavaOptions& options);
+int compile_aidl_to_cpp(const CppOptions& options,
+                        const IoDelegate& io_delegate);
+int compile_aidl_to_java(const JavaOptions& options,
+                         const IoDelegate& io_delegate);
+int preprocess_aidl(const JavaOptions& options,
+                    const IoDelegate& io_delegate);
 
 namespace internals {
 
-int load_aidl_for_test(const std::string& input_file_name,
-                       const std::string& data,
-                       TypeNamespace* types,
-                       interface_type** returned_interface);
+int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
+                           const std::vector<std::string> import_paths,
+                           const std::string& input_file_name,
+                           const IoDelegate& io_delegate,
+                           TypeNamespace* types,
+                           interface_type** returned_interface,
+                           import_info** returned_imports);
 
 } // namespace internals
 

@@ -7,6 +7,8 @@
 
 #include <base/macros.h>
 
+#include <io_delegate.h>
+
 struct yy_buffer_state;
 typedef yy_buffer_state* YY_BUFFER_STATE;
 
@@ -193,16 +195,12 @@ struct import_info {
 
 class Parser {
  public:
-  Parser(const std::string& filename);
+  explicit Parser(const android::aidl::IoDelegate& io_delegate);
   ~Parser();
 
-  bool OpenFileFromDisk();
+  // Parse contents of file |filename|.
+  bool ParseFile(const std::string& filename);
 
-  // Call this instead of OpenFileFromDisk to provide the text of the file
-  // directly.
-  void SetFileContents(const std::string& contents);
-
-  bool RunParser();
   void ReportError(const std::string& err);
 
   bool FoundNoErrors() const { return error_ == 0; }
@@ -219,13 +217,14 @@ class Parser {
   import_info *GetImports() const { return imports_; }
 
  private:
+  const android::aidl::IoDelegate& io_delegate_;
   int error_ = 0;
   std::string filename_;
   std::string package_;
   void *scanner_ = nullptr;
   document_item_type* document_ = nullptr;
   import_info* imports_ = nullptr;
-  bool buffer_is_valid_ = false;
+  std::unique_ptr<std::string> raw_buffer_;
   YY_BUFFER_STATE buffer_;
 
   DISALLOW_COPY_AND_ASSIGN(Parser);
