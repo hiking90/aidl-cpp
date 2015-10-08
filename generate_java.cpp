@@ -49,11 +49,11 @@ namespace java {
 
 int
 generate_java(const string& filename, const string& originalSrc,
-                interface_type* iface, JavaTypeNamespace* types)
+                AidlInterface* iface, JavaTypeNamespace* types)
 {
     Class* cl;
 
-    if (iface->document_item.item_type == INTERFACE_TYPE_BINDER) {
+    if (iface->item_type == INTERFACE_TYPE_BINDER) {
         cl = generate_binder_interface_class(iface, types);
     }
 

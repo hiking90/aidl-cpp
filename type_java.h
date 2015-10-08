@@ -404,9 +404,9 @@ class JavaTypeNamespace : public TypeNamespace {
   JavaTypeNamespace();
   virtual ~JavaTypeNamespace();
 
-  bool AddParcelableType(const user_data_type* p,
+  bool AddParcelableType(const AidlParcelable* p,
                          const string& filename) override;
-  bool AddBinderType(const interface_type* b,
+  bool AddBinderType(const AidlInterface* b,
                      const string& filename) override;
   bool AddContainerType(const string& type_name) override;
 

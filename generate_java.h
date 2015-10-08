@@ -17,10 +17,10 @@ namespace java {
 class JavaTypeNamespace;
 
 int generate_java(const string& filename, const string& originalSrc,
-                  interface_type* iface, java::JavaTypeNamespace* types);
+                  AidlInterface* iface, java::JavaTypeNamespace* types);
 
 android::aidl::java::Class* generate_binder_interface_class(
-    const interface_type* iface, java::JavaTypeNamespace* types);
+    const AidlInterface* iface, java::JavaTypeNamespace* types);
 
 }  // namespace java
 

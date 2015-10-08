@@ -27,7 +27,7 @@ namespace cpp {
 
 bool GenerateCpp(const CppOptions& options,
                  const cpp::TypeNamespace& types,
-                 const interface_type& parsed_doc);
+                 const AidlInterface& parsed_doc);
 
 }  // namespace cpp
 }  // namespace aidl

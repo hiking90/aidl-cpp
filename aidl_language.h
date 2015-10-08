@@ -134,36 +134,54 @@ class AidlMethod {
 };
 
 enum {
-    USER_DATA_TYPE = 12,
-    INTERFACE_TYPE_BINDER
+  USER_DATA_TYPE = 12,
+  INTERFACE_TYPE_BINDER
 };
 
-struct document_item_type {
-    unsigned item_type;
-    struct document_item_type* next;
+class AidlDocumentItem : public AidlNode {
+ public:
+  AidlDocumentItem() = default;
+  virtual ~AidlDocumentItem() = default;
+
+  AidlDocumentItem* next;
+  unsigned item_type;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AidlDocumentItem);
 };
 
+class AidlParcelable : public AidlDocumentItem {
+ public:
+  AidlParcelable() = default;
+  virtual ~AidlParcelable() = default;
 
-struct user_data_type {
-    document_item_type document_item;
-    buffer_type keyword_token; // only the first one
-    char* package;
-    buffer_type name;
-    buffer_type semicolon_token;
-    bool parcelable;
+  buffer_type keyword_token; // only the first one
+  char* package;
+  buffer_type name;
+  buffer_type semicolon_token;
+  bool parcelable;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AidlParcelable);
 };
 
-struct interface_type {
-    document_item_type document_item;
-    buffer_type interface_token;
-    bool oneway;
-    buffer_type oneway_token;
-    char* package;
-    buffer_type name;
-    buffer_type open_brace_token;
-    std::vector<std::unique_ptr<AidlMethod>>* methods;
-    buffer_type close_brace_token;
-    buffer_type* comments_token; // points into this structure, DO NOT DELETE
+class AidlInterface : public AidlDocumentItem {
+ public:
+  explicit AidlInterface() = default;
+  virtual ~AidlInterface() = default;
+
+  buffer_type interface_token;
+  bool oneway;
+  buffer_type oneway_token;
+  char* package;
+  buffer_type name;
+  buffer_type open_brace_token;
+  std::vector<std::unique_ptr<AidlMethod>>* methods;
+  buffer_type close_brace_token;
+  buffer_type* comments_token; // points into this structure, DO NOT DELETE
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AidlInterface);
 };
 
 
@@ -181,13 +199,13 @@ class AidlImport : public AidlNode {
   unsigned GetLine() const { return line_; }
   const AidlDocumentItem* GetDocument() { return document_.get(); };
   void SetDocument(AidlDocumentItem* doc) {
-    document_.reset(doc);
+    document_ = std::unique_ptr<AidlDocumentItem>(doc);
   }
 
   void SetFilename(const std::string& filename) { filename_ = filename; }
 
  private:
-  std::unique_ptr<document_item_type> document_;
+  std::unique_ptr<AidlDocumentItem> document_;
   std::string from_;
   std::string filename_;
   std::string needed_class_;
@@ -211,12 +229,12 @@ class Parser {
   const std::string& Package() const { return package_; }
   void *Scanner() const { return scanner_; }
 
-  void SetDocument(document_item_type *items) { document_ = items; };
+  void SetDocument(AidlDocumentItem *items) { document_ = items; };
 
   void AddImport(std::vector<std::string>* terms, unsigned line);
   void SetPackage(std::vector<std::string>* terms);
 
-  document_item_type *GetDocument() const { return document_; }
+  AidlDocumentItem *GetDocument() const { return document_; }
   const std::vector<std::unique_ptr<AidlImport>>& GetImports() { return imports_; }
 
   void ReleaseImports(std::vector<std::unique_ptr<AidlImport>>* ret) {
@@ -230,7 +248,7 @@ class Parser {
   std::string filename_;
   std::string package_;
   void *scanner_ = nullptr;
-  document_item_type* document_ = nullptr;
+  AidlDocumentItem* document_ = nullptr;
   std::vector<std::unique_ptr<AidlImport>> imports_;
   std::unique_ptr<std::string> raw_buffer_;
   YY_BUFFER_STATE buffer_;

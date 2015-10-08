@@ -34,11 +34,11 @@ namespace aidl {
 namespace cpp {
 namespace internals {
 unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& types,
-                                          const interface_type& parsed_doc);
+                                          const AidlInterface& parsed_doc);
 unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
-                                       const interface_type& parsed_doc);
+                                       const AidlInterface& parsed_doc);
 unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
-                                          const interface_type& parsed_doc);
+                                          const AidlInterface& parsed_doc);
 }
 
 namespace {
@@ -115,13 +115,13 @@ IMPLEMENT_META_INTERFACE(PingResponder, "IPingResponder");
 
 class TrivialInterfaceASTTest : public ::testing::Test {
  protected:
-  interface_type* Parse() {
+  AidlInterface* Parse() {
 
   FakeIoDelegate io_delegate;
   io_delegate.SetFileContents("IPingResponder.aidl", kTrivialInterfaceAIDL);
 
   cpp::TypeNamespace types;
-  interface_type* ret = nullptr;
+  AidlInterface* ret = nullptr;
   std::vector<std::unique_ptr<AidlImport>> imports;
   int err = ::android::aidl::internals::load_and_validate_aidl(
       {},  // no preprocessed files
@@ -149,7 +149,7 @@ class TrivialInterfaceASTTest : public ::testing::Test {
 };
 
 TEST_F(TrivialInterfaceASTTest, GeneratesClientHeader) {
-  interface_type* interface = Parse();
+  AidlInterface* interface = Parse();
   ASSERT_NE(interface, nullptr);
   TypeNamespace types;
   unique_ptr<Document> doc = internals::BuildClientHeader(types, *interface);
@@ -157,7 +157,7 @@ TEST_F(TrivialInterfaceASTTest, GeneratesClientHeader) {
 }
 
 TEST_F(TrivialInterfaceASTTest, GeneratesInterfaceHeader) {
-  interface_type* interface = Parse();
+  AidlInterface* interface = Parse();
   ASSERT_NE(interface, nullptr);
   TypeNamespace types;
   unique_ptr<Document> doc = internals::BuildInterfaceHeader(types, *interface);
@@ -165,7 +165,7 @@ TEST_F(TrivialInterfaceASTTest, GeneratesInterfaceHeader) {
 }
 
 TEST_F(TrivialInterfaceASTTest, GeneratesInterfaceSource) {
-  interface_type* interface = Parse();
+  AidlInterface* interface = Parse();
   ASSERT_NE(interface, nullptr);
   TypeNamespace types;
   unique_ptr<Document> doc = internals::BuildInterfaceSource(types, *interface);

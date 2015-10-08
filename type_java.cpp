@@ -955,7 +955,7 @@ const Type* JavaTypeNamespace::Find(const char* package,
   return Find(s);
 }
 
-bool JavaTypeNamespace::AddParcelableType(const user_data_type* p,
+bool JavaTypeNamespace::AddParcelableType(const AidlParcelable* p,
                                           const std::string& filename) {
   Type* type =
       new UserDataType(this, p->package ? p->package : "", p->name.data, false,
@@ -963,7 +963,7 @@ bool JavaTypeNamespace::AddParcelableType(const user_data_type* p,
   return Add(type);
 }
 
-bool JavaTypeNamespace::AddBinderType(const interface_type* b,
+bool JavaTypeNamespace::AddBinderType(const AidlInterface* b,
                                       const std::string& filename) {
   // for interfaces, add the stub, proxy, and interface types.
   Type* type =

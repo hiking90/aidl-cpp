@@ -103,7 +103,7 @@ unique_ptr<CppNamespace> NestInNamespaces(unique_ptr<Declaration> decl) {
 
 enum class ClassNames { BASE, CLIENT, SERVER, INTERFACE };
 
-string ClassName(const interface_type& interface, ClassNames type) {
+string ClassName(const AidlInterface& interface, ClassNames type) {
   string c_name = interface.name.Literal();
 
   if (c_name.length() >= 2 && c_name[0] == 'I' && isupper(c_name[1]))
@@ -126,19 +126,19 @@ string ClassName(const interface_type& interface, ClassNames type) {
 }
 
 unique_ptr<Document> BuildClientSource(const TypeNamespace& types,
-                                       const interface_type& parsed_doc) {
+                                       const AidlInterface& parsed_doc) {
   unique_ptr<CppNamespace> ns{new CppNamespace{"android"}};
   return unique_ptr<Document>{new CppSource{ {}, std::move(ns)}};
 }
 
 unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
-                                       const interface_type& parsed_doc) {
+                                       const AidlInterface& parsed_doc) {
   unique_ptr<CppNamespace> ns{new CppNamespace{"android"}};
   return unique_ptr<Document>{new CppSource{ {}, std::move(ns)}};
 }
 
 unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& types,
-                                          const interface_type& parsed_doc) {
+                                          const AidlInterface& parsed_doc) {
   const string i_name = ClassName(parsed_doc, ClassNames::INTERFACE);
   const string bp_name = ClassName(parsed_doc, ClassNames::CLIENT);
   vector<string> include_list{i_name + ".h", bp_name + ".h"};
@@ -159,7 +159,7 @@ unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& types,
 }
 
 unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
-                                       const interface_type& parsed_doc) {
+                                       const AidlInterface& parsed_doc) {
   const string i_name = ClassName(parsed_doc, ClassNames::INTERFACE);
   const string bp_name = ClassName(parsed_doc, ClassNames::CLIENT);
 
@@ -192,7 +192,7 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
 }
 
 unique_ptr<Document> BuildServerHeader(const TypeNamespace& types,
-                                       const interface_type& parsed_doc) {
+                                       const AidlInterface& parsed_doc) {
   const string i_name = ClassName(parsed_doc, ClassNames::INTERFACE);
   const string bn_name = ClassName(parsed_doc, ClassNames::SERVER);
 
@@ -222,7 +222,7 @@ unique_ptr<Document> BuildServerHeader(const TypeNamespace& types,
 }
 
 unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
-                                          const interface_type& parsed_doc) {
+                                          const AidlInterface& parsed_doc) {
   unique_ptr<ClassDecl> if_class{
       new ClassDecl{ClassName(parsed_doc, ClassNames::INTERFACE),
                     "public android::IInterface"}};
@@ -262,7 +262,7 @@ using namespace internals;
 
 bool GenerateCpp(const CppOptions& options,
                  const TypeNamespace& types,
-                 const interface_type& parsed_doc) {
+                 const AidlInterface& parsed_doc) {
   bool success = true;
 
   success &= GenerateCppForFile(options.ClientCppFileName(),

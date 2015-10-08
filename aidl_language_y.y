@@ -30,9 +30,9 @@ using android::aidl::cpp_strdup;
     AidlMethod* method;
     std::vector<std::unique_ptr<AidlMethod>>* methods;
     std::vector<std::string>* strvec;
-    interface_type* interface_obj;
-    user_data_type* user_data;
-    document_item_type* document_item;
+    AidlInterface* interface_obj;
+    AidlParcelable* user_data;
+    AidlDocumentItem* document_item;
 }
 
 %token<buffer> IDENTIFIER IDVALUE GENERIC PARCELABLE ONEWAY INTERFACE ';' '{' '}'
@@ -70,117 +70,98 @@ import
   { ps->AddImport($2, @1.begin.line); };
 
 package_name
- : IDENTIFIER
-  {
+ : IDENTIFIER {
     $$ = new std::vector<std::string>();
     $$->push_back($1.data);
   }
  | package_name '.' IDENTIFIER
   { $$->push_back($3.data); };
 
-document_items:
-                                                { $$ = NULL; }
-    |   document_items declaration              {
-                                                    if ($2 == NULL) {
-                                                        // error cases only
-                                                        $$ = $1;
-                                                    } else {
-                                                        document_item_type* p = $1;
-                                                        while (p && p->next) {
-                                                            p=p->next;
-                                                        }
-                                                        if (p) {
-                                                            p->next = (document_item_type*)$2;
-                                                            $$ = $1;
-                                                        } else {
-                                                            $$ = (document_item_type*)$2;
-                                                        }
-                                                    }
-                                                }
-    | document_items error                      {
-                                                    fprintf(stderr, "%s:%d: syntax error don't know what to do with \"%s\"\n",
-                                                            ps->FileName().c_str(),
-                                                            $2.lineno, $2.data);
-                                                    $$ = $1;
-                                                }
-    ;
+document_items
+ : { $$ = NULL; }
+ | document_items declaration {
+   $$ = $1;
+   AidlDocumentItem **pos = &$$;
+   while (*pos)
+     pos = &(*pos)->next;
+   if ($2)
+     *pos = $2;
+  }
+ | document_items error {
+    fprintf(stderr, "%s:%d: syntax error don't know what to do with \"%s\"\n",
+            ps->FileName().c_str(),
+            $2.lineno, $2.data);
+    $$ = $1;
+  };
 
-declaration:
-        parcelable_decl                            { $$ = (document_item_type*)$1; }
-    |   interface_decl                             { $$ = (document_item_type*)$1; }
-    ;
+declaration
+ : parcelable_decl
+  { $$ = $1; }
+ | interface_decl
+  { $$ = $1; };
 
-parcelable_decl:
-        PARCELABLE IDENTIFIER ';'                   {
-                                                        user_data_type* b = new user_data_type();
-                                                        b->document_item.item_type = USER_DATA_TYPE;
-                                                        b->document_item.next = NULL;
-                                                        b->keyword_token = $1;
-                                                        b->name = $2;
-                                                        b->package =
-                                                        cpp_strdup(ps->Package().c_str());
-                                                        b->semicolon_token = $3;
-                                                        b->parcelable = true;
-                                                        $$ = b;
-                                                    }
-    |   PARCELABLE ';'                              {
-                                                        fprintf(stderr, "%s:%d syntax error in parcelable declaration. Expected type name.\n",
-                                                                     ps->FileName().c_str(), $1.lineno);
-                                                        $$ = NULL;
-                                                    }
-    |   PARCELABLE error ';'                        {
-                                                        fprintf(stderr, "%s:%d syntax error in parcelable declaration. Expected type name, saw \"%s\".\n",
-                                                                     ps->FileName().c_str(), $2.lineno, $2.data);
-                                                        $$ = NULL;
-                                                    }
-    ;
+parcelable_decl
+ : PARCELABLE IDENTIFIER ';' {
+    AidlParcelable* b = new AidlParcelable();
+    b->item_type = USER_DATA_TYPE;
+    b->keyword_token = $1;
+    b->name = $2;
+    b->package = cpp_strdup(ps->Package().c_str());
+    b->semicolon_token = $3;
+    b->parcelable = true;
+    $$ = b;
+  }
+ | PARCELABLE ';' {
+    fprintf(stderr, "%s:%d syntax error in parcelable declaration. Expected type name.\n",
+            ps->FileName().c_str(), $1.lineno);
+    $$ = NULL;
+  }
+ | PARCELABLE error ';' {
+    fprintf(stderr, "%s:%d syntax error in parcelable declaration. Expected type name, saw \"%s\".\n",
+            ps->FileName().c_str(), $2.lineno, $2.data);
+    $$ = NULL;
+  };
 
-interface_header:
-        INTERFACE                                  {
-                                                        interface_type* c = new interface_type();
-                                                        c->document_item.item_type = INTERFACE_TYPE_BINDER;
-                                                        c->document_item.next = NULL;
-                                                        c->interface_token = $1;
-                                                        c->oneway = false;
-                                                        memset(&c->oneway_token, 0, sizeof(buffer_type));
-                                                        c->comments_token = &c->interface_token;
-                                                        $$ = c;
-                                                   }
-    |   ONEWAY INTERFACE                           {
-                                                        interface_type* c = new interface_type();
-                                                        c->document_item.item_type = INTERFACE_TYPE_BINDER;
-                                                        c->document_item.next = NULL;
-                                                        c->interface_token = $2;
-                                                        c->oneway = true;
-                                                        c->oneway_token = $1;
-                                                        c->comments_token = &c->oneway_token;
-                                                        $$ = c;
-                                                   }
-    ;
+interface_header
+ : INTERFACE {
+    AidlInterface* c = new AidlInterface();
+    c->item_type = INTERFACE_TYPE_BINDER;
+    c->interface_token = $1;
+    c->oneway = false;
+    memset(&c->oneway_token, 0, sizeof(buffer_type));
+    c->comments_token = &c->interface_token;
+    $$ = c;
+  }
+ | ONEWAY INTERFACE {
+    AidlInterface* c = new AidlInterface();
+    c->item_type = INTERFACE_TYPE_BINDER;
+    c->interface_token = $2;
+    c->oneway = true;
+    c->oneway_token = $1;
+    c->comments_token = &c->oneway_token;
+    $$ = c;
+  };
 
-interface_decl:
-        interface_header IDENTIFIER '{' methods '}' { 
-                                                        interface_type* c = $1;
-                                                        c->name = $2;
-                                                        c->package =
-                                                        cpp_strdup(ps->Package().c_str());
-                                                        c->open_brace_token = $3;
-                                                        c->methods = $4;
-                                                        c->close_brace_token = $5;
-                                                        $$ = c;
-                                                    }
-    |   INTERFACE error '{' methods '}'     {
-                                                        fprintf(stderr, "%s:%d: syntax error in interface declaration.  Expected type name, saw \"%s\"\n",
-                                                                    ps->FileName().c_str(), $2.lineno, $2.data);
-                                                        $$ = NULL;
-                                                    }
-    |   INTERFACE error '}'                {
-                                                        fprintf(stderr, "%s:%d: syntax error in interface declaration.  Expected type name, saw \"%s\"\n",
-                                                                    ps->FileName().c_str(), $2.lineno, $2.data);
-                                                        $$ = NULL;
-                                                    }
-
-    ;
+interface_decl
+ : interface_header IDENTIFIER '{' methods '}' {
+    AidlInterface* c = $1;
+    c->name = $2;
+    c->package = cpp_strdup(ps->Package().c_str());
+    c->open_brace_token = $3;
+    c->methods = $4;
+    c->close_brace_token = $5;
+    $$ = c;
+  }
+ | INTERFACE error '{' methods '}' {
+    fprintf(stderr, "%s:%d: syntax error in interface declaration.  Expected type name, saw \"%s\"\n",
+            ps->FileName().c_str(), $2.lineno, $2.data);
+    $$ = NULL;
+  }
+ | INTERFACE error '}' {
+    fprintf(stderr, "%s:%d: syntax error in interface declaration.  Expected type name, saw \"%s\"\n",
+            ps->FileName().c_str(), $2.lineno, $2.data);
+    $$ = NULL;
+  };
 
 methods
  :
@@ -272,14 +253,6 @@ direction
 
 #include <ctype.h>
 #include <stdio.h>
-
-void init_buffer_type(buffer_type* buf, int lineno)
-{
-    buf->lineno = lineno;
-    buf->token = 0;
-    buf->data = NULL;
-    buf->extra = NULL;
-}
 
 void yy::parser::error(const yy::parser::location_type& l, const std::string& errstr)
 {

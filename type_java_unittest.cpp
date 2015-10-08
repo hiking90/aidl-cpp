@@ -29,13 +29,12 @@ namespace aidl {
 namespace java {
 namespace {
 
-user_data_type* MakeFakeUserDataType(const std::string& package,
+AidlParcelable* MakeFakeUserDataType(const std::string& package,
                                      const std::string& class_name) {
   // This leaks memory, like all usages of these structs.
   // See b/24410295
-  user_data_type* parcl = new user_data_type();
-  memset(parcl, 0, sizeof(user_data_type));
-  parcl->document_item.item_type = USER_DATA_TYPE;
+  AidlParcelable* parcl = new AidlParcelable();
+  parcl->item_type = USER_DATA_TYPE;
   parcl->package = cpp_strdup(package.c_str());
   parcl->name.data = cpp_strdup(class_name.c_str());
   return parcl;
