@@ -264,7 +264,7 @@ unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
       NestInNamespaces(std::move(on_transact))}};
 }
 
-unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& types,
+unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& /* types */,
                                           const AidlInterface& parsed_doc) {
   const string i_name = ClassName(parsed_doc, ClassNames::INTERFACE);
   const string bp_name = ClassName(parsed_doc, ClassNames::CLIENT);
@@ -318,7 +318,7 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
       NestInNamespaces(std::move(bp_class))}};
 }
 
-unique_ptr<Document> BuildServerHeader(const TypeNamespace& types,
+unique_ptr<Document> BuildServerHeader(const TypeNamespace& /* types */,
                                        const AidlInterface& parsed_doc) {
   const string i_name = ClassName(parsed_doc, ClassNames::INTERFACE);
   const string bn_name = ClassName(parsed_doc, ClassNames::SERVER);
