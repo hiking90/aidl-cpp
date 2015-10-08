@@ -119,7 +119,8 @@ class ConstructorDecl : public Declaration {
                   std::vector<std::string> arguments);
   ConstructorDecl(const std::string& name,
                   std::vector<std::string> arguments,
-                  bool is_virtual);
+                  bool is_virtual,
+                  bool is_default);
 
   virtual ~ConstructorDecl() = default;
 
@@ -129,6 +130,7 @@ class ConstructorDecl : public Declaration {
   const std::string name_;
   std::vector<std::string> arguments_;
   bool is_virtual_ = false;
+  bool is_default_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(ConstructorDecl);
 };  // class ConstructorDecl

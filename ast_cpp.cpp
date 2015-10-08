@@ -138,10 +138,12 @@ ConstructorDecl::ConstructorDecl(
 ConstructorDecl::ConstructorDecl(
     const std::string& name,
     std::vector<std::string> arguments,
-    bool is_virtual)
+    bool is_virtual,
+    bool is_default)
     : name_(name),
       arguments_(arguments),
-      is_virtual_(is_virtual) {}
+      is_virtual_(is_virtual),
+      is_default_(is_default) {}
 
 void ConstructorDecl::Write(CodeWriter* to) const {
   if (is_virtual_)
@@ -157,8 +159,12 @@ void ConstructorDecl::Write(CodeWriter* to) const {
     not_first = true;
     to->Write("%s", arg.c_str());
   }
+  to->Write(")");
 
-  to->Write(");\n");
+  if (is_default_)
+    to->Write(" = default");
+
+  to->Write(";\n");
 }
 
 MethodDecl::MethodDecl(const std::string& return_type,

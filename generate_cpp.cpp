@@ -291,8 +291,8 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
   const string bp_name = ClassName(parsed_doc, ClassNames::CLIENT);
 
   unique_ptr<ConstructorDecl> constructor{new ConstructorDecl(bp_name, {})};
-  unique_ptr<ConstructorDecl> destructor{
-        new ConstructorDecl("~" + bp_name, {})};
+  unique_ptr<ConstructorDecl> destructor{new ConstructorDecl(
+      "~" + bp_name, {}, true /* is virtual */, true /* is default */)};
 
   vector<unique_ptr<Declaration>> publics;
   publics.push_back(std::move(constructor));
