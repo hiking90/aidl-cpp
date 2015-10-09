@@ -112,6 +112,23 @@ void Enum::AddValue(const string& key, const string& value) {
   fields_.emplace_back(key, value);
 }
 
+ArgList::ArgList(const std::string& single_argument)
+    : ArgList(vector<string>{single_argument}) {}
+
+ArgList::ArgList(const std::vector<std::string>& arg_list)
+    : arguments_(arg_list) {}
+
+void ArgList::Write(CodeWriter* to) const {
+  to->Write("(");
+  bool is_first = true;
+  for (const auto& s : arguments_) {
+    if (!is_first) { to->Write(", "); }
+    is_first = false;
+    to->Write("%s", s.c_str());
+  }
+  to->Write(")");
+}
+
 ConstructorDecl::ConstructorDecl(
     const std::string& name,
     std::vector<std::string> arguments)
@@ -187,6 +204,10 @@ void StatementBlock::AddStatement(unique_ptr<AstNode> statement) {
   statements_.push_back(std::move(statement));
 }
 
+void StatementBlock::AddStatement(AstNode* statement) {
+  statements_.emplace_back(statement);
+}
+
 void StatementBlock::AddLiteral(const std::string& expression,
                                 bool add_semicolon) {
   statements_.push_back(unique_ptr<AstNode>{
@@ -257,12 +278,46 @@ void SwitchStatement::Write(CodeWriter* to) const {
   to->Write("}\n");
 }
 
+
+Assignment::Assignment(const std::string& left, const std::string& right)
+    : Assignment(left, new LiteralExpression{right}) {}
+
+Assignment::Assignment(const std::string& left, AstNode* right)
+    : lhs_(left),
+      rhs_(right) {}
+
+void Assignment::Write(CodeWriter* to) const {
+  to->Write("%s = ", lhs_.c_str());
+  rhs_->Write(to);
+  to->Write(";\n");
+}
+
+MethodCall::MethodCall(const std::string& method_name,
+                       const std::string& single_argument)
+    : MethodCall(method_name, new ArgList{single_argument}) {}
+
+MethodCall::MethodCall(const std::string& method_name, ArgList* arg_list)
+    : method_name_(method_name),
+      arg_list_{arg_list} {}
+
+void MethodCall::Write(CodeWriter* to) const {
+  to->Write("%s", method_name_.c_str());
+  arg_list_->Write(to);
+}
+
 LiteralStatement::LiteralStatement(const string& expression, bool use_semicolon)
     : expression_(expression),
       use_semicolon_(use_semicolon) {}
 
 void LiteralStatement::Write(CodeWriter* to) const {
   to->Write("%s%s\n", expression_.c_str(), (use_semicolon_) ? ";" : "");
+}
+
+LiteralExpression::LiteralExpression(const std::string& expression)
+    : expression_(expression) {}
+
+void LiteralExpression::Write(CodeWriter* to) const {
+  to->Write("%s", expression_.c_str());
 }
 
 CppNamespace::CppNamespace(const std::string& name,

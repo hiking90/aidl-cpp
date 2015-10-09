@@ -79,7 +79,7 @@ class ClassDecl : public Declaration {
 
 class Enum : public Declaration {
  public:
-  Enum(const std::string& name);
+  explicit Enum(const std::string& name);
   virtual ~Enum() = default;
 
   void Write(CodeWriter* to) const override;
@@ -98,6 +98,20 @@ class Enum : public Declaration {
 
   DISALLOW_COPY_AND_ASSIGN(Enum);
 };  // class Enum
+
+class ArgList : public AstNode {
+ public:
+  explicit ArgList(const std::string& single_argument);
+  explicit ArgList(const std::vector<std::string>& arg_list);
+  virtual ~ArgList() = default;
+
+  void Write(CodeWriter* to) const override;
+
+ private:
+  std::vector<std::string> arguments_;
+
+  DISALLOW_COPY_AND_ASSIGN(ArgList);
+};  // class ArgList
 
 class ConstructorDecl : public Declaration {
  public:
@@ -157,6 +171,7 @@ class StatementBlock : public Declaration {
   virtual ~StatementBlock() = default;
 
   void AddStatement(std::unique_ptr<AstNode> statement);
+  void AddStatement(AstNode* statement);  // Takes ownership
   void AddLiteral(const std::string& expression, bool add_semicolon = true);
 
   void Write(CodeWriter* to) const override;
@@ -212,6 +227,35 @@ class SwitchStatement : public AstNode {
   DISALLOW_COPY_AND_ASSIGN(SwitchStatement);
 };  // class SwitchStatement
 
+class Assignment : public AstNode {
+ public:
+  Assignment(const std::string& left, const std::string& right);
+  Assignment(const std::string& left, AstNode* right);
+  ~Assignment() = default;
+  void Write(CodeWriter* to) const override;
+
+ private:
+  const std::string lhs_;
+  std::unique_ptr<AstNode> rhs_;
+
+  DISALLOW_COPY_AND_ASSIGN(Assignment);
+};  // class Assignment
+
+class MethodCall : public AstNode {
+ public:
+  MethodCall(const std::string& method_name,
+             const std::string& single_argument);
+  MethodCall(const std::string& method_name, ArgList* arg_list);
+  ~MethodCall() = default;
+  void Write(CodeWriter* to) const override;
+
+ private:
+  const std::string method_name_;
+  const std::unique_ptr<ArgList> arg_list_;
+
+  DISALLOW_COPY_AND_ASSIGN(MethodCall);
+};  // class MethodCall
+
 class LiteralStatement : public AstNode {
  public:
   LiteralStatement(const std::string& expression, bool use_semicolon = true);
@@ -224,6 +268,18 @@ class LiteralStatement : public AstNode {
 
   DISALLOW_COPY_AND_ASSIGN(LiteralStatement);
 };  // class LiteralStatement
+
+class LiteralExpression : public AstNode {
+ public:
+  explicit LiteralExpression(const std::string& expression);
+  ~LiteralExpression() = default;
+  void Write(CodeWriter* to) const override;
+
+ private:
+  const std::string expression_;
+
+  DISALLOW_COPY_AND_ASSIGN(LiteralExpression);
+};  // class LiteralExpression
 
 class CppNamespace : public Declaration {
  public:

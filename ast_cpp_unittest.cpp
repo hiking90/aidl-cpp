@@ -91,11 +91,11 @@ bar;
 
 class AstCppTests : public ::testing::Test {
  protected:
-  void CompareGenereratedCode(const AstNode* node,
-                              const string& expected_output) {
+  void CompareGeneratedCode(const AstNode& node,
+                            const string& expected_output) {
     string actual_output;
     CodeWriterPtr writer = GetStringWriter(&actual_output);
-    node->Write(writer.get());
+    node.Write(writer.get());
     EXPECT_EQ(expected_output, actual_output);
   }
 };  // class AstCppTests
@@ -136,30 +136,52 @@ TEST_F(AstCppTests, GeneratesHeader) {
   vector<unique_ptr<Declaration>> test_ns_vec;
   test_ns_vec.push_back(std::move(test_ns));
 
-  unique_ptr<CppNamespace> android_ns{new CppNamespace {"android", std::move(test_ns_vec) }};
+  unique_ptr<CppNamespace> android_ns{new CppNamespace {"android",
+      std::move(test_ns_vec) }};
 
   CppHeader cpp_header{"HEADER_INCLUDE_GUARD_H_", {"string", "memory"},
       std::move(android_ns) };
-  CompareGenereratedCode(&cpp_header, kExpectedHeaderOutput);
+  CompareGeneratedCode(cpp_header, kExpectedHeaderOutput);
 }
 
 TEST_F(AstCppTests, GeneratesEnum) {
   Enum e("Foo");
   e.AddValue("BAR", "42");
   e.AddValue("BAZ", "");
-  CompareGenereratedCode(&e, kExpectedEnumOutput);
+  CompareGeneratedCode(e, kExpectedEnumOutput);
+}
+
+TEST_F(AstCppTests, GeneratesArgList) {
+  ArgList simple("foo");
+  CompareGeneratedCode(simple, "(foo)");
+  ArgList compound({"foo", "bar", "baz"});
+  CompareGeneratedCode(compound, "(foo, bar, baz)");
 }
 
 TEST_F(AstCppTests, GeneratesLiteralStatement) {
   LiteralStatement s("foo");
-  CompareGenereratedCode(&s, "foo;\n");
+  CompareGeneratedCode(s, "foo;\n");
 }
 
 TEST_F(AstCppTests, GeneratesStatementBlock) {
   StatementBlock block;
   block.AddStatement(unique_ptr<AstNode>(new LiteralStatement("foo")));
   block.AddStatement(unique_ptr<AstNode>(new LiteralStatement("bar")));
-  CompareGenereratedCode(&block, "{\nfoo;\nbar;\n}\n");
+  CompareGeneratedCode(block, "{\nfoo;\nbar;\n}\n");
+}
+
+TEST_F(AstCppTests, GeneratesAssignment) {
+  Assignment simple("foo", "8");
+  CompareGeneratedCode(simple, "foo = 8;\n");
+  Assignment less_simple("foo", new MethodCall("f", "8"));
+  CompareGeneratedCode(less_simple, "foo = f(8);\n");
+}
+
+TEST_F(AstCppTests, GeneratesMethodCall) {
+  MethodCall single("single", "arg");
+  CompareGeneratedCode(single, "single(arg)");
+  MethodCall multi("multi", new ArgList({"has", "some", "args"}));
+  CompareGeneratedCode(multi, "multi(has, some, args)");
 }
 
 TEST_F(AstCppTests, GeneratesSwitchStatement) {
@@ -171,7 +193,7 @@ TEST_F(AstCppTests, GeneratesSwitchStatement) {
   auto case1 = s.AddCase("1");
   case1->AddStatement(unique_ptr<AstNode>{new LiteralStatement{"foo"}});
   case1->AddStatement(unique_ptr<AstNode>{new LiteralStatement{"bar"}});
-  CompareGenereratedCode(&s, kExpectedSwitchOutput);
+  CompareGeneratedCode(s, kExpectedSwitchOutput);
 }
 
 TEST_F(AstCppTests, GeneratesMethodImpl) {
@@ -179,7 +201,7 @@ TEST_F(AstCppTests, GeneratesMethodImpl) {
                {"arg 1", "arg 2"}, true};
   m.AddStatement(unique_ptr<AstNode>{new LiteralStatement{"foo"}});
   m.AddStatement(unique_ptr<AstNode>{new LiteralStatement{"bar"}});
-  CompareGenereratedCode(&m, kExpectedMethodImplOutput);
+  CompareGeneratedCode(m, kExpectedMethodImplOutput);
 }
 
 }  // namespace cpp
