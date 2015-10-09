@@ -72,9 +72,9 @@ idvalue     (0|[1-9][0-9]*)
 
     /* symbols */
 ;                     { RETURN_BUFFER(';'); }
-\{                    { RETURN_BUFFER('{'); }
-\}                    { RETURN_BUFFER('}'); }
 
+\{                    { return '{'; }
+\}                    { return '}'; }
 =                     { return '='; }
 ,                     { return ','; }
 \.                    { return '.'; }

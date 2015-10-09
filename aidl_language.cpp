@@ -82,7 +82,7 @@ string AidlArgument::ToString() const {
 
 AidlMethod::AidlMethod(bool oneway, AidlType* type, std::string name,
                        std::vector<std::unique_ptr<AidlArgument>>* args,
-                       unsigned line, std::string comments, int id)
+                       unsigned line, const std::string& comments, int id)
     : oneway_(oneway),
       comments_(comments),
       type_(type),
@@ -96,7 +96,7 @@ AidlMethod::AidlMethod(bool oneway, AidlType* type, std::string name,
 
 AidlMethod::AidlMethod(bool oneway, AidlType* type, std::string name,
                        std::vector<std::unique_ptr<AidlArgument>>* args,
-                       unsigned line, std::string comments)
+                       unsigned line, const std::string& comments)
     : AidlMethod(oneway, type, name, args, line, comments, 0) {
   has_id_ = false;
 }
@@ -104,6 +104,20 @@ AidlMethod::AidlMethod(bool oneway, AidlType* type, std::string name,
 Parser::Parser(const IoDelegate& io_delegate)
     : io_delegate_(io_delegate) {
   yylex_init(&scanner_);
+}
+
+AidlInterface::AidlInterface(const std::string& name, unsigned line,
+                             const std::string& comments, bool oneway,
+                             std::vector<std::unique_ptr<AidlMethod>>* methods,
+                             const std::string& package)
+    : name_(name),
+      comments_(comments),
+      line_(line),
+      oneway_(oneway),
+      methods_(std::move(*methods)),
+      package_(package) {
+  item_type = INTERFACE_TYPE_BINDER;
+  delete methods;
 }
 
 AidlImport::AidlImport(const std::string& from,

@@ -104,7 +104,7 @@ unique_ptr<CppNamespace> NestInNamespaces(unique_ptr<Declaration> decl) {
 enum class ClassNames { BASE, CLIENT, SERVER, INTERFACE };
 
 string ClassName(const AidlInterface& interface, ClassNames type) {
-  string c_name = interface.name.Literal();
+  string c_name = interface.GetName();
 
   if (c_name.length() >= 2 && c_name[0] == 'I' && isupper(c_name[1]))
     c_name = c_name.substr(1);
@@ -144,8 +144,8 @@ unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& types,
   vector<string> include_list{i_name + ".h", bp_name + ".h"};
 
   string fq_name = i_name;
-  if (parsed_doc.package != nullptr && strlen(parsed_doc.package) > 0) {
-    fq_name = StringPrintf("%s.%s", parsed_doc.package, i_name.c_str());
+  if (!parsed_doc.GetPackage().empty()) {
+    fq_name = StringPrintf("%s.%s", parsed_doc.GetPackage().c_str(), i_name.c_str());
   }
 
   unique_ptr<ConstructorDecl> meta_if{new ConstructorDecl{
@@ -171,7 +171,7 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
   publics.push_back(std::move(constructor));
   publics.push_back(std::move(destructor));
 
-  for (const auto& item : *parsed_doc.methods) {
+  for (const auto& item : parsed_doc.GetMethods()) {
     publics.push_back(BuildMethodDecl(*item, types, false));
   }
 
@@ -232,7 +232,7 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
           {ClassName(parsed_doc, ClassNames::BASE)}}});
 
   unique_ptr<Enum> call_enum{new Enum{"Call"}};
-  for (const auto& method : *parsed_doc.methods) {
+  for (const auto& method : parsed_doc.GetMethods()) {
     if_class->AddPublic(BuildMethodDecl(*method, types, true));
     call_enum->AddValue(
         UpperCase(method->GetName()),

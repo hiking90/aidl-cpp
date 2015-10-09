@@ -35,13 +35,14 @@ using android::aidl::cpp_strdup;
     AidlDocumentItem* document_item;
 }
 
-%token<buffer> IDENTIFIER IDVALUE GENERIC PARCELABLE ONEWAY INTERFACE ';' '{' '}'
-%token IN OUT INOUT '(' ')' ',' '=' '[' ']' '<' '>' '.' PACKAGE IMPORT
+%token<buffer> IDENTIFIER IDVALUE GENERIC PARCELABLE INTERFACE ONEWAY ';'
+%token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' PACKAGE IMPORT
+%token IN OUT INOUT
 
 %type<document_item> document_items declaration
 %type<user_data> parcelable_decl
 %type<methods> methods
-%type<interface_obj> interface_decl interface_header
+%type<interface_obj> interface_decl
 %type<method> method_decl
 %type<type> type
 %type<arg_list> arg_list
@@ -122,35 +123,14 @@ parcelable_decl
     $$ = NULL;
   };
 
-interface_header
- : INTERFACE {
-    AidlInterface* c = new AidlInterface();
-    c->item_type = INTERFACE_TYPE_BINDER;
-    c->interface_token = $1;
-    c->oneway = false;
-    memset(&c->oneway_token, 0, sizeof(buffer_type));
-    c->comments_token = &c->interface_token;
-    $$ = c;
-  }
- | ONEWAY INTERFACE {
-    AidlInterface* c = new AidlInterface();
-    c->item_type = INTERFACE_TYPE_BINDER;
-    c->interface_token = $2;
-    c->oneway = true;
-    c->oneway_token = $1;
-    c->comments_token = &c->oneway_token;
-    $$ = c;
-  };
-
 interface_decl
- : interface_header IDENTIFIER '{' methods '}' {
-    AidlInterface* c = $1;
-    c->name = $2;
-    c->package = cpp_strdup(ps->Package().c_str());
-    c->open_brace_token = $3;
-    c->methods = $4;
-    c->close_brace_token = $5;
-    $$ = c;
+ : INTERFACE IDENTIFIER '{' methods '}' {
+    $$ = new AidlInterface($2.Literal(), @2.begin.line,
+        android::aidl::gather_comments($1.extra), false, $4, ps->Package());
+  }
+ | ONEWAY INTERFACE IDENTIFIER '{' methods '}' {
+    $$ = new AidlInterface($3.Literal(), @3.begin.line,
+        android::aidl::gather_comments($1.extra), true, $5, ps->Package());
   }
  | INTERFACE error '{' methods '}' {
     fprintf(stderr, "%s:%d: syntax error in interface declaration.  Expected type name, saw \"%s\"\n",

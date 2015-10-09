@@ -101,10 +101,10 @@ class AidlMethod {
  public:
   AidlMethod(bool oneway, AidlType* type, std::string name,
              std::vector<std::unique_ptr<AidlArgument>>* args,
-             unsigned line, std::string comments);
+             unsigned line, const std::string& comments);
   AidlMethod(bool oneway, AidlType* type, std::string name,
              std::vector<std::unique_ptr<AidlArgument>>* args,
-             unsigned line, std::string comments, int id);
+             unsigned line, const std::string& comments, int id);
   virtual ~AidlMethod() = default;
 
   const std::string& GetComments() const { return comments_; }
@@ -143,7 +143,7 @@ class AidlDocumentItem : public AidlNode {
   AidlDocumentItem() = default;
   virtual ~AidlDocumentItem() = default;
 
-  AidlDocumentItem* next;
+  AidlDocumentItem* next = nullptr;
   unsigned item_type;
 
  private:
@@ -154,6 +154,9 @@ class AidlParcelable : public AidlDocumentItem {
  public:
   AidlParcelable() = default;
   virtual ~AidlParcelable() = default;
+
+  std::string GetName() const { return name.data; }
+  unsigned GetLine() const { return name.lineno; }
 
   buffer_type keyword_token; // only the first one
   char* package;
@@ -167,20 +170,29 @@ class AidlParcelable : public AidlDocumentItem {
 
 class AidlInterface : public AidlDocumentItem {
  public:
-  explicit AidlInterface() = default;
+  AidlInterface(const std::string& name, unsigned line,
+                const std::string& comments, bool oneway_,
+                std::vector<std::unique_ptr<AidlMethod>>* methods,
+                const std::string& package);
   virtual ~AidlInterface() = default;
 
-  buffer_type interface_token;
-  bool oneway;
-  buffer_type oneway_token;
-  char* package;
-  buffer_type name;
-  buffer_type open_brace_token;
-  std::vector<std::unique_ptr<AidlMethod>>* methods;
-  buffer_type close_brace_token;
-  buffer_type* comments_token; // points into this structure, DO NOT DELETE
+  const std::string& GetName() const { return name_; }
+  unsigned GetLine() const { return line_; }
+  const std::string& GetComments() const { return comments_; }
+  bool IsOneway() const { return oneway_; }
+  const std::vector<std::unique_ptr<AidlMethod>>& GetMethods() const
+      { return methods_; }
+  const std::string& GetPackage() const { return package_; }
+  std::string GetCanonicalName() const { return package_ + "." + name_; }
 
  private:
+  std::string name_;
+  std::string comments_;
+  unsigned line_;
+  bool oneway_;
+  std::vector<std::unique_ptr<AidlMethod>> methods_;
+  std::string package_;
+
   DISALLOW_COPY_AND_ASSIGN(AidlInterface);
 };
 

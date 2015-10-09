@@ -68,8 +68,9 @@ const int kMinUserSetMethodId = 0;
 const int kMaxUserSetMethodId = 16777214;
 
 int check_filename(const std::string& filename,
-                   const char* package,
-                   buffer_type* name) {
+                   const std::string& package,
+                   const std::string& name,
+                   unsigned line) {
     const char* p;
     string expected;
     string fn;
@@ -93,7 +94,7 @@ int check_filename(const std::string& filename,
         fn += filename;
     }
 
-    if (package) {
+    if (!package.empty()) {
         expected = package;
         expected += '.';
     }
@@ -105,9 +106,7 @@ int check_filename(const std::string& filename,
         }
     }
 
-    p = strchr(name->data, '.');
-    len = p ? p-name->data : strlen(name->data);
-    expected.append(name->data, len);
+    expected.append(name, 0, name.find('.'));
 
     expected += ".aidl";
 
@@ -139,7 +138,7 @@ int check_filename(const std::string& filename,
     if (!valid) {
         fprintf(stderr, "%s:%d interface %s should be declared in a file"
                 " called %s.\n",
-                filename.c_str(), name->lineno, name->data, expected.c_str());
+                filename.c_str(), line, name.c_str(), expected.c_str());
         return 1;
     }
 
@@ -151,11 +150,11 @@ int check_filenames(const std::string& filename, const AidlDocumentItem* items) 
     while (items) {
         if (items->item_type == USER_DATA_TYPE) {
             const AidlParcelable* p = reinterpret_cast<const AidlParcelable*>(items);
-            err |= check_filename(filename, p->package, &p->name);
+            err |= check_filename(filename, p->package, p->name.data, p->name.lineno);
         }
         else if (items->item_type == INTERFACE_TYPE_BINDER) {
             const AidlInterface* c = reinterpret_cast<const AidlInterface*>(items);
-            err |= check_filename(filename, c->package, &c->name);
+            err |= check_filename(filename, c->GetPackage(), c->GetName(), c->GetLine());
         }
         else {
             fprintf(stderr, "aidl: internal error unkown document type %d.\n",
@@ -204,7 +203,7 @@ int check_types(const string& filename,
 
   // Has to be a pointer due to deleting copy constructor. No idea why.
   map<string, const AidlMethod*> method_names;
-  for (const auto& m : *c->methods) {
+  for (const auto& m : c->GetMethods()) {
     if (!types->AddContainerType(m->GetType().GetName()) ||
         !types->IsValidReturnType(m->GetType(), filename)) {
       err = 1;  // return type is invalid
@@ -302,8 +301,8 @@ void generate_dep_file(const JavaOptions& options,
 }
 
 string generate_outputFileName2(const JavaOptions& options,
-                                const buffer_type& name,
-                                const char* package) {
+                                const std::string& name,
+                                const std::string& package) {
     string result;
 
     // create the path to the destination folder based on the
@@ -322,11 +321,8 @@ string generate_outputFileName2(const JavaOptions& options,
     result += packageStr;
 
     // add the filename by replacing the .aidl extension to .java
-    const char* p = strchr(name.data, '.');
-    len = p ? p-name.data : strlen(name.data);
-
     result += OS_PATH_SEPARATOR;
-    result.append(name.data, len);
+    result.append(name, 0, name.find('.'));
     result += ".java";
 
     return result;
@@ -338,10 +334,11 @@ string generate_outputFileName(const JavaOptions& options,
     if (items->item_type == INTERFACE_TYPE_BINDER) {
         AidlInterface* type = (AidlInterface*)items;
 
-        return generate_outputFileName2(options, type->name, type->package);
+        return generate_outputFileName2(options, type->GetName(), type->GetPackage());
     } else if (items->item_type == USER_DATA_TYPE) {
         AidlParcelable* type = (AidlParcelable*)items;
-        return generate_outputFileName2(options, type->name, type->package);
+
+        return generate_outputFileName2(options, type->GetName(), type->package);
     }
 
     // I don't think we can come here, but safer than returning NULL.
@@ -416,17 +413,10 @@ int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
             doc = (AidlDocumentItem*)parcl;
         }
         else if (0 == strcmp("interface", type)) {
-            AidlInterface* iface = new AidlInterface();
-            iface->item_type = INTERFACE_TYPE_BINDER;
-            iface->interface_token.lineno = lineno;
-            iface->interface_token.data = cpp_strdup(type);
-            iface->package = packagename ? cpp_strdup(packagename) : NULL;
-            iface->name.lineno = lineno;
-            iface->name.data = cpp_strdup(classname);
-            iface->open_brace_token.lineno = lineno;
-            iface->open_brace_token.data = cpp_strdup("{");
-            iface->close_brace_token.lineno = lineno;
-            iface->close_brace_token.data = cpp_strdup("}");
+            auto temp = new std::vector<std::unique_ptr<AidlMethod>>();
+            AidlInterface* iface = new AidlInterface(classname, lineno, "",
+                                                     false, temp,
+                                                     packagename ?: "");
             doc = (AidlDocumentItem*)iface;
         }
         else {
@@ -549,7 +539,8 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
   }
   AidlInterface* interface = (AidlInterface*)parsed_doc;
   err |= check_filename(input_file_name.c_str(),
-                        interface->package, &interface->name);
+                        interface->GetPackage(), interface->GetName(),
+                        interface->GetLine());
 
   // parse the imports of the input file
   ImportResolver import_resolver{io_delegate, import_paths};
@@ -601,7 +592,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
 
   // assign method ids and validate.
   err |= check_and_assign_method_ids(input_file_name.c_str(),
-                                     *interface->methods);
+                                     interface->GetMethods());
 
   // after this, there shouldn't be any more errors because of the
   // input.
@@ -711,11 +702,11 @@ int preprocess_aidl(const JavaOptions& options,
         } else {
             line = "interface ";
             AidlInterface* iface = (AidlInterface*)doc;
-            if (iface->package) {
-                line += iface->package;
+            if (!iface->GetPackage().empty()) {
+                line += iface->GetPackage();
                 line += '.';
             }
-            line += iface->name.data;
+            line += iface->GetName();
         }
         line += ";\n";
         lines.push_back(line);

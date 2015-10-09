@@ -59,7 +59,8 @@ generate_java(const string& filename, const string& originalSrc,
 
     Document* document = new Document;
         document->comment = "";
-        if (iface->package) document->package = iface->package;
+        if (!iface->GetPackage().empty())
+            document->package = iface->GetPackage();
         document->originalSrc = originalSrc;
         document->classes.push_back(cl);
 
