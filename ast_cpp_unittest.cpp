@@ -170,6 +170,17 @@ TEST_F(AstCppTests, GeneratesStatementBlock) {
   CompareGeneratedCode(block, "{\nfoo;\nbar;\n}\n");
 }
 
+TEST_F(AstCppTests, GeneratesConstructorImpl) {
+  ConstructorImpl c("ClassName", ArgList({"a", "b", "c"}),
+                    {"baz_(foo)", "bar_(blah)"});
+  string expected = R"(ClassName::ClassName(a, b, c)
+    : baz_(foo),
+      bar_(blah){
+}
+)";
+  CompareGeneratedCode(c, expected);
+}
+
 TEST_F(AstCppTests, GeneratesAssignment) {
   Assignment simple("foo", "8");
   CompareGeneratedCode(simple, "foo = 8;\n");
@@ -202,8 +213,9 @@ TEST_F(AstCppTests, GeneratesMethodImpl) {
   MethodImpl m{"return_type", "ClassName", "MethodName",
                ArgList{{"arg 1", "arg 2", "arg 3"}},
                true};
-  m.AddStatement(unique_ptr<AstNode>{new LiteralStatement{"foo"}});
-  m.AddStatement(unique_ptr<AstNode>{new LiteralStatement{"bar"}});
+  auto b = m.GetStatementBlock();
+  b->AddLiteral("foo");
+  b->AddLiteral("bar");
   CompareGeneratedCode(m, kExpectedMethodImplOutput);
 }
 

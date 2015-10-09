@@ -239,7 +239,7 @@ unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
 
   // Add the all important switch statement, but retain a pointer to it.
   SwitchStatement* s = new SwitchStatement{"code"};
-  on_transact->AddStatement(unique_ptr<AstNode>{s});
+  on_transact->GetStatementBlock()->AddStatement(s);
 
   // The switch statement has a case statement for each transaction code.
   for (const auto& method : parsed_doc.GetMethods()) {
@@ -256,8 +256,7 @@ unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
       "status = android::BBinder::onTransact(code, data, reply, flags)");
 
   // Finally, the server's onTransact method just returns a status code.
-  on_transact->AddStatement(unique_ptr<AstNode>{
-      new LiteralStatement{"return status"}});
+  on_transact->GetStatementBlock()->AddLiteral("return status");
 
   return unique_ptr<Document>{new CppSource{
       include_list,

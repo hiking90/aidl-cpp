@@ -182,6 +182,24 @@ class StatementBlock : public Declaration {
   DISALLOW_COPY_AND_ASSIGN(StatementBlock);
 };  // class StatementBlock
 
+class ConstructorImpl : public Declaration {
+ public:
+  ConstructorImpl(const std::string& class_name,
+                  ArgList&& arg_list,
+                  const std::vector<std::string>& initializer_list);
+  virtual ~ConstructorImpl() = default;
+
+  void Write(CodeWriter* to) const override;
+
+ private:
+  std::string class_name_;
+  ArgList arguments_;
+  std::vector<std::string> initializer_list_;
+  StatementBlock body_;
+
+  DISALLOW_COPY_AND_ASSIGN(ConstructorImpl);
+};  // class ConstructorImpl
+
 class MethodImpl : public Declaration {
  public:
   // Passing an empty class name causes the method to be declared as a normal
@@ -193,7 +211,9 @@ class MethodImpl : public Declaration {
              bool is_const_method = false);
   virtual ~MethodImpl() = default;
 
-  void AddStatement(std::unique_ptr<AstNode> statement);
+  // MethodImpl retains ownership of the statement block.
+  StatementBlock* GetStatementBlock();
+
   void Write(CodeWriter* to) const override;
 
  private:

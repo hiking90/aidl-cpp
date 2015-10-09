@@ -202,6 +202,31 @@ void StatementBlock::Write(CodeWriter* to) const {
   to->Write("}\n");
 }
 
+ConstructorImpl::ConstructorImpl(const string& class_name,
+                                 ArgList&& arg_list,
+                                 const vector<string>& initializer_list)
+      : class_name_(class_name),
+        arguments_(std::move(arg_list)),
+        initializer_list_(initializer_list) {}
+
+void ConstructorImpl::Write(CodeWriter* to) const {
+  to->Write("%s::%s", class_name_.c_str(), class_name_.c_str());
+  arguments_.Write(to);
+  to->Write("\n");
+
+  bool is_first = true;
+  for (const string& i : initializer_list_) {
+    if (is_first) {
+      to->Write("    : %s", i.c_str());
+    } else {
+      to->Write(",\n      %s", i.c_str());
+    }
+    is_first = false;
+  }
+
+  body_.Write(to);
+}
+
 MethodImpl::MethodImpl(const string& return_type,
                        const string& class_name,
                        const string& method_name,
@@ -216,8 +241,8 @@ MethodImpl::MethodImpl(const string& return_type,
   }
 }
 
-void MethodImpl::AddStatement(unique_ptr<AstNode> statement) {
-  statements_.AddStatement(std::move(statement));
+StatementBlock* MethodImpl::GetStatementBlock() {
+  return &statements_;
 }
 
 void MethodImpl::Write(CodeWriter* to) const {
