@@ -184,10 +184,10 @@ bool gather_types(const std::string& filename,
 
   for (const AidlDocumentItem* item = all_items; item; item = item->next) {
     if (item->item_type == USER_DATA_TYPE) {
-      AidlParcelable* p = (AidlParcelable*)item;
+      const AidlParcelable* p = reinterpret_cast<const AidlParcelable*>(item);
       success &= types->AddParcelableType(p, filename);
     } else if (item->item_type == INTERFACE_TYPE_BINDER) {
-      AidlInterface* c = (AidlInterface*)item;
+      const AidlInterface* c = reinterpret_cast<const AidlInterface*>(item);
       success &= types->AddBinderType(c, filename);
     } else {
       LOG(FATAL) << "internal error";
@@ -332,11 +332,11 @@ string generate_outputFileName(const JavaOptions& options,
                                const AidlDocumentItem* items) {
     // items has already been checked to have only one interface.
     if (items->item_type == INTERFACE_TYPE_BINDER) {
-        AidlInterface* type = (AidlInterface*)items;
+        const AidlInterface* type = reinterpret_cast<const AidlInterface*>(items);
 
         return generate_outputFileName2(options, type->GetName(), type->GetPackage());
     } else if (items->item_type == USER_DATA_TYPE) {
-        AidlParcelable* type = (AidlParcelable*)items;
+        const AidlParcelable* type = reinterpret_cast<const AidlParcelable*>(items);
 
         return generate_outputFileName2(options, type->GetName(), type->package);
     }
@@ -410,14 +410,14 @@ int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
             parcl->semicolon_token.lineno = lineno;
             parcl->semicolon_token.data = cpp_strdup(";");
             parcl->parcelable = true;
-            doc = (AidlDocumentItem*)parcl;
+            doc = reinterpret_cast<AidlDocumentItem*>(parcl);
         }
         else if (0 == strcmp("interface", type)) {
             auto temp = new std::vector<std::unique_ptr<AidlMethod>>();
             AidlInterface* iface = new AidlInterface(classname, lineno, "",
                                                      false, temp,
                                                      packagename ?: "");
-            doc = (AidlDocumentItem*)iface;
+            doc = reinterpret_cast<AidlDocumentItem*>(iface);
         }
         else {
             fprintf(stderr, "%s:%d: bad type in line: %s\n",
@@ -537,7 +537,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
     cerr << "aidl expects exactly one interface per input file";
     return 1;
   }
-  AidlInterface* interface = (AidlInterface*)parsed_doc;
+  AidlInterface* interface = reinterpret_cast<AidlInterface*>(parsed_doc);
   err |= check_filename(input_file_name.c_str(),
                         interface->GetPackage(), interface->GetName(),
                         interface->GetLine());
@@ -651,7 +651,7 @@ int compile_aidl_to_java(const JavaOptions& options,
   if (err != 0) {
     return err;
   }
-  AidlDocumentItem* parsed_doc = (AidlDocumentItem*)interface;
+  AidlDocumentItem* parsed_doc = reinterpret_cast<AidlDocumentItem*>(interface);
 
   string output_file_name = options.output_file_name_;
   // if needed, generate the output file name from the base folder
@@ -690,7 +690,7 @@ int preprocess_aidl(const JavaOptions& options,
         AidlDocumentItem* doc = p.GetDocument();
         string line;
         if (doc->item_type == USER_DATA_TYPE) {
-            AidlParcelable* parcelable = (AidlParcelable*)doc;
+            AidlParcelable* parcelable = reinterpret_cast<AidlParcelable*>(doc);
             if (parcelable->parcelable) {
                 line = "parcelable ";
             }
@@ -701,7 +701,7 @@ int preprocess_aidl(const JavaOptions& options,
             line += parcelable->name.data;
         } else {
             line = "interface ";
-            AidlInterface* iface = (AidlInterface*)doc;
+            AidlInterface* iface = reinterpret_cast<AidlInterface*>(doc);
             if (!iface->GetPackage().empty()) {
                 line += iface->GetPackage();
                 line += '.';
