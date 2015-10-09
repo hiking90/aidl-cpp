@@ -42,9 +42,13 @@ namespace aidl {
 namespace cpp {
 namespace internals {
 namespace {
+
 const char kStatusOkOrBreakCheck[] = "if (status != android::OK) { break; }";
+const char kStatusOkOrReturnLiteral[] =
+    "if (status != android::OK) { return status; }";
 const char kReturnVarName[] = "_aidl_return";
 const char kAndroidStatusLiteral[] = "android::status_t";
+const char kAndroidParcelLiteral[] = "android::Parcel";
 const char kIBinderHeader[] = "binder/IBinder.h";
 const char kIInterfaceHeader[] = "binder/IInterface.h";
 const char kParcelHeader[] = "binder/Parcel.h";
@@ -125,6 +129,13 @@ unique_ptr<CppNamespace> NestInNamespaces(unique_ptr<Declaration> decl) {
   return NPtr{new N{"android", NPtr{new N{"generated", std::move(decl)}}}};
 }
 
+unique_ptr<CppNamespace> NestInNamespaces(
+    vector<unique_ptr<Declaration>> decls) {
+  using N = CppNamespace;
+  using NPtr = unique_ptr<N>;
+  return NPtr{new N{"android", NPtr{new N{"generated", std::move(decls)}}}};
+}
+
 bool DeclareLocalVariable(const TypeNamespace& types, const AidlArgument& a,
                           StatementBlock* b) {
   const Type* cpp_type = types.Find(a.GetType().GetName());
@@ -160,10 +171,96 @@ string ClassName(const AidlInterface& interface, ClassNames type) {
   return c_name;
 }
 
+namespace {
+
+unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
+                                                const AidlInterface& interface,
+                                                const AidlMethod& method) {
+  const string i_name = ClassName(interface, ClassNames::INTERFACE);
+  const string bp_name = ClassName(interface, ClassNames::CLIENT);
+  unique_ptr<MethodImpl> ret{new MethodImpl{
+      kAndroidStatusLiteral, bp_name, method.GetName(),
+      ArgList{BuildArgList(types, method, true /* for method decl */)}}};
+  StatementBlock* b = ret->GetStatementBlock();
+
+  // Declare parcels to hold our query and the response.
+  b->AddLiteral(StringPrintf("%s data", kAndroidParcelLiteral));
+  b->AddLiteral(StringPrintf("%s reply", kAndroidParcelLiteral));
+  // And declare the status variable we need for error handling.
+  b->AddLiteral(StringPrintf("%s status", kAndroidStatusLiteral));
+
+  // Serialization looks roughly like:
+  //     status = data.WriteInt32(in_param_name);
+  //     if (status != android::OK) { return status; }
+  for (const AidlArgument* a : method.GetInArguments()) {
+    string method = types.Find(a->GetType().GetName())->WriteToParcelMethod();
+    string var_name = ((a->IsOut()) ? "*" : "") + a->GetName();
+    b->AddStatement(new Assignment(
+        "status",
+        new MethodCall("data." + method, ArgList(var_name))));
+    b->AddLiteral(kStatusOkOrReturnLiteral, false /* no semicolon */);
+  }
+
+  // Invoke the transaction on the remote binder and confirm status.
+  string transaction_code = StringPrintf(
+      "%s::%s", i_name.c_str(), UpperCase(method.GetName()).c_str());
+  b->AddStatement(new Assignment(
+      "status",
+      new MethodCall("remote()->transact",
+                     ArgList({transaction_code, "data", "&reply"}))));
+  b->AddLiteral(kStatusOkOrReturnLiteral, false /* no semicolon */);
+
+  // If the method is expected to return something, read it first by convention.
+  const Type* return_type = types.Find(method.GetType().GetName());
+  if (return_type != types.VoidType()) {
+    string method = return_type->ReadFromParcelMethod();
+    b->AddStatement(new Assignment(
+        "status",
+        new MethodCall("reply." + method, ArgList(kReturnVarName))));
+    b->AddLiteral(kStatusOkOrReturnLiteral, false /* no semicolon */);
+  }
+
+  for (const AidlArgument* a : method.GetOutArguments()) {
+    // Deserialization looks roughly like:
+    //     status = reply.ReadInt32(out_param_name);
+    //     if (status != android::OK) { return status; }
+    string method = types.Find(a->GetType().GetName())->ReadFromParcelMethod();
+    b->AddStatement(new Assignment(
+        "status",
+        new MethodCall("reply." + method, ArgList(a->GetName()))));
+    b->AddLiteral(kStatusOkOrReturnLiteral, false /* no semicolon */);
+  }
+
+  b->AddLiteral("return status");
+
+  return unique_ptr<Declaration>(ret.release());
+}
+
+}  // namespace
+
 unique_ptr<Document> BuildClientSource(const TypeNamespace& types,
-                                       const AidlInterface& parsed_doc) {
-  unique_ptr<CppNamespace> ns{new CppNamespace{"android"}};
-  return unique_ptr<Document>{new CppSource{ {}, std::move(ns)}};
+                                       const AidlInterface& interface) {
+  const string bp_name = ClassName(interface, ClassNames::CLIENT);
+  vector<string> include_list = { bp_name + ".h", kParcelHeader };
+  vector<unique_ptr<Declaration>> file_decls;
+
+  // The constructor just passes the IBinder instance up to the super
+  // class.
+  file_decls.push_back(unique_ptr<Declaration>{new ConstructorImpl{
+      bp_name,
+      ArgList{"const android::sp<android::IBinder>& impl"},
+      { "BpInterface<IPingResponder>(impl)" }}});
+
+  // Clients define a method per transaction.
+  for (const auto& method : interface.GetMethods()) {
+    unique_ptr<Declaration> m = DefineClientTransaction(
+        types, interface, *method);
+    if (!m) { return nullptr; }
+    file_decls.push_back(std::move(m));
+  }
+  return unique_ptr<Document>{new CppSource{
+      include_list,
+      NestInNamespaces(std::move(file_decls))}};
 }
 
 namespace {
@@ -207,6 +304,14 @@ bool HandleServerTransaction(const TypeNamespace& types,
           BuildArgList(types, method, false /* not for method decl */)}});
   b->AddLiteral(kStatusOkOrBreakCheck, false /* no semicolon */);
 
+  // If we have a return value, write it first.
+  if (return_type != types.VoidType()) {
+    string method = "reply->" + return_type->WriteToParcelMethod();
+    b->AddStatement(new Assignment{
+        "status", new MethodCall{method, ArgList{kReturnVarName}}});
+    b->AddLiteral(kStatusOkOrBreakCheck, false /* no semicolon */);
+  }
+
   // Write each out parameter to the reply parcel.
   for (const AidlArgument* a : method.GetOutArguments()) {
     // Serialization looks roughly like:
@@ -232,10 +337,10 @@ unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
   unique_ptr<MethodImpl> on_transact{new MethodImpl{
       kAndroidStatusLiteral, bn_name, "onTransact",
       ArgList{{"uint32_t code",
-               "const android::Parcel& data",
-               "android::Parcel* reply",
-               "uint32_t flags"}
-  }}};
+               StringPrintf("const %s& data", kAndroidParcelLiteral),
+               StringPrintf("%s* reply", kAndroidParcelLiteral),
+               "uint32_t flags"}}
+      }};
 
   // Add the all important switch statement, but retain a pointer to it.
   SwitchStatement* s = new SwitchStatement{"code"};
@@ -297,8 +402,8 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
   publics.push_back(std::move(constructor));
   publics.push_back(std::move(destructor));
 
-  for (const auto& item : parsed_doc.GetMethods()) {
-    publics.push_back(BuildMethodDecl(*item, types, false));
+  for (const auto& method: parsed_doc.GetMethods()) {
+    publics.push_back(BuildMethodDecl(*method, types, false));
   }
 
   unique_ptr<ClassDecl> bp_class{
@@ -325,8 +430,8 @@ unique_ptr<Document> BuildServerHeader(const TypeNamespace& /* types */,
   unique_ptr<Declaration> on_transact{new MethodDecl(
       kAndroidStatusLiteral, "onTransact",
       ArgList{{"uint32_t code",
-               "const android::Parcel& data",
-               "android::Parcel* reply",
+               StringPrintf("const %s& data", kAndroidParcelLiteral),
+               StringPrintf("%s* reply", kAndroidParcelLiteral),
                "uint32_t flags = 0"}})};
 
   std::vector<unique_ptr<Declaration>> publics;

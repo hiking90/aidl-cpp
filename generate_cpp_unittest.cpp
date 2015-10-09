@@ -40,6 +40,36 @@ R"(interface IPingResponder {
   int Ping(int token);
 })";
 
+const char kExpectedTrivialClientSourceOutput[] =
+R"(#include <BpPingResponder.h>
+#include <binder/Parcel.h>
+
+namespace android {
+
+namespace generated {
+
+BpPingResponder::BpPingResponder(const android::sp<android::IBinder>& impl)
+    : BpInterface<IPingResponder>(impl){
+}
+
+android::status_t BpPingResponder::Ping(int32_t token, int32_t* _aidl_return) {
+android::Parcel data;
+android::Parcel reply;
+android::status_t status;
+status = data.writeInt32(token);
+if (status != android::OK) { return status; }
+status = remote()->transact(IPingResponder::PING, data, &reply);
+if (status != android::OK) { return status; }
+status = reply.readInt32(_aidl_return);
+if (status != android::OK) { return status; }
+return status;
+}
+
+}  // namespace generated
+
+}  // namespace android
+)";
+
 const char kExpectedTrivialServerSourceOutput[] =
 R"(#include <BnPingResponder.h>
 #include <binder/Parcel.h>
@@ -58,6 +88,8 @@ android::status_t status;
 status = data.readInt32(&in_token);
 if (status != android::OK) { break; }
 status = Ping(in_token, &_aidl_return);
+if (status != android::OK) { break; }
+status = reply->writeInt32(_aidl_return);
 if (status != android::OK) { break; }
 }
 break;
@@ -181,6 +213,14 @@ TEST_F(TrivialInterfaceASTTest, GeneratesClientHeader) {
   TypeNamespace types;
   unique_ptr<Document> doc = internals::BuildClientHeader(types, *interface);
   Compare(doc.get(), kExpectedTrivialClientHeaderOutput);
+}
+
+TEST_F(TrivialInterfaceASTTest, GeneratesClientSource) {
+  AidlInterface* interface = Parse();
+  ASSERT_NE(interface, nullptr);
+  TypeNamespace types;
+  unique_ptr<Document> doc = internals::BuildClientSource(types, *interface);
+  Compare(doc.get(), kExpectedTrivialClientSourceOutput);
 }
 
 TEST_F(TrivialInterfaceASTTest, GeneratesServerSource) {
