@@ -514,15 +514,15 @@ generate_interface_descriptors(StubClass* stub, ProxyClass* proxy,
 }
 
 Class*
-generate_binder_interface_class(const interface_type* iface,
+generate_binder_interface_class(const AidlInterface* iface,
                                 JavaTypeNamespace* types)
 {
     const InterfaceType* interfaceType = static_cast<const InterfaceType*>(
-        types->Find(iface->package, iface->name.data));
+        types->Find(iface->GetCanonicalName()));
 
     // the interface class
     Class* interface = new Class;
-        interface->comment = gather_comments(iface->comments_token->extra);
+        interface->comment = iface->GetComments();
         interface->modifiers = PUBLIC;
         interface->what = Class::INTERFACE;
         interface->type = interfaceType;
@@ -530,15 +530,14 @@ generate_binder_interface_class(const interface_type* iface,
 
     // the stub inner class
     StubClass* stub = new StubClass(
-        types->Find(iface->package, append(iface->name.data, ".Stub").c_str()),
+        types->Find(iface->GetCanonicalName() + ".Stub"),
         interfaceType, types);
     interface->elements.push_back(stub);
 
     // the proxy inner class
     ProxyClass* proxy = new ProxyClass(
         types,
-        types->Find(iface->package,
-                         append(iface->name.data, ".Stub.Proxy").c_str()),
+        types->Find(iface->GetCanonicalName() + ".Stub.Proxy"),
         interfaceType);
     stub->elements.push_back(proxy);
 
@@ -547,7 +546,7 @@ generate_binder_interface_class(const interface_type* iface,
 
     // all the declared methods of the interface
     int index = 0;
-    for (const auto& item : *iface->methods) {
+    for (const auto& item : iface->GetMethods()) {
         generate_method(*item, interface, stub, proxy,
                         item->GetId(), types);
         index++;

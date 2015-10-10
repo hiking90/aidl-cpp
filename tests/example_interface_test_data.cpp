@@ -59,21 +59,26 @@ interface IExampleInterface {
 )";
 
 const char kIExampleInterfaceDeps[] =
-R"(/tmp/.org.chromium.Chromium.Cdq7YZ/output/android/test/IExampleInterface.java: \
-  /tmp/.org.chromium.Chromium.Cdq7YZ/input/android/test/IExampleInterface.aidl \
-  /tmp/.org.chromium.Chromium.Cdq7YZ/input/android/foo/ExampleParcelable.aidl \
-  /tmp/.org.chromium.Chromium.Cdq7YZ/input/android/test/ExampleParcelable2.aidl \
-  /tmp/.org.chromium.Chromium.Cdq7YZ/input/android/bar/IAuxInterface.aidl \
-  /tmp/.org.chromium.Chromium.Cdq7YZ/input/android/test/IAuxInterface2.aidl 
+R"(android/test/IExampleInterface.java: \
+  android/test/IExampleInterface.aidl \
+  ./android/foo/ExampleParcelable.aidl \
+  ./android/test/CompoundParcelable.aidl \
+  ./android/bar/IAuxInterface.aidl \
+  ./android/test/IAuxInterface2.aidl
 
-/tmp/.org.chromium.Chromium.Cdq7YZ/input/android/test/IExampleInterface.aidl :
-/tmp/.org.chromium.Chromium.Cdq7YZ/input/android/foo/ExampleParcelable.aidl :
-/tmp/.org.chromium.Chromium.Cdq7YZ/input/android/test/ExampleParcelable2.aidl :
-/tmp/.org.chromium.Chromium.Cdq7YZ/input/android/bar/IAuxInterface.aidl :
-/tmp/.org.chromium.Chromium.Cdq7YZ/input/android/test/IAuxInterface2.aidl :)";
+android/test/IExampleInterface.aidl :
+./android/foo/ExampleParcelable.aidl :
+./android/test/CompoundParcelable.aidl :
+./android/bar/IAuxInterface.aidl :
+./android/test/IAuxInterface2.aidl :
+)";
 
 const char kIExampleInterfaceJava[] =
-R"(package android.test;
+R"(/*
+ * This file is auto-generated.  DO NOT MODIFY.
+ * Original file: android/test/IExampleInterface.aidl
+ */
+package android.test;
 public interface IExampleInterface extends android.os.IInterface
 {
 /** Local-side IPC implementation stub class. */
@@ -422,7 +427,8 @@ public void registerBinder(android.bar.IAuxInterface foo) throws android.os.Remo
 public android.test.IExampleInterface getRecursiveBinder() throws android.os.RemoteException;
 public int takesAnInterface(android.test.IAuxInterface2 arg) throws android.os.RemoteException;
 public int takesAParcelable(android.test.CompoundParcelable.Subclass1 arg, android.test.CompoundParcelable.Subclass2 arg2) throws android.os.RemoteException;
-})";
+}
+)";
 
 }  // namespace test_data
 }  // namespace aidl

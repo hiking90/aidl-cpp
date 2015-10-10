@@ -101,10 +101,10 @@ class AidlMethod {
  public:
   AidlMethod(bool oneway, AidlType* type, std::string name,
              std::vector<std::unique_ptr<AidlArgument>>* args,
-             unsigned line, std::string comments);
+             unsigned line, const std::string& comments);
   AidlMethod(bool oneway, AidlType* type, std::string name,
              std::vector<std::unique_ptr<AidlArgument>>* args,
-             unsigned line, std::string comments, int id);
+             unsigned line, const std::string& comments, int id);
   virtual ~AidlMethod() = default;
 
   const std::string& GetComments() const { return comments_; }
@@ -134,63 +134,96 @@ class AidlMethod {
 };
 
 enum {
-    USER_DATA_TYPE = 12,
-    INTERFACE_TYPE_BINDER
+  USER_DATA_TYPE = 12,
+  INTERFACE_TYPE_BINDER
 };
 
-struct document_item_type {
-    unsigned item_type;
-    struct document_item_type* next;
+class AidlDocumentItem : public AidlNode {
+ public:
+  AidlDocumentItem() = default;
+  virtual ~AidlDocumentItem() = default;
+
+  AidlDocumentItem* next = nullptr;
+  unsigned item_type;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AidlDocumentItem);
 };
 
+class AidlParcelable : public AidlDocumentItem {
+ public:
+  AidlParcelable() = default;
+  virtual ~AidlParcelable() = default;
 
-struct user_data_type {
-    document_item_type document_item;
-    buffer_type keyword_token; // only the first one
-    char* package;
-    buffer_type name;
-    buffer_type semicolon_token;
-    bool parcelable;
+  std::string GetName() const { return name.data; }
+  unsigned GetLine() const { return name.lineno; }
+
+  buffer_type keyword_token; // only the first one
+  char* package;
+  buffer_type name;
+  buffer_type semicolon_token;
+  bool parcelable;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AidlParcelable);
 };
 
-struct interface_type {
-    document_item_type document_item;
-    buffer_type interface_token;
-    bool oneway;
-    buffer_type oneway_token;
-    char* package;
-    buffer_type name;
-    buffer_type open_brace_token;
-    std::vector<std::unique_ptr<AidlMethod>>* methods;
-    buffer_type close_brace_token;
-    buffer_type* comments_token; // points into this structure, DO NOT DELETE
+class AidlInterface : public AidlDocumentItem {
+ public:
+  AidlInterface(const std::string& name, unsigned line,
+                const std::string& comments, bool oneway_,
+                std::vector<std::unique_ptr<AidlMethod>>* methods,
+                const std::string& package);
+  virtual ~AidlInterface() = default;
+
+  const std::string& GetName() const { return name_; }
+  unsigned GetLine() const { return line_; }
+  const std::string& GetComments() const { return comments_; }
+  bool IsOneway() const { return oneway_; }
+  const std::vector<std::unique_ptr<AidlMethod>>& GetMethods() const
+      { return methods_; }
+  const std::string& GetPackage() const { return package_; }
+  std::string GetCanonicalName() const { return package_ + "." + name_; }
+
+ private:
+  std::string name_;
+  std::string comments_;
+  unsigned line_;
+  bool oneway_;
+  std::vector<std::unique_ptr<AidlMethod>> methods_;
+  std::string package_;
+
+  DISALLOW_COPY_AND_ASSIGN(AidlInterface);
 };
 
-
-#if __cplusplus
-extern "C" {
-#endif
-
-// callbacks from within the parser
-// these functions all take ownership of the strings
-struct ParserCallbacks {
-    void (*document)(document_item_type* items);
-    void (*import)(buffer_type* statement);
-};
-
-enum error_type {
-    STATEMENT_INSIDE_INTERFACE
-};
 
 void init_buffer_type(buffer_type* buf, int lineno);
 
-struct import_info {
-    const char* from;
-    const char* filename;
-    const char* neededClass;
-    unsigned line;
-    document_item_type* doc;
-    struct import_info* next;
+class AidlImport : public AidlNode {
+ public:
+  AidlImport(const std::string& from, const std::string& needed_class,
+             unsigned line);
+  virtual ~AidlImport() = default;
+
+  const std::string& GetFileFrom() const { return from_; }
+  const std::string& GetFilename() const { return filename_; }
+  const std::string& GetNeededClass() const { return needed_class_; }
+  unsigned GetLine() const { return line_; }
+  const AidlDocumentItem* GetDocument() { return document_.get(); };
+  void SetDocument(AidlDocumentItem* doc) {
+    document_ = std::unique_ptr<AidlDocumentItem>(doc);
+  }
+
+  void SetFilename(const std::string& filename) { filename_ = filename; }
+
+ private:
+  std::unique_ptr<AidlDocumentItem> document_;
+  std::string from_;
+  std::string filename_;
+  std::string needed_class_;
+  unsigned line_;
+
+  DISALLOW_COPY_AND_ASSIGN(AidlImport);
 };
 
 class Parser {
@@ -208,13 +241,18 @@ class Parser {
   const std::string& Package() const { return package_; }
   void *Scanner() const { return scanner_; }
 
-  void SetDocument(document_item_type *items) { document_ = items; };
+  void SetDocument(AidlDocumentItem *items) { document_ = items; };
 
   void AddImport(std::vector<std::string>* terms, unsigned line);
   void SetPackage(std::vector<std::string>* terms);
 
-  document_item_type *GetDocument() const { return document_; }
-  import_info *GetImports() const { return imports_; }
+  AidlDocumentItem *GetDocument() const { return document_; }
+  const std::vector<std::unique_ptr<AidlImport>>& GetImports() { return imports_; }
+
+  void ReleaseImports(std::vector<std::unique_ptr<AidlImport>>* ret) {
+      *ret = std::move(imports_);
+      imports_.clear();
+  }
 
  private:
   const android::aidl::IoDelegate& io_delegate_;
@@ -222,16 +260,12 @@ class Parser {
   std::string filename_;
   std::string package_;
   void *scanner_ = nullptr;
-  document_item_type* document_ = nullptr;
-  import_info* imports_ = nullptr;
+  AidlDocumentItem* document_ = nullptr;
+  std::vector<std::unique_ptr<AidlImport>> imports_;
   std::unique_ptr<std::string> raw_buffer_;
   YY_BUFFER_STATE buffer_;
 
   DISALLOW_COPY_AND_ASSIGN(Parser);
 };
-
-#if __cplusplus
-}
-#endif
 
 #endif // AIDL_AIDL_LANGUAGE_H_

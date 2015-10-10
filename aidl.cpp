@@ -67,9 +67,10 @@ namespace {
 const int kMinUserSetMethodId = 0;
 const int kMaxUserSetMethodId = 16777214;
 
-int check_filename(const char* filename,
-                   const char* package,
-                   buffer_type* name) {
+int check_filename(const std::string& filename,
+                   const std::string& package,
+                   const std::string& name,
+                   unsigned line) {
     const char* p;
     string expected;
     string fn;
@@ -93,7 +94,7 @@ int check_filename(const char* filename,
         fn += filename;
     }
 
-    if (package) {
+    if (!package.empty()) {
         expected = package;
         expected += '.';
     }
@@ -105,9 +106,7 @@ int check_filename(const char* filename,
         }
     }
 
-    p = strchr(name->data, '.');
-    len = p ? p-name->data : strlen(name->data);
-    expected.append(name->data, len);
+    expected.append(name, 0, name.find('.'));
 
     expected += ".aidl";
 
@@ -139,23 +138,23 @@ int check_filename(const char* filename,
     if (!valid) {
         fprintf(stderr, "%s:%d interface %s should be declared in a file"
                 " called %s.\n",
-                filename, name->lineno, name->data, expected.c_str());
+                filename.c_str(), line, name.c_str(), expected.c_str());
         return 1;
     }
 
     return 0;
 }
 
-int check_filenames(const char* filename, document_item_type* items) {
+int check_filenames(const std::string& filename, const AidlDocumentItem* items) {
     int err = 0;
     while (items) {
         if (items->item_type == USER_DATA_TYPE) {
-            user_data_type* p = (user_data_type*)items;
-            err |= check_filename(filename, p->package, &p->name);
+            const AidlParcelable* p = reinterpret_cast<const AidlParcelable*>(items);
+            err |= check_filename(filename, p->package, p->name.data, p->name.lineno);
         }
         else if (items->item_type == INTERFACE_TYPE_BINDER) {
-            interface_type* c = (interface_type*)items;
-            err |= check_filename(filename, c->package, &c->name);
+            const AidlInterface* c = reinterpret_cast<const AidlInterface*>(items);
+            err |= check_filename(filename, c->GetPackage(), c->GetName(), c->GetLine());
         }
         else {
             fprintf(stderr, "aidl: internal error unkown document type %d.\n",
@@ -178,20 +177,17 @@ char* rfind(char* str, char c) {
     return NULL;
 }
 
-bool gather_types(const char* raw_filename,
-                  document_item_type* all_items,
+bool gather_types(const std::string& filename,
+                  const AidlDocumentItem* all_items,
                   TypeNamespace* types) {
   bool success = true;
-  if (raw_filename == nullptr)
-    raw_filename = "";
-  const std::string filename{raw_filename};
 
-  for (document_item_type* item = all_items; item; item = item->next) {
+  for (const AidlDocumentItem* item = all_items; item; item = item->next) {
     if (item->item_type == USER_DATA_TYPE) {
-      user_data_type* p = (user_data_type*)item;
+      const AidlParcelable* p = reinterpret_cast<const AidlParcelable*>(item);
       success &= types->AddParcelableType(p, filename);
     } else if (item->item_type == INTERFACE_TYPE_BINDER) {
-      interface_type* c = (interface_type*)item;
+      const AidlInterface* c = reinterpret_cast<const AidlInterface*>(item);
       success &= types->AddBinderType(c, filename);
     } else {
       LOG(FATAL) << "internal error";
@@ -201,13 +197,13 @@ bool gather_types(const char* raw_filename,
 }
 
 int check_types(const string& filename,
-                interface_type* c,
+                AidlInterface* c,
                 TypeNamespace* types) {
   int err = 0;
 
   // Has to be a pointer due to deleting copy constructor. No idea why.
   map<string, const AidlMethod*> method_names;
-  for (const auto& m : *c->methods) {
+  for (const auto& m : c->GetMethods()) {
     if (!types->AddContainerType(m->GetType().GetName()) ||
         !types->IsValidReturnType(m->GetType(), filename)) {
       err = 1;  // return type is invalid
@@ -237,48 +233,57 @@ int check_types(const string& filename,
 }
 
 void generate_dep_file(const JavaOptions& options,
-                       const document_item_type* items,
-                       import_info* import_head) {
+                       const AidlDocumentItem* items,
+                       const std::vector<std::unique_ptr<AidlImport>>& imports) {
     /* we open the file in binary mode to ensure that the same output is
      * generated on all platforms !!
      */
     FILE* to = NULL;
+    string fileName;
+
     if (options.auto_dep_file_) {
-        string fileName = options.output_file_name_ + ".d";
-        to = fopen(fileName.c_str(), "wb");
+            fileName = options.output_file_name_ + ".d";
     } else {
-        to = fopen(options.dep_file_name_.c_str(), "wb");
+        fileName = options.dep_file_name_;
     }
 
+    string output_file_name;
+
+    // TODO: Mock IO and remove this weird stuff (b/24816077)
+    if (!options.output_file_name_for_deps_test_.empty())
+        output_file_name = options.output_file_name_for_deps_test_;
+    else
+        output_file_name = options.output_file_name_;
+
+    to = fopen(fileName.c_str(), "wb");
+
     if (to == NULL) {
+        cerr << "Could not open " << fileName << endl;
+        printf("%m\n");
         return;
     }
 
-    const char* slash = "\\";
-    import_info* import = import_head;
-    if (import == NULL) {
-        slash = "";
-    }
-
     if (items->item_type == INTERFACE_TYPE_BINDER) {
-        fprintf(to, "%s: \\\n", options.output_file_name_.c_str());
+        fprintf(to, "%s: \\\n", output_file_name.c_str());
     } else {
         // parcelable: there's no output file.
         fprintf(to, " : \\\n");
     }
-    fprintf(to, "  %s %s\n", options.input_file_name_.c_str(), slash);
+    fprintf(to, "  %s %s\n", options.input_file_name_.c_str(), imports.empty() ? "" : "\\");
 
-    while (import) {
-        if (import->next == NULL) {
-            slash = "";
+    bool first = true;
+    for (const auto& import : imports) {
+        if (! first) {
+          fprintf(to, " \\\n");
         }
-        if (import->filename) {
-            fprintf(to, "  %s %s\n", import->filename, slash);
+        first = false;
+
+        if (! import->GetFilename().empty()) {
+            fprintf(to, "  %s", import->GetFilename().c_str());
         }
-        import = import->next;
     }
 
-    fprintf(to, "\n");
+    fprintf(to, first ? "\n" : "\n\n");
 
     // Output "<input_aidl_file>: " so make won't fail if the input .aidl file
     // has been deleted, moved or renamed in incremental build.
@@ -286,20 +291,18 @@ void generate_dep_file(const JavaOptions& options,
 
     // Output "<imported_file>: " so make won't fail if the imported file has
     // been deleted, moved or renamed in incremental build.
-    import = import_head;
-    while (import) {
-        if (import->filename) {
-            fprintf(to, "%s :\n", import->filename);
+    for (const auto& import : imports) {
+        if (! import->GetFilename().empty()) {
+            fprintf(to, "%s :\n", import->GetFilename().c_str());
         }
-        import = import->next;
     }
 
     fclose(to);
 }
 
 string generate_outputFileName2(const JavaOptions& options,
-                                const buffer_type& name,
-                                const char* package) {
+                                const std::string& name,
+                                const std::string& package) {
     string result;
 
     // create the path to the destination folder based on the
@@ -318,26 +321,24 @@ string generate_outputFileName2(const JavaOptions& options,
     result += packageStr;
 
     // add the filename by replacing the .aidl extension to .java
-    const char* p = strchr(name.data, '.');
-    len = p ? p-name.data : strlen(name.data);
-
     result += OS_PATH_SEPARATOR;
-    result.append(name.data, len);
+    result.append(name, 0, name.find('.'));
     result += ".java";
 
     return result;
 }
 
 string generate_outputFileName(const JavaOptions& options,
-                               const document_item_type* items) {
+                               const AidlDocumentItem* items) {
     // items has already been checked to have only one interface.
     if (items->item_type == INTERFACE_TYPE_BINDER) {
-        interface_type* type = (interface_type*)items;
+        const AidlInterface* type = reinterpret_cast<const AidlInterface*>(items);
 
-        return generate_outputFileName2(options, type->name, type->package);
+        return generate_outputFileName2(options, type->GetName(), type->GetPackage());
     } else if (items->item_type == USER_DATA_TYPE) {
-        user_data_type* type = (user_data_type*)items;
-        return generate_outputFileName2(options, type->name, type->package);
+        const AidlParcelable* type = reinterpret_cast<const AidlParcelable*>(items);
+
+        return generate_outputFileName2(options, type->GetName(), type->package);
     }
 
     // I don't think we can come here, but safer than returning NULL.
@@ -396,12 +397,11 @@ int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
 
         //printf("%s:%d:...%s...%s...%s...\n", filename.c_str(), lineno,
         //        type, packagename, classname);
-        document_item_type* doc;
+        AidlDocumentItem* doc;
 
         if (0 == strcmp("parcelable", type)) {
-            user_data_type* parcl = new user_data_type();
-            memset(parcl, 0, sizeof(user_data_type));
-            parcl->document_item.item_type = USER_DATA_TYPE;
+            AidlParcelable* parcl = new AidlParcelable();
+            parcl->item_type = USER_DATA_TYPE;
             parcl->keyword_token.lineno = lineno;
             parcl->keyword_token.data = cpp_strdup(type);
             parcl->package = packagename ? cpp_strdup(packagename) : NULL;
@@ -410,22 +410,14 @@ int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
             parcl->semicolon_token.lineno = lineno;
             parcl->semicolon_token.data = cpp_strdup(";");
             parcl->parcelable = true;
-            doc = (document_item_type*)parcl;
+            doc = reinterpret_cast<AidlDocumentItem*>(parcl);
         }
         else if (0 == strcmp("interface", type)) {
-            interface_type* iface = new interface_type();
-            memset(iface, 0, sizeof(interface_type));
-            iface->document_item.item_type = INTERFACE_TYPE_BINDER;
-            iface->interface_token.lineno = lineno;
-            iface->interface_token.data = cpp_strdup(type);
-            iface->package = packagename ? cpp_strdup(packagename) : NULL;
-            iface->name.lineno = lineno;
-            iface->name.data = cpp_strdup(classname);
-            iface->open_brace_token.lineno = lineno;
-            iface->open_brace_token.data = cpp_strdup("{");
-            iface->close_brace_token.lineno = lineno;
-            iface->close_brace_token.data = cpp_strdup("}");
-            doc = (document_item_type*)iface;
+            auto temp = new std::vector<std::unique_ptr<AidlMethod>>();
+            AidlInterface* iface = new AidlInterface(classname, lineno, "",
+                                                     false, temp,
+                                                     packagename ?: "");
+            doc = reinterpret_cast<AidlDocumentItem*>(iface);
         }
         else {
             fprintf(stderr, "%s:%d: bad type in line: %s\n",
@@ -514,8 +506,8 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
                            const std::string& input_file_name,
                            const IoDelegate& io_delegate,
                            TypeNamespace* types,
-                           interface_type** returned_interface,
-                           import_info** returned_imports) {
+                           AidlInterface** returned_interface,
+                           std::vector<std::unique_ptr<AidlImport>>* returned_imports) {
   int err = 0;
 
   // import the preprocessed file
@@ -532,7 +524,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
     return 1;
   }
 
-  document_item_type* parsed_doc = p.GetDocument();
+  AidlDocumentItem* parsed_doc = p.GetDocument();
   // We could in theory declare parcelables in the same file as the interface.
   // In practice, those parcelables would have to have the same name as
   // the interface, since this was originally written to support Java, with its
@@ -545,39 +537,40 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
     cerr << "aidl expects exactly one interface per input file";
     return 1;
   }
-  interface_type* interface = (interface_type*)parsed_doc;
+  AidlInterface* interface = reinterpret_cast<AidlInterface*>(parsed_doc);
   err |= check_filename(input_file_name.c_str(),
-                        interface->package, &interface->name);
+                        interface->GetPackage(), interface->GetName(),
+                        interface->GetLine());
 
   // parse the imports of the input file
   ImportResolver import_resolver{io_delegate, import_paths};
-  for (import_info* import = p.GetImports(); import; import = import->next) {
-    if (types->HasType(import->neededClass)) {
+  for (auto& import : p.GetImports()) {
+    if (types->HasType(import->GetNeededClass())) {
       // There are places in the Android tree where an import doesn't resolve,
       // but we'll pick the type up through the preprocessed types.
       // This seems like an error, but legacy support demands we support it...
       continue;
     }
-    string import_path = import_resolver.FindImportFile(import->neededClass);
+    string import_path = import_resolver.FindImportFile(import->GetNeededClass());
     if (import_path.empty()) {
-      cerr << import->from << ":" << import->line
+      cerr << import->GetFileFrom() << ":" << import->GetLine()
            << ": couldn't find import for class "
-           << import->neededClass << endl;
+           << import->GetNeededClass() << endl;
       err |= 1;
       continue;
     }
-    import->filename = cpp_strdup(import_path.c_str());
+    import->SetFilename(import_path);
 
     Parser p{io_delegate};
-    if (!p.ParseFile(import->filename)) {
+    if (!p.ParseFile(import->GetFilename())) {
       cerr << "error while parsing import for class "
-           << import->neededClass << endl;
+           << import->GetNeededClass() << endl;
       err |= 1;
       continue;
     }
 
-    import->doc = p.GetDocument();
-    err |= check_filenames(import->filename, import->doc);
+    import->SetDocument(p.GetDocument());
+    err |= check_filenames(import->GetFilename(), import->GetDocument());
   }
   if (err != 0) {
     return err;
@@ -587,8 +580,8 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
   if (!gather_types(input_file_name.c_str(), parsed_doc, types)) {
     err |= 1;
   }
-  for (import_info* import = p.GetImports(); import; import = import->next) {
-    if (!gather_types(import->filename, import->doc, types)) {
+  for (const auto& import : p.GetImports()) {
+    if (!gather_types(import->GetFilename(), import->GetDocument(), types)) {
       err |= 1;
     }
   }
@@ -599,7 +592,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
 
   // assign method ids and validate.
   err |= check_and_assign_method_ids(input_file_name.c_str(),
-                                     *interface->methods);
+                                     interface->GetMethods());
 
   // after this, there shouldn't be any more errors because of the
   // input.
@@ -607,8 +600,14 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
     return err;
   }
 
-  *returned_interface = interface;
-  *returned_imports = p.GetImports();
+  if (returned_interface)
+      *returned_interface = interface;
+  else
+      delete interface;
+
+  if (returned_imports)
+    p.ReleaseImports(returned_imports);
+
   return 0;
 }
 
@@ -616,8 +615,8 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
 
 int compile_aidl_to_cpp(const CppOptions& options,
                         const IoDelegate& io_delegate) {
-  interface_type* interface = nullptr;
-  import_info* imports = nullptr;
+  AidlInterface* interface = nullptr;
+  std::vector<std::unique_ptr<AidlImport>> imports;
   unique_ptr<cpp::TypeNamespace> types(new cpp::TypeNamespace());
   int err = internals::load_and_validate_aidl(
       std::vector<std::string>{},  // no preprocessed files
@@ -638,8 +637,8 @@ int compile_aidl_to_cpp(const CppOptions& options,
 
 int compile_aidl_to_java(const JavaOptions& options,
                          const IoDelegate& io_delegate) {
-  interface_type* interface = nullptr;
-  import_info* imports = nullptr;
+  AidlInterface* interface = nullptr;
+  std::vector<std::unique_ptr<AidlImport>> imports;
   unique_ptr<java::JavaTypeNamespace> types(new java::JavaTypeNamespace());
   int err = internals::load_and_validate_aidl(
       options.preprocessed_files_,
@@ -652,7 +651,7 @@ int compile_aidl_to_java(const JavaOptions& options,
   if (err != 0) {
     return err;
   }
-  document_item_type* parsed_doc = (document_item_type*)interface;
+  AidlDocumentItem* parsed_doc = reinterpret_cast<AidlDocumentItem*>(interface);
 
   string output_file_name = options.output_file_name_;
   // if needed, generate the output file name from the base folder
@@ -688,10 +687,10 @@ int preprocess_aidl(const JavaOptions& options,
         Parser p{io_delegate};
         if (!p.ParseFile(options.files_to_preprocess_[i]))
           return 1;
-        document_item_type* doc = p.GetDocument();
+        AidlDocumentItem* doc = p.GetDocument();
         string line;
         if (doc->item_type == USER_DATA_TYPE) {
-            user_data_type* parcelable = (user_data_type*)doc;
+            AidlParcelable* parcelable = reinterpret_cast<AidlParcelable*>(doc);
             if (parcelable->parcelable) {
                 line = "parcelable ";
             }
@@ -702,12 +701,12 @@ int preprocess_aidl(const JavaOptions& options,
             line += parcelable->name.data;
         } else {
             line = "interface ";
-            interface_type* iface = (interface_type*)doc;
-            if (iface->package) {
-                line += iface->package;
+            AidlInterface* iface = reinterpret_cast<AidlInterface*>(doc);
+            if (!iface->GetPackage().empty()) {
+                line += iface->GetPackage();
                 line += '.';
             }
-            line += iface->name.data;
+            line += iface->GetName();
         }
         line += ";\n";
         lines.push_back(line);

@@ -61,14 +61,14 @@ TypeNamespace::TypeNamespace() {
       new Type("double", "double", "readDouble", "writeDouble"));
 }
 
-bool TypeNamespace::AddParcelableType(const user_data_type* p,
+bool TypeNamespace::AddParcelableType(const AidlParcelable* p,
                                       const string& filename) {
   // TODO Support parcelables b/23600712
   LOG(ERROR) << "Passing parcelables in unimplemented in C++ generation.";
   return true;
 }
 
-bool TypeNamespace::AddBinderType(const interface_type* b,
+bool TypeNamespace::AddBinderType(const AidlInterface* b,
                                   const string& filename) {
   // TODO Support passing binders b/24470875
   LOG(ERROR) << "Passing binders is unimplemented in C++ generation.";

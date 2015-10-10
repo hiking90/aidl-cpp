@@ -82,7 +82,7 @@ string AidlArgument::ToString() const {
 
 AidlMethod::AidlMethod(bool oneway, AidlType* type, std::string name,
                        std::vector<std::unique_ptr<AidlArgument>>* args,
-                       unsigned line, std::string comments, int id)
+                       unsigned line, const std::string& comments, int id)
     : oneway_(oneway),
       comments_(comments),
       type_(type),
@@ -96,7 +96,7 @@ AidlMethod::AidlMethod(bool oneway, AidlType* type, std::string name,
 
 AidlMethod::AidlMethod(bool oneway, AidlType* type, std::string name,
                        std::vector<std::unique_ptr<AidlArgument>>* args,
-                       unsigned line, std::string comments)
+                       unsigned line, const std::string& comments)
     : AidlMethod(oneway, type, name, args, line, comments, 0) {
   has_id_ = false;
 }
@@ -105,6 +105,26 @@ Parser::Parser(const IoDelegate& io_delegate)
     : io_delegate_(io_delegate) {
   yylex_init(&scanner_);
 }
+
+AidlInterface::AidlInterface(const std::string& name, unsigned line,
+                             const std::string& comments, bool oneway,
+                             std::vector<std::unique_ptr<AidlMethod>>* methods,
+                             const std::string& package)
+    : name_(name),
+      comments_(comments),
+      line_(line),
+      oneway_(oneway),
+      methods_(std::move(*methods)),
+      package_(package) {
+  item_type = INTERFACE_TYPE_BINDER;
+  delete methods;
+}
+
+AidlImport::AidlImport(const std::string& from,
+                       const std::string& needed_class, unsigned line)
+    : from_(from),
+      needed_class_(needed_class),
+      line_(line) {}
 
 Parser::~Parser() {
   if (raw_buffer_) {
@@ -136,7 +156,6 @@ bool Parser::ParseFile(const string& filename) {
   package_.clear();
   error_ = 0;
   document_ = nullptr;
-  imports_ = nullptr;
 
   buffer_ = yy_scan_buffer(&(*raw_buffer_)[0], raw_buffer_->length(), scanner_);
 
@@ -169,13 +188,7 @@ void Parser::AddImport(std::vector<std::string>* terms, unsigned line) {
           data += '.' + term;
   }
 
-  import_info* import = new import_info();
-  memset(import, 0, sizeof(import_info));
-  import->from = cpp_strdup(this->FileName().c_str());
-  import->next = imports_;
-  import->line = line;
-  import->neededClass = cpp_strdup(data.c_str());
-  imports_ = import;
+  imports_.emplace_back(new AidlImport(this->FileName(), data, line));
 
   delete terms;
 }

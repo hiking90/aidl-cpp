@@ -83,9 +83,8 @@ class EndToEndTest : public ::testing::Test {
     if (!ReadFileToString(actual_path, &actual_contents)) {
       FAIL() << "Failed to read expected output file: " << rel_path.value();
     }
-    // Generated .java files mention the "original" file as part of their
-    // comment header.  Thus we look for expected_content being a substring.
-    if (actual_contents.find(expected_content) == string::npos) {
+
+    if (actual_contents != expected_content) {
       // When the match fails, display a diff of what's wrong.  This greatly
       // aids in debugging.
       FilePath expected_path;
@@ -116,7 +115,10 @@ TEST_F(EndToEndTest, IExampleInterface) {
   options.import_paths_.push_back("");
   options.input_file_name_ =
       CanonicalNameToPath(kIExampleInterfaceClass, ".aidl").value();
+  options.output_file_name_for_deps_test_ =
+      CanonicalNameToPath(kIExampleInterfaceClass, ".java").value();
   options.output_base_folder_ = outputDir_.value();
+  options.dep_file_name_ = outputDir_.Append(FilePath("test.d")).value();
 
   // Load up our fake file system with data.
   io_delegate.SetFileContents(options.input_file_name_,
@@ -130,7 +132,7 @@ TEST_F(EndToEndTest, IExampleInterface) {
   EXPECT_EQ(android::aidl::compile_aidl_to_java(options, io_delegate), 0);
   CheckFileContents(CanonicalNameToPath(kIExampleInterfaceClass, ".java"),
                     kIExampleInterfaceJava);
-  // We'd like to check the depends file, but it mentions unique file paths.
+  CheckFileContents(FilePath("test.d"), kIExampleInterfaceDeps);
 }
 
 }  // namespace android

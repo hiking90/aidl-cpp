@@ -64,9 +64,9 @@ class TypeNamespace : public ::android::aidl::TypeNamespace {
   TypeNamespace();
   virtual ~TypeNamespace() = default;
 
-  bool AddParcelableType(const user_data_type* p,
+  bool AddParcelableType(const AidlParcelable* p,
                          const std::string& filename) override;
-  bool AddBinderType(const interface_type* b,
+  bool AddBinderType(const AidlInterface* b,
                      const std::string& filename) override;
   bool AddContainerType(const std::string& type_name) override;
 

@@ -43,9 +43,9 @@ class ValidatableType {
 class TypeNamespace {
  public:
   // Load this TypeNamespace with user defined types.
-  virtual bool AddParcelableType(const user_data_type* p,
+  virtual bool AddParcelableType(const AidlParcelable* p,
                                  const std::string& filename) = 0;
-  virtual bool AddBinderType(const interface_type* b,
+  virtual bool AddBinderType(const AidlInterface* b,
                              const std::string& filename) = 0;
   // We dynamically create container types as we discover them in the parse
   // tree.  Returns false iff this is an invalid type.  Silently discards
