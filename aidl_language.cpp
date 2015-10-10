@@ -110,6 +110,14 @@ Parser::Parser(const IoDelegate& io_delegate)
   yylex_init(&scanner_);
 }
 
+AidlParcelable::AidlParcelable(const std::string& name, unsigned line,
+                               const std::string& package)
+    : name_(name),
+      line_(line),
+      package_(package) {
+  item_type = USER_DATA_TYPE;
+}
+
 AidlInterface::AidlInterface(const std::string& name, unsigned line,
                              const std::string& comments, bool oneway,
                              std::vector<std::unique_ptr<AidlMethod>>* methods,

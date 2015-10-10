@@ -33,10 +33,7 @@ AidlParcelable* MakeFakeUserDataType(const std::string& package,
                                      const std::string& class_name) {
   // This leaks memory, like all usages of these structs.
   // See b/24410295
-  AidlParcelable* parcl = new AidlParcelable();
-  parcl->item_type = USER_DATA_TYPE;
-  parcl->package = cpp_strdup(package.c_str());
-  parcl->name.data = cpp_strdup(class_name.c_str());
+  AidlParcelable* parcl = new AidlParcelable(class_name, 0, package);
   return parcl;
 }
 

@@ -150,7 +150,7 @@ int check_filenames(const std::string& filename, const AidlDocumentItem* items) 
     while (items) {
         if (items->item_type == USER_DATA_TYPE) {
             const AidlParcelable* p = reinterpret_cast<const AidlParcelable*>(items);
-            err |= check_filename(filename, p->package, p->name.data, p->name.lineno);
+            err |= check_filename(filename, p->GetPackage(), p->GetName(), p->GetLine());
         }
         else if (items->item_type == INTERFACE_TYPE_BINDER) {
             const AidlInterface* c = reinterpret_cast<const AidlInterface*>(items);
@@ -338,7 +338,7 @@ string generate_outputFileName(const JavaOptions& options,
     } else if (items->item_type == USER_DATA_TYPE) {
         const AidlParcelable* type = reinterpret_cast<const AidlParcelable*>(items);
 
-        return generate_outputFileName2(options, type->GetName(), type->package);
+        return generate_outputFileName2(options, type->GetName(), type->GetPackage());
     }
 
     // I don't think we can come here, but safer than returning NULL.
@@ -400,16 +400,7 @@ int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
         AidlDocumentItem* doc;
 
         if (0 == strcmp("parcelable", type)) {
-            AidlParcelable* parcl = new AidlParcelable();
-            parcl->item_type = USER_DATA_TYPE;
-            parcl->keyword_token.lineno = lineno;
-            parcl->keyword_token.data = cpp_strdup(type);
-            parcl->package = packagename ? cpp_strdup(packagename) : NULL;
-            parcl->name.lineno = lineno;
-            parcl->name.data = cpp_strdup(classname);
-            parcl->semicolon_token.lineno = lineno;
-            parcl->semicolon_token.data = cpp_strdup(";");
-            parcl->parcelable = true;
+            AidlParcelable* parcl = new AidlParcelable(classname, lineno, packagename);
             doc = reinterpret_cast<AidlDocumentItem*>(parcl);
         }
         else if (0 == strcmp("interface", type)) {
@@ -691,14 +682,14 @@ int preprocess_aidl(const JavaOptions& options,
         string line;
         if (doc->item_type == USER_DATA_TYPE) {
             AidlParcelable* parcelable = reinterpret_cast<AidlParcelable*>(doc);
-            if (parcelable->parcelable) {
-                line = "parcelable ";
-            }
-            if (parcelable->package) {
-                line += parcelable->package;
+
+            line = "parcelable ";
+
+            if (! parcelable->GetPackage().empty()) {
+                line += parcelable->GetPackage();
                 line += '.';
             }
-            line += parcelable->name.data;
+            line += parcelable->GetName();
         } else {
             line = "interface ";
             AidlInterface* iface = reinterpret_cast<AidlInterface*>(doc);

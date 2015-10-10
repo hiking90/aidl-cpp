@@ -958,8 +958,8 @@ const Type* JavaTypeNamespace::Find(const char* package,
 bool JavaTypeNamespace::AddParcelableType(const AidlParcelable* p,
                                           const std::string& filename) {
   Type* type =
-      new UserDataType(this, p->package ? p->package : "", p->GetName(), false,
-                       p->parcelable, filename, p->GetLine());
+      new UserDataType(this, p->GetPackage(), p->GetName(), false,
+                       true, filename, p->GetLine());
   return Add(type);
 }
 
