@@ -64,9 +64,9 @@ string BuildVarName(const AidlArgument& a) {
   return prefix + a.GetName();
 }
 
-vector<string> BuildArgList(const TypeNamespace& types,
-                            const AidlMethod& method,
-                            bool for_declaration) {
+ArgList BuildArgList(const TypeNamespace& types,
+                     const AidlMethod& method,
+                     bool for_declaration) {
   // Build up the argument list for the server method call.
   vector<string> method_arguments;
   for (const unique_ptr<AidlArgument>& a : method.GetArguments()) {
@@ -88,16 +88,17 @@ vector<string> BuildArgList(const TypeNamespace& types,
 
   const Type* return_type = types.Find(method.GetType().GetName());
   if (return_type != types.VoidType()) {
+    string literal;
     if (for_declaration) {
-      method_arguments.push_back(
-          StringPrintf("%s* %s", return_type->CppType().c_str(),
-                       kReturnVarName));
+      literal = StringPrintf(
+          "%s* %s", return_type->CppType().c_str(), kReturnVarName);
     } else {
-      method_arguments.push_back(string{"&"} + kReturnVarName);
+      literal = string{"&"} + kReturnVarName;
     }
+    method_arguments.push_back(literal);
   }
 
-  return method_arguments;
+  return ArgList(method_arguments);
 }
 
 unique_ptr<Declaration> BuildMethodDecl(const AidlMethod& method,
@@ -203,8 +204,7 @@ bool HandleServerTransaction(const TypeNamespace& types,
   b->AddStatement(new Assignment{
       "status", new MethodCall{
           method.GetName(),
-          new ArgList{BuildArgList(types, method,
-                                   false /* not for method decl */)}}});
+          BuildArgList(types, method, false /* not for method decl */)}});
   b->AddLiteral(kStatusOkOrBreakCheck, false /* no semicolon */);
 
   // Write each out parameter to the reply parcel.
@@ -231,11 +231,11 @@ unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
   vector<string> include_list{bn_name + ".h", kParcelHeader};
   unique_ptr<MethodImpl> on_transact{new MethodImpl{
       kAndroidStatusLiteral, bn_name, "onTransact",
-      {"uint32_t code",
-       "const android::Parcel& data",
-       "android::Parcel* reply",
-       "uint32_t flags"}
-  }};
+      ArgList{{"uint32_t code",
+               "const android::Parcel& data",
+               "android::Parcel* reply",
+               "uint32_t flags"}
+  }}};
 
   // Add the all important switch statement, but retain a pointer to it.
   SwitchStatement* s = new SwitchStatement{"code"};
@@ -277,8 +277,8 @@ unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& /* types */,
 
   unique_ptr<ConstructorDecl> meta_if{new ConstructorDecl{
       "IMPLEMENT_META_INTERFACE",
-      {ClassName(parsed_doc, ClassNames::BASE), '"' + fq_name + '"'}
-  }};
+      ArgList{vector<string>{ClassName(parsed_doc, ClassNames::BASE),
+                             '"' + fq_name + '"'}}}};
 
   return unique_ptr<Document>{new CppSource{
       include_list,
@@ -292,7 +292,7 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
 
   unique_ptr<ConstructorDecl> constructor{new ConstructorDecl(bp_name, {})};
   unique_ptr<ConstructorDecl> destructor{new ConstructorDecl(
-      "~" + bp_name, {}, true /* is virtual */, true /* is default */)};
+      "~" + bp_name, ArgList{}, true /* is virtual */, true /* is default */)};
 
   vector<unique_ptr<Declaration>> publics;
   publics.push_back(std::move(constructor));
@@ -323,13 +323,12 @@ unique_ptr<Document> BuildServerHeader(const TypeNamespace& /* types */,
   const string i_name = ClassName(parsed_doc, ClassNames::INTERFACE);
   const string bn_name = ClassName(parsed_doc, ClassNames::SERVER);
 
-  unique_ptr<Declaration> on_transact{
-      new MethodDecl(kAndroidStatusLiteral, "onTransact",
-                     { "uint32_t code",
-                       "const android::Parcel& data",
-                       "android::Parcel* reply",
-                       "uint32_t flags = 0"
-                     })};
+  unique_ptr<Declaration> on_transact{new MethodDecl(
+      kAndroidStatusLiteral, "onTransact",
+      ArgList{{"uint32_t code",
+               "const android::Parcel& data",
+               "android::Parcel* reply",
+               "uint32_t flags = 0"}})};
 
   std::vector<unique_ptr<Declaration>> publics;
   publics.push_back(std::move(on_transact));
@@ -353,10 +352,9 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
   unique_ptr<ClassDecl> if_class{
       new ClassDecl{ClassName(parsed_doc, ClassNames::INTERFACE),
                     "public android::IInterface"}};
-  if_class->AddPublic(unique_ptr<Declaration>{
-      new ConstructorDecl{
-          "DECLARE_META_INTERFACE",
-          {ClassName(parsed_doc, ClassNames::BASE)}}});
+  if_class->AddPublic(unique_ptr<Declaration>{new ConstructorDecl{
+      "DECLARE_META_INTERFACE",
+      ArgList{vector<string>{ClassName(parsed_doc, ClassNames::BASE)}}}});
 
   unique_ptr<Enum> call_enum{new Enum{"Call"}};
   for (const auto& method : parsed_doc.GetMethods()) {

@@ -28,24 +28,6 @@ using std::vector;
 namespace android {
 namespace aidl {
 namespace cpp {
-namespace {
-
-void WriteArgList(CodeWriter* to, const vector<string>& arguments_) {
-  bool first = true;
-
-  to->Write("(");
-
-  for (const auto& arg : arguments_) {
-    if (!first)
-      to->Write(", ");
-    to->Write("%s", arg.c_str());
-    first = false;
-  }
-
-  to->Write(")");
-}
-
-}  // namespace
 
 ClassDecl::ClassDecl(const std::string& name, const std::string& parent)
     : name_(name),
@@ -118,6 +100,9 @@ ArgList::ArgList(const std::string& single_argument)
 ArgList::ArgList(const std::vector<std::string>& arg_list)
     : arguments_(arg_list) {}
 
+ArgList::ArgList(ArgList&& arg_list)
+    : arguments_(std::move(arg_list.arguments_)) {}
+
 void ArgList::Write(CodeWriter* to) const {
   to->Write("(");
   bool is_first = true;
@@ -131,17 +116,16 @@ void ArgList::Write(CodeWriter* to) const {
 
 ConstructorDecl::ConstructorDecl(
     const std::string& name,
-    std::vector<std::string> arguments)
-    : name_(name),
-      arguments_(arguments) {}
+    ArgList&& arg_list)
+    : ConstructorDecl(name, std::move(arg_list), false, false) {}
 
 ConstructorDecl::ConstructorDecl(
     const std::string& name,
-    std::vector<std::string> arguments,
+    ArgList&& arg_list,
     bool is_virtual,
     bool is_default)
     : name_(name),
-      arguments_(arguments),
+      arguments_(std::move(arg_list)),
       is_virtual_(is_virtual),
       is_default_(is_default) {}
 
@@ -149,17 +133,9 @@ void ConstructorDecl::Write(CodeWriter* to) const {
   if (is_virtual_)
     to->Write("virtual ");
 
-  to->Write("%s(", name_.c_str());
+  to->Write("%s", name_.c_str());
 
-  bool not_first = false;
-
-  for (const auto& arg : arguments_) {
-    if (not_first)
-      to->Write(", ");
-    not_first = true;
-    to->Write("%s", arg.c_str());
-  }
-  to->Write(")");
+  arguments_.Write(to);
 
   if (is_default_)
     to->Write(" = default");
@@ -169,18 +145,16 @@ void ConstructorDecl::Write(CodeWriter* to) const {
 
 MethodDecl::MethodDecl(const std::string& return_type,
                        const std::string& name,
-                       std::vector<std::string> arguments)
-    : return_type_(return_type),
-      name_(name),
-      arguments_(arguments) {}
+                       ArgList&& arg_list)
+    : MethodDecl(return_type, name, std::move(arg_list), 0u) {}
 
 MethodDecl::MethodDecl(const std::string& return_type,
                        const std::string& name,
-                       std::vector<std::string> arguments,
+                       ArgList&& arg_list,
                        uint32_t modifiers)
     : return_type_(return_type),
       name_(name),
-      arguments_(arguments),
+      arguments_(std::move(arg_list)),
       is_const_(modifiers & IS_CONST),
       is_virtual_(modifiers & IS_VIRTUAL),
       is_override_(modifiers & IS_OVERRIDE),
@@ -192,7 +166,7 @@ void MethodDecl::Write(CodeWriter* to) const {
 
   to->Write("%s %s", return_type_.c_str(), name_.c_str());
 
-  WriteArgList(to, arguments_);
+  arguments_.Write(to);
 
   if (is_const_)
     to->Write(" const");
@@ -231,11 +205,11 @@ void StatementBlock::Write(CodeWriter* to) const {
 MethodImpl::MethodImpl(const string& return_type,
                        const string& class_name,
                        const string& method_name,
-                       vector<string> arguments,
+                       ArgList&& arg_list,
                        bool is_const_method)
     : return_type_(return_type),
       method_name_(method_name),
-      arguments_(arguments),
+      arguments_(std::move(arg_list)),
       is_const_method_(is_const_method) {
   if (!class_name.empty()) {
     method_name_ = class_name + "::" + method_name;
@@ -248,7 +222,7 @@ void MethodImpl::AddStatement(unique_ptr<AstNode> statement) {
 
 void MethodImpl::Write(CodeWriter* to) const {
   to->Write("%s %s", return_type_.c_str(), method_name_.c_str());
-  WriteArgList(to, arguments_);
+  arguments_.Write(to);
   to->Write("%s ", (is_const_method_) ? " const" : "");
   statements_.Write(to);
 }
@@ -300,15 +274,16 @@ void Assignment::Write(CodeWriter* to) const {
 
 MethodCall::MethodCall(const std::string& method_name,
                        const std::string& single_argument)
-    : MethodCall(method_name, new ArgList{single_argument}) {}
+    : MethodCall(method_name, ArgList{single_argument}) {}
 
-MethodCall::MethodCall(const std::string& method_name, ArgList* arg_list)
+MethodCall::MethodCall(const std::string& method_name,
+                       ArgList&& arg_list)
     : method_name_(method_name),
-      arg_list_{arg_list} {}
+      arguments_{std::move(arg_list)} {}
 
 void MethodCall::Write(CodeWriter* to) const {
   to->Write("%s", method_name_.c_str());
-  arg_list_->Write(to);
+  arguments_.Write(to);
 }
 
 LiteralStatement::LiteralStatement(const string& expression, bool use_semicolon)

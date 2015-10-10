@@ -37,11 +37,7 @@ class AstNode {
  public:
   AstNode() = default;
   virtual ~AstNode() = default;
-
   virtual void Write(CodeWriter* to) const = 0;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(AstNode);
 };  // class AstNode
 
 class Declaration : public AstNode {
@@ -101,8 +97,10 @@ class Enum : public Declaration {
 
 class ArgList : public AstNode {
  public:
+  ArgList() = default;
   explicit ArgList(const std::string& single_argument);
   explicit ArgList(const std::vector<std::string>& arg_list);
+  ArgList(ArgList&& arg_list);
   virtual ~ArgList() = default;
 
   void Write(CodeWriter* to) const override;
@@ -116,9 +114,9 @@ class ArgList : public AstNode {
 class ConstructorDecl : public Declaration {
  public:
   ConstructorDecl(const std::string& name,
-                  std::vector<std::string> arguments);
+                  ArgList&& arg_list);
   ConstructorDecl(const std::string& name,
-                  std::vector<std::string> arguments,
+                  ArgList&& arg_list,
                   bool is_virtual,
                   bool is_default);
 
@@ -128,7 +126,7 @@ class ConstructorDecl : public Declaration {
 
  private:
   const std::string name_;
-  std::vector<std::string> arguments_;
+  const ArgList arguments_;
   bool is_virtual_ = false;
   bool is_default_ = false;
 
@@ -146,10 +144,10 @@ class MethodDecl : public Declaration {
 
   MethodDecl(const std::string& return_type,
              const std::string& name,
-             std::vector<std::string> arguments);
+             ArgList&& arg_list);
   MethodDecl(const std::string& return_type,
              const std::string& name,
-             std::vector<std::string> arguments,
+             ArgList&& arg_list,
              uint32_t modifiers);
   virtual ~MethodDecl() = default;
 
@@ -158,7 +156,7 @@ class MethodDecl : public Declaration {
  private:
   const std::string return_type_;
   const std::string name_;
-  std::vector<std::string> arguments_;
+  const ArgList arguments_;
   bool is_const_ = false;
   bool is_virtual_ = false;
   bool is_override_ = false;
@@ -191,7 +189,7 @@ class MethodImpl : public Declaration {
   MethodImpl(const std::string& return_type,
              const std::string& class_name,
              const std::string& method_name,
-             std::vector<std::string> arguments,
+             ArgList&& arg_list,
              bool is_const_method = false);
   virtual ~MethodImpl() = default;
 
@@ -201,7 +199,7 @@ class MethodImpl : public Declaration {
  private:
   std::string return_type_;
   std::string method_name_;
-  std::vector<std::string> arguments_;
+  const ArgList arguments_;
   StatementBlock statements_;
   bool is_const_method_ = false;
 
@@ -247,13 +245,13 @@ class MethodCall : public AstNode {
  public:
   MethodCall(const std::string& method_name,
              const std::string& single_argument);
-  MethodCall(const std::string& method_name, ArgList* arg_list);
+  MethodCall(const std::string& method_name, ArgList&& arg_list);
   ~MethodCall() = default;
   void Write(CodeWriter* to) const override;
 
  private:
   const std::string method_name_;
-  const std::unique_ptr<ArgList> arg_list_;
+  const ArgList arguments_;
 
   DISALLOW_COPY_AND_ASSIGN(MethodCall);
 };  // class MethodCall

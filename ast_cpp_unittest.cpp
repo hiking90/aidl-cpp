@@ -82,7 +82,7 @@ break;
 )";
 
 const char kExpectedMethodImplOutput[] =
-R"(return_type ClassName::MethodName(arg 1, arg 2) const {
+R"(return_type ClassName::MethodName(arg 1, arg 2, arg 3) const {
 foo;
 bar;
 }
@@ -102,16 +102,16 @@ class AstCppTests : public ::testing::Test {
 
 
 TEST_F(AstCppTests, GeneratesHeader) {
-  unique_ptr<MethodDecl> norm{
-      new MethodDecl("void", "NormalMethod",
-                     { "int normalarg", "float normal2" })};
+  unique_ptr<MethodDecl> norm{new MethodDecl(
+      "void", "NormalMethod",
+      ArgList{vector<string>{"int normalarg", "float normal2"}})};
   unique_ptr<MethodDecl> sub{
       new MethodDecl("void", "SubMethod",
-                     { "int subarg" },
+                     ArgList{ "int subarg" },
                      MethodDecl::IS_CONST | MethodDecl::IS_VIRTUAL)};
   unique_ptr<MethodDecl> sub2{
       new MethodDecl("void", "SubMethod",
-                     { "int subarg" },
+                     ArgList{ "int subarg" },
                      MethodDecl::IS_CONST | MethodDecl::IS_VIRTUAL)};
   vector<unique_ptr<Declaration>> test_methods;
   test_methods.push_back(std::move(norm));
@@ -180,7 +180,9 @@ TEST_F(AstCppTests, GeneratesAssignment) {
 TEST_F(AstCppTests, GeneratesMethodCall) {
   MethodCall single("single", "arg");
   CompareGeneratedCode(single, "single(arg)");
-  MethodCall multi("multi", new ArgList({"has", "some", "args"}));
+  MethodCall multi(
+      "multi",
+      ArgList({"has", "some", "args"}));
   CompareGeneratedCode(multi, "multi(has, some, args)");
 }
 
@@ -198,7 +200,8 @@ TEST_F(AstCppTests, GeneratesSwitchStatement) {
 
 TEST_F(AstCppTests, GeneratesMethodImpl) {
   MethodImpl m{"return_type", "ClassName", "MethodName",
-               {"arg 1", "arg 2"}, true};
+               ArgList{{"arg 1", "arg 2", "arg 3"}},
+               true};
   m.AddStatement(unique_ptr<AstNode>{new LiteralStatement{"foo"}});
   m.AddStatement(unique_ptr<AstNode>{new LiteralStatement{"bar"}});
   CompareGeneratedCode(m, kExpectedMethodImplOutput);
