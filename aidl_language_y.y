@@ -32,7 +32,6 @@ using android::aidl::cpp_strdup;
     std::vector<std::string>* strvec;
     AidlInterface* interface_obj;
     AidlParcelable* user_data;
-    AidlDocumentItem* document_item;
 }
 
 %token<buffer> IDENTIFIER IDVALUE GENERIC INTERFACE ONEWAY
@@ -40,8 +39,7 @@ using android::aidl::cpp_strdup;
 %token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' ';'
 %token IN OUT INOUT PACKAGE IMPORT PARCELABLE 
 
-%type<document_item> document_items declaration
-%type<user_data> parcelable_decl
+%type<user_data> parcelable_decl parcelable_decls
 %type<methods> methods
 %type<interface_obj> interface_decl
 %type<method> method_decl
@@ -55,7 +53,9 @@ using android::aidl::cpp_strdup;
 %type<buffer> error
 %%
 document
- : package imports document_items
+ : package imports parcelable_decls
+  { ps->SetDocument($3); }
+ | package imports interface_decl
   { ps->SetDocument($3); };
 
 package
@@ -79,28 +79,23 @@ package_name
  | package_name '.' IDENTIFIER
   { $$->push_back($3.data); };
 
-document_items
- : { $$ = NULL; }
- | document_items declaration {
+parcelable_decls
+ :
+  { $$ = NULL; }
+ | parcelable_decls parcelable_decl {
    $$ = $1;
-   AidlDocumentItem **pos = &$$;
+   AidlParcelable **pos = &$$;
    while (*pos)
      pos = &(*pos)->next;
    if ($2)
      *pos = $2;
   }
- | document_items error {
+ | parcelable_decls error {
     fprintf(stderr, "%s:%d: syntax error don't know what to do with \"%s\"\n",
             ps->FileName().c_str(),
             @2.begin.line, $2.data);
     $$ = $1;
   };
-
-declaration
- : parcelable_decl
-  { $$ = $1; }
- | interface_decl
-  { $$ = $1; };
 
 parcelable_decl
  : PARCELABLE IDENTIFIER ';' {

@@ -67,10 +67,10 @@ namespace {
 const int kMinUserSetMethodId = 0;
 const int kMaxUserSetMethodId = 16777214;
 
-int check_filename(const std::string& filename,
-                   const std::string& package,
-                   const std::string& name,
-                   unsigned line) {
+bool check_filename(const std::string& filename,
+                    const std::string& package,
+                    const std::string& name,
+                    unsigned line) {
     const char* p;
     string expected;
     string fn;
@@ -139,31 +139,28 @@ int check_filename(const std::string& filename,
         fprintf(stderr, "%s:%d interface %s should be declared in a file"
                 " called %s.\n",
                 filename.c_str(), line, name.c_str(), expected.c_str());
-        return 1;
     }
 
-    return 0;
+    return valid;
 }
 
-int check_filenames(const std::string& filename, const AidlDocumentItem* items) {
-    int err = 0;
-    while (items) {
-        if (items->item_type == USER_DATA_TYPE) {
-            const AidlParcelable* p = reinterpret_cast<const AidlParcelable*>(items);
-            err |= check_filename(filename, p->GetPackage(), p->GetName(), p->GetLine());
-        }
-        else if (items->item_type == INTERFACE_TYPE_BINDER) {
-            const AidlInterface* c = reinterpret_cast<const AidlInterface*>(items);
-            err |= check_filename(filename, c->GetPackage(), c->GetName(), c->GetLine());
-        }
-        else {
-            fprintf(stderr, "aidl: internal error unkown document type %d.\n",
-                        items->item_type);
-            return 1;
-        }
-        items = items->next;
-    }
-    return err;
+bool check_filenames(const std::string& filename, const AidlDocumentItem* items) {
+  if (! items)
+    return true;
+
+  if (items->item_type == INTERFACE_TYPE_BINDER) {
+    const AidlInterface* c = reinterpret_cast<const AidlInterface*>(items);
+    return check_filename(filename, c->GetPackage(), c->GetName(), c->GetLine());
+  }
+
+  bool success = true;
+
+  for (const AidlParcelable* p = reinterpret_cast<const AidlParcelable*>(items);
+       p; p = p->next)
+    success &= check_filename(filename, p->GetPackage(), p->GetName(),
+                              p->GetLine());
+
+  return success;
 }
 
 char* rfind(char* str, char c) {
@@ -182,17 +179,15 @@ bool gather_types(const std::string& filename,
                   TypeNamespace* types) {
   bool success = true;
 
-  for (const AidlDocumentItem* item = all_items; item; item = item->next) {
-    if (item->item_type == USER_DATA_TYPE) {
-      const AidlParcelable* p = reinterpret_cast<const AidlParcelable*>(item);
-      success &= types->AddParcelableType(p, filename);
-    } else if (item->item_type == INTERFACE_TYPE_BINDER) {
-      const AidlInterface* c = reinterpret_cast<const AidlInterface*>(item);
-      success &= types->AddBinderType(c, filename);
-    } else {
-      LOG(FATAL) << "internal error";
-    }
+  if (all_items->item_type == INTERFACE_TYPE_BINDER)
+    return types->AddBinderType(reinterpret_cast<const AidlInterface *>(all_items), filename);
+
+  for (const AidlParcelable* item =
+       reinterpret_cast<const AidlParcelable *>(all_items);
+       item; item = item->next) {
+    success &= types->AddParcelableType(item, filename);
   }
+
   return success;
 }
 
@@ -523,15 +518,14 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
   // Since we can't have two distinct classes with the same name and package,
   // we can't actually declare parcelables in the same file.
   if (parsed_doc == nullptr ||
-      parsed_doc->item_type != INTERFACE_TYPE_BINDER ||
-      parsed_doc->next != nullptr) {
+      parsed_doc->item_type != INTERFACE_TYPE_BINDER) {
     cerr << "aidl expects exactly one interface per input file";
     return 1;
   }
   AidlInterface* interface = reinterpret_cast<AidlInterface*>(parsed_doc);
   err |= check_filename(input_file_name.c_str(),
                         interface->GetPackage(), interface->GetName(),
-                        interface->GetLine());
+                        interface->GetLine()) ? 1 : 0;
 
   // parse the imports of the input file
   ImportResolver import_resolver{io_delegate, import_paths};
@@ -561,7 +555,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
     }
 
     import->SetDocument(p.GetDocument());
-    err |= check_filenames(import->GetFilename(), import->GetDocument());
+    err |= check_filenames(import->GetFilename(), import->GetDocument()) ? 1 : 0;
   }
   if (err != 0) {
     return err;
