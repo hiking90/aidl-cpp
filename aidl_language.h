@@ -21,7 +21,6 @@ enum which_extra_text {
 };
 
 struct extra_text_type {
-    unsigned lineno;
     which_extra_text which;
     char* data; 
     unsigned len;
@@ -29,7 +28,6 @@ struct extra_text_type {
 };
 
 struct buffer_type {
-  unsigned lineno;
   unsigned token;
   char *data;
   extra_text_type* extra;
@@ -166,19 +164,19 @@ class AidlDocumentItem : public AidlNode {
 
 class AidlParcelable : public AidlDocumentItem {
  public:
-  AidlParcelable() = default;
+  AidlParcelable(const std::string& name, unsigned line,
+                 const std::string& package);
   virtual ~AidlParcelable() = default;
 
-  std::string GetName() const { return name.data; }
-  unsigned GetLine() const { return name.lineno; }
-
-  buffer_type keyword_token; // only the first one
-  char* package;
-  buffer_type name;
-  buffer_type semicolon_token;
-  bool parcelable;
+  const std::string& GetName() const { return name_; }
+  unsigned GetLine() const { return line_; }
+  const std::string& GetPackage() const { return package_; }
 
  private:
+  std::string name_;
+  unsigned line_;
+  std::string package_;
+
   DISALLOW_COPY_AND_ASSIGN(AidlParcelable);
 };
 

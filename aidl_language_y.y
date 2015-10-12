@@ -35,9 +35,10 @@ using android::aidl::cpp_strdup;
     AidlDocumentItem* document_item;
 }
 
-%token<buffer> IDENTIFIER IDVALUE GENERIC PARCELABLE INTERFACE ONEWAY ';'
-%token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' PACKAGE IMPORT
-%token IN OUT INOUT
+%token<buffer> IDENTIFIER IDVALUE GENERIC INTERFACE ONEWAY
+
+%token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' ';'
+%token IN OUT INOUT PACKAGE IMPORT PARCELABLE 
 
 %type<document_item> document_items declaration
 %type<user_data> parcelable_decl
@@ -91,7 +92,7 @@ document_items
  | document_items error {
     fprintf(stderr, "%s:%d: syntax error don't know what to do with \"%s\"\n",
             ps->FileName().c_str(),
-            $2.lineno, $2.data);
+            @2.begin.line, $2.data);
     $$ = $1;
   };
 
@@ -103,23 +104,16 @@ declaration
 
 parcelable_decl
  : PARCELABLE IDENTIFIER ';' {
-    AidlParcelable* b = new AidlParcelable();
-    b->item_type = USER_DATA_TYPE;
-    b->keyword_token = $1;
-    b->name = $2;
-    b->package = cpp_strdup(ps->Package().c_str());
-    b->semicolon_token = $3;
-    b->parcelable = true;
-    $$ = b;
+    $$ = new AidlParcelable($2.data, @2.begin.line, ps->Package());
   }
  | PARCELABLE ';' {
     fprintf(stderr, "%s:%d syntax error in parcelable declaration. Expected type name.\n",
-            ps->FileName().c_str(), $1.lineno);
+            ps->FileName().c_str(), @1.begin.line);
     $$ = NULL;
   }
  | PARCELABLE error ';' {
     fprintf(stderr, "%s:%d syntax error in parcelable declaration. Expected type name, saw \"%s\".\n",
-            ps->FileName().c_str(), $2.lineno, $2.data);
+            ps->FileName().c_str(), @2.begin.line, $2.data);
     $$ = NULL;
   };
 
@@ -134,12 +128,12 @@ interface_decl
   }
  | INTERFACE error '{' methods '}' {
     fprintf(stderr, "%s:%d: syntax error in interface declaration.  Expected type name, saw \"%s\"\n",
-            ps->FileName().c_str(), $2.lineno, $2.data);
+            ps->FileName().c_str(), @2.begin.line, $2.data);
     $$ = NULL;
   }
  | INTERFACE error '}' {
     fprintf(stderr, "%s:%d: syntax error in interface declaration.  Expected type name, saw \"%s\"\n",
-            ps->FileName().c_str(), $2.lineno, $2.data);
+            ps->FileName().c_str(), @2.begin.line, $2.data);
     $$ = NULL;
   };
 
@@ -151,7 +145,7 @@ methods
  | methods error ';' {
     fprintf(stderr, "%s:%d: syntax error before ';' "
                     "(expected method declaration)\n",
-            ps->FileName().c_str(), $3.lineno);
+            ps->FileName().c_str(), @3.begin.line);
     $$ = $1;
   };
 
@@ -187,7 +181,7 @@ arg_list
   }
  | error {
     fprintf(stderr, "%s:%d: syntax error in parameter list\n",
-            ps->FileName().c_str(), $1.lineno);
+            ps->FileName().c_str(), @1.begin.line);
     $$ = new std::vector<std::unique_ptr<AidlArgument>>();
   };
 
