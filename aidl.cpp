@@ -163,17 +163,6 @@ bool check_filenames(const std::string& filename, const AidlDocumentItem* items)
   return success;
 }
 
-char* rfind(char* str, char c) {
-    char* p = str + strlen(str) - 1;
-    while (p >= str) {
-        if (*p == c) {
-            return p;
-        }
-        p--;
-    }
-    return NULL;
-}
-
 bool gather_types(const std::string& filename,
                   const AidlDocumentItem* all_items,
                   TypeNamespace* types) {
@@ -382,7 +371,7 @@ int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
         sscanf(line, "%s %[^; \r\n\t];", type, fullname);
 
         char* packagename;
-        char* classname = rfind(fullname, '.');
+        char* classname = strrchr(fullname, '.');
         if (classname != NULL) {
             *classname = '\0';
             classname++;
@@ -498,6 +487,8 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
                            std::vector<std::unique_ptr<AidlImport>>* returned_imports) {
   int err = 0;
 
+  std::map<AidlImport*,std::unique_ptr<AidlDocumentItem>> docs;
+
   // import the preprocessed file
   for (const string& s : preprocessed_files) {
     err |= parse_preprocessed_file(s, types);
@@ -556,9 +547,10 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
       continue;
     }
 
-    import->SetDocument(p.GetDocument());
-    if (!check_filenames(import->GetFilename(), import->GetDocument()))
+    AidlDocumentItem* document = p.GetDocument();
+    if (!check_filenames(import->GetFilename(), document))
       err |= 1;
+    docs[import.get()] = std::unique_ptr<AidlDocumentItem>(document);
   }
   if (err != 0) {
     return err;
@@ -569,7 +561,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
     err |= 1;
   }
   for (const auto& import : p.GetImports()) {
-    if (!gather_types(import->GetFilename(), import->GetDocument(), types)) {
+    if (!gather_types(import->GetFilename(), docs[import.get()].get(), types)) {
       err |= 1;
     }
   }

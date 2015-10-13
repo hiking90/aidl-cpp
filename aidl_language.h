@@ -221,15 +221,10 @@ class AidlImport : public AidlNode {
   const std::string& GetFilename() const { return filename_; }
   const std::string& GetNeededClass() const { return needed_class_; }
   unsigned GetLine() const { return line_; }
-  const AidlDocumentItem* GetDocument() { return document_.get(); };
-  void SetDocument(AidlDocumentItem* doc) {
-    document_ = std::unique_ptr<AidlDocumentItem>(doc);
-  }
 
   void SetFilename(const std::string& filename) { filename_ = filename; }
 
  private:
-  std::unique_ptr<AidlDocumentItem> document_;
   std::string from_;
   std::string filename_;
   std::string needed_class_;
