@@ -110,6 +110,12 @@ Parser::Parser(const IoDelegate& io_delegate)
   yylex_init(&scanner_);
 }
 
+AidlParcelable::AidlParcelable(AidlQualifiedName* name, unsigned line,
+                               const std::string& package)
+    : AidlParcelable(name->GetDotName(), line, package) {
+  delete name;
+}
+
 AidlParcelable::AidlParcelable(const std::string& name, unsigned line,
                                const std::string& package)
     : name_(name),
@@ -130,6 +136,16 @@ AidlInterface::AidlInterface(const std::string& name, unsigned line,
       package_(package) {
   item_type = INTERFACE_TYPE_BINDER;
   delete methods;
+}
+
+AidlQualifiedName::AidlQualifiedName(std::string term,
+                                     std::string comments)
+    : terms_({term}),
+      comments_(comments) {
+}
+
+void AidlQualifiedName::AddTerm(std::string term) {
+  terms_.push_back(term);
 }
 
 AidlImport::AidlImport(const std::string& from,
@@ -185,35 +201,8 @@ void Parser::ReportError(const string& err) {
   error_ = 1;
 }
 
-void Parser::AddImport(std::vector<std::string>* terms, unsigned line) {
-  std::string data;
-  bool first = true;
-
-  /* NOTE: This string building code is duplicated from below. We haven't
-   * factored it out into a function because it's hoped that when import_info
-   * becomes a class we won't need this anymore.
-   **/
-  for (const auto& term : *terms) {
-      if (first)
-          data = term;
-      else
-          data += '.' + term;
-  }
-
-  imports_.emplace_back(new AidlImport(this->FileName(), data, line));
-
-  delete terms;
-}
-
-void Parser::SetPackage(std::vector<std::string> *terms) {
-    bool first = true;
-
-    for (const auto& term : *terms) {
-        if (first)
-            package_ = term;
-        else
-            package_ += '.' + term;
-    }
-
-    delete terms;
+void Parser::AddImport(AidlQualifiedName* name, unsigned line) {
+  imports_.emplace_back(new AidlImport(this->FileName(),
+                                       name->GetDotName(), line));
+  delete name;
 }
