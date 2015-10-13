@@ -34,7 +34,7 @@ using android::aidl::cpp_strdup;
     AidlParcelable* user_data;
 }
 
-%token<buffer> IDENTIFIER IDVALUE INTERFACE ONEWAY
+%token<buffer> IDENTIFIER IDVALUE GENERIC INTERFACE ONEWAY
 
 %token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' ';'
 %token IN OUT INOUT PACKAGE IMPORT PARCELABLE 
