@@ -29,7 +29,7 @@ struct extra_text_type {
 
 struct buffer_type {
   unsigned token;
-  char *data;
+  char* data;
   extra_text_type* extra;
 
   std::string Literal() const {
@@ -74,7 +74,7 @@ class AidlArgument : public AidlNode {
 
   AidlArgument(AidlArgument::Direction direction, AidlType* type,
                std::string name, unsigned line);
-  AidlArgument(AidlType *type, std::string name, unsigned line);
+  AidlArgument(AidlType* type, std::string name, unsigned line);
   virtual ~AidlArgument() = default;
 
   Direction GetDirection() const { return direction_; }
@@ -155,7 +155,6 @@ class AidlDocumentItem : public AidlNode {
   AidlDocumentItem() = default;
   virtual ~AidlDocumentItem() = default;
 
-  AidlDocumentItem* next = nullptr;
   unsigned item_type;
 
  private:
@@ -172,6 +171,7 @@ class AidlParcelable : public AidlDocumentItem {
   unsigned GetLine() const { return line_; }
   const std::string& GetPackage() const { return package_; }
 
+  AidlParcelable* next = nullptr;
  private:
   std::string name_;
   unsigned line_;
@@ -251,14 +251,14 @@ class Parser {
   bool FoundNoErrors() const { return error_ == 0; }
   const std::string& FileName() const { return filename_; }
   const std::string& Package() const { return package_; }
-  void *Scanner() const { return scanner_; }
+  void* Scanner() const { return scanner_; }
 
-  void SetDocument(AidlDocumentItem *items) { document_ = items; };
+  void SetDocument(AidlDocumentItem* items) { document_ = items; };
 
   void AddImport(std::vector<std::string>* terms, unsigned line);
   void SetPackage(std::vector<std::string>* terms);
 
-  AidlDocumentItem *GetDocument() const { return document_; }
+  AidlDocumentItem* GetDocument() const { return document_; }
   const std::vector<std::unique_ptr<AidlImport>>& GetImports() { return imports_; }
 
   void ReleaseImports(std::vector<std::unique_ptr<AidlImport>>* ret) {
@@ -271,7 +271,7 @@ class Parser {
   int error_ = 0;
   std::string filename_;
   std::string package_;
-  void *scanner_ = nullptr;
+  void* scanner_ = nullptr;
   AidlDocumentItem* document_ = nullptr;
   std::vector<std::unique_ptr<AidlImport>> imports_;
   std::unique_ptr<std::string> raw_buffer_;
