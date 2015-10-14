@@ -108,8 +108,8 @@ return status;
 )";
 
 const char kExpectedTrivialClientHeaderOutput[] =
-R"(#ifndef BpPingResponder_H
-#define BpPingResponder_H
+R"(#ifndef AIDL_GENERATED__BP_PING_RESPONDER_H_
+#define AIDL_GENERATED__BP_PING_RESPONDER_H_
 
 #include <binder/IBinder.h>
 #include <binder/IInterface.h>
@@ -120,7 +120,7 @@ namespace android {
 
 namespace generated {
 
-class BpPingResponder : public public android::BpInterface<IPingResponder> {
+class BpPingResponder : public android::BpInterface<IPingResponder> {
 public:
 BpPingResponder();
 virtual ~BpPingResponder() = default;
@@ -131,29 +131,33 @@ android::status_t Ping(int32_t token, int32_t* _aidl_return) override;
 
 }  // namespace android
 
-#endif  // BpPingResponder_H)";
+#endif  // AIDL_GENERATED__BP_PING_RESPONDER_H_)";
 
 const char kExpectedTrivialInterfaceHeaderOutput[] =
-R"(#include <binder/IBinder.h>
+R"(#ifndef AIDL_GENERATED__I_PING_RESPONDER_H_
+#define AIDL_GENERATED__I_PING_RESPONDER_H_
+
+#include <binder/IBinder.h>
 #include <binder/IInterface.h>
 
 namespace android {
 
 namespace generated {
 
-class IPingResponder : public public android::IInterface {
+class IPingResponder : public android::IInterface {
 public:
 DECLARE_META_INTERFACE(PingResponder);
 virtual android::status_t Ping(int32_t token, int32_t* _aidl_return) = 0;
 enum Call {
   PING = android::IBinder::FIRST_CALL_TRANSACTION + 0,
-}
+};
 };  // class IPingResponder
 
 }  // namespace generated
 
 }  // namespace android
-)";
+
+#endif  // AIDL_GENERATED__I_PING_RESPONDER_H_)";
 
 const char kExpectedTrivialInterfaceSourceOutput[] =
 R"(#include <IPingResponder.h>

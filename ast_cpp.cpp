@@ -87,7 +87,7 @@ void Enum::Write(CodeWriter* to) const {
       to->Write("  %s = %s,\n", field.key.c_str(), field.value.c_str());
     }
   }
-  to->Write("}\n");
+  to->Write("};\n");
 }
 
 void Enum::AddValue(const string& key, const string& value) {

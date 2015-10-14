@@ -62,7 +62,7 @@ const char kExpectedEnumOutput[] =
 R"(enum Foo {
   BAR = 42,
   BAZ,
-}
+};
 )";
 
 const char kExpectedSwitchOutput[] =
