@@ -35,7 +35,7 @@ using android::aidl::cpp_strdup;
 
 %x COPYING LONG_COMMENT
 
-identifier  [_a-zA-Z][_a-zA-Z0-9\.]*
+identifier  [_a-zA-Z][_a-zA-Z0-9]*
 whitespace  ([ \t\r]+)
 idvalue     (0|[1-9][0-9]*)
 

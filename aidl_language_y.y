@@ -29,7 +29,7 @@ using android::aidl::cpp_strdup;
     std::vector<std::unique_ptr<AidlArgument>>* arg_list;
     AidlMethod* method;
     std::vector<std::unique_ptr<AidlMethod>>* methods;
-    std::vector<std::string>* strvec;
+    AidlQualifiedName* qname;
     AidlInterface* interface_obj;
     AidlParcelable* user_data;
 }
@@ -37,7 +37,7 @@ using android::aidl::cpp_strdup;
 %token<buffer> IDENTIFIER IDVALUE INTERFACE ONEWAY
 
 %token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' ';'
-%token IN OUT INOUT PACKAGE IMPORT PARCELABLE 
+%token IN OUT INOUT PACKAGE IMPORT PARCELABLE
 
 %type<user_data> parcelable_decl parcelable_decls
 %type<methods> methods
@@ -48,7 +48,7 @@ using android::aidl::cpp_strdup;
 %type<arg> arg
 %type<direction> direction
 %type<str> generic_list
-%type<strvec> package_name
+%type<qname> qualified_name
 
 %type<buffer> error
 %%
@@ -60,7 +60,7 @@ document
 
 package
  : {}
- | PACKAGE package_name ';'
+ | PACKAGE qualified_name ';'
   { ps->SetPackage($2); };
 
 imports
@@ -68,16 +68,18 @@ imports
  | import imports {};
 
 import
- : IMPORT package_name ';'
+ : IMPORT qualified_name ';'
   { ps->AddImport($2, @1.begin.line); };
 
-package_name
+qualified_name
  : IDENTIFIER {
-    $$ = new std::vector<std::string>();
-    $$->push_back($1.data);
+    $$ = new AidlQualifiedName($1.data,
+                               android::aidl::gather_comments($1.extra));
   }
- | package_name '.' IDENTIFIER
-  { $$->push_back($3.data); };
+ | qualified_name '.' IDENTIFIER
+  { $$ = $1;
+    $$->AddTerm($3.data);
+  };
 
 parcelable_decls
  :
@@ -98,8 +100,8 @@ parcelable_decls
   };
 
 parcelable_decl
- : PARCELABLE IDENTIFIER ';' {
-    $$ = new AidlParcelable($2.data, @2.begin.line, ps->Package());
+ : PARCELABLE qualified_name ';' {
+    $$ = new AidlParcelable($2, @2.begin.line, ps->Package());
   }
  | PARCELABLE ';' {
     fprintf(stderr, "%s:%d syntax error in parcelable declaration. Expected type name.\n",
@@ -187,27 +189,32 @@ arg
   { $$ = new AidlArgument($1, $2.data, @2.begin.line); };
 
 type
- : IDENTIFIER {
-    $$ = new AidlType($1.data, @1.begin.line,
-                      android::aidl::gather_comments($1.extra), false);
+ : qualified_name {
+    $$ = new AidlType($1->GetDotName(), @1.begin.line, $1->GetComments(),
+                      false);
+    delete $1;
   }
- | IDENTIFIER '[' ']' {
-    $$ = new AidlType($1.data,
-                      @1.begin.line, android::aidl::gather_comments($1.extra),
+ | qualified_name '[' ']' {
+    $$ = new AidlType($1->GetDotName(), @1.begin.line, $1->GetComments(),
                       true);
+    delete $1;
   }
- | IDENTIFIER '<' generic_list '>' {
-    $$ = new AidlType(std::string($1.data) + "<" + *$3 + ">", @1.begin.line,
-                      android::aidl::gather_comments($1.extra), false);
+ | qualified_name '<' generic_list '>' {
+    $$ = new AidlType($1->GetDotName() + "<" + *$3 + ">", @1.begin.line,
+                      $1->GetComments(), false);
+    delete $1;
     delete $3;
   };
 
 generic_list
- : IDENTIFIER
-  { $$ = new std::string($1.data); }
- | generic_list ',' IDENTIFIER {
-    $$ = new std::string(*$1 + "," + std::string($3.data));
+ : qualified_name {
+    $$ = new std::string($1->GetDotName());
     delete $1;
+  }
+ | generic_list ',' qualified_name {
+    $$ = new std::string(*$1 + "," + $3->GetDotName());
+    delete $1;
+    delete $3;
   };
 
 direction
@@ -223,7 +230,7 @@ direction
 #include <ctype.h>
 #include <stdio.h>
 
-void yy::parser::error(const yy::parser::location_type& l, const std::string& errstr)
-{
+void yy::parser::error(const yy::parser::location_type& l,
+                       const std::string& errstr) {
   ps->ReportError(errstr);
 }

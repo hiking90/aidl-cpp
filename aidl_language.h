@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <base/macros.h>
+#include <base/strings.h>
 
 #include <io_delegate.h>
 
@@ -161,9 +162,29 @@ class AidlDocumentItem : public AidlNode {
   DISALLOW_COPY_AND_ASSIGN(AidlDocumentItem);
 };
 
+class AidlQualifiedName : public AidlNode {
+ public:
+  AidlQualifiedName(std::string term, std::string comments);
+  virtual ~AidlQualifiedName() = default;
+
+  const std::vector<std::string>& GetTerms() const { return terms_; }
+  const std::string& GetComments() const { return comments_; }
+  std::string GetDotName() const { return android::base::Join(terms_, '.'); }
+
+  void AddTerm(std::string term);
+
+ private:
+  std::vector<std::string> terms_;
+  std::string comments_;
+
+  DISALLOW_COPY_AND_ASSIGN(AidlQualifiedName);
+};
+
 class AidlParcelable : public AidlDocumentItem {
  public:
   AidlParcelable(const std::string& name, unsigned line,
+                 const std::string& package);
+  AidlParcelable(AidlQualifiedName* name, unsigned line,
                  const std::string& package);
   virtual ~AidlParcelable() = default;
 
@@ -208,9 +229,6 @@ class AidlInterface : public AidlDocumentItem {
   DISALLOW_COPY_AND_ASSIGN(AidlInterface);
 };
 
-
-void init_buffer_type(buffer_type* buf, int lineno);
-
 class AidlImport : public AidlNode {
  public:
   AidlImport(const std::string& from, const std::string& needed_class,
@@ -250,8 +268,11 @@ class Parser {
 
   void SetDocument(AidlDocumentItem* items) { document_ = items; };
 
-  void AddImport(std::vector<std::string>* terms, unsigned line);
-  void SetPackage(std::vector<std::string>* terms);
+  void AddImport(AidlQualifiedName* name, unsigned line);
+  void SetPackage(AidlQualifiedName* name) {
+    package_ = name->GetDotName();
+    delete name;
+  }
 
   AidlDocumentItem* GetDocument() const { return document_; }
   const std::vector<std::unique_ptr<AidlImport>>& GetImports() { return imports_; }
