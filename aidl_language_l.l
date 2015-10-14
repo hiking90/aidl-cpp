@@ -4,7 +4,6 @@
 
 #include "aidl_language.h"
 #include "aidl_language_y.hpp"
-#include "parse_helpers.h"
 
 // comment and whitespace handling
 // these functions save a copy of the buffer
@@ -14,7 +13,11 @@ static extra_text_type* get_extra_text(void);   // you now own the object
                                                 // this returns
 static void drop_extra_text(void);
 
-using android::aidl::cpp_strdup;
+static char* cpp_strdup(const char* in) {
+  char *out = new char[strlen(in) + 1];
+  strcpy(out, in);
+  return out;
+}
 
 #define RETURN_BUFFER(t) \
     do { \

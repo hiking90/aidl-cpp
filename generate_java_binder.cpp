@@ -7,7 +7,6 @@
 
 #include <base/macros.h>
 
-#include "parse_helpers.h"
 #include "type_java.h"
 
 namespace android {

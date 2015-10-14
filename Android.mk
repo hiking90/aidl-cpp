@@ -41,7 +41,6 @@ LOCAL_SRC_FILES := \
     import_resolver.cpp \
     io_delegate.cpp \
     options.cpp \
-    parse_helpers.cpp \
     type_cpp.cpp \
     type_java.cpp \
     type_namespace.cpp \
@@ -86,7 +85,6 @@ LOCAL_SRC_FILES := \
     ast_java_unittest.cpp \
     generate_cpp_unittest.cpp \
     options_unittest.cpp \
-    parse_helpers_unittest.cpp \
     test_main.cpp \
     tests/end_to_end_tests.cpp \
     tests/example_interface_test_data.cpp \

@@ -16,13 +16,13 @@
 
 #include "type_namespace.h"
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 
 #include <base/stringprintf.h>
 
 #include "aidl_language.h"
-#include "parse_helpers.h"
 
 using android::base::StringPrintf;
 using std::cerr;
@@ -31,6 +31,28 @@ using std::string;
 
 namespace android {
 namespace aidl {
+
+namespace {
+
+bool is_java_keyword(const char* str) {
+  static const std::vector<std::string> kJavaKeywords{
+      "abstract",   "assert",       "boolean",   "break",      "byte",
+      "case",       "catch",        "char",      "class",      "const",
+      "continue",   "default",      "do",        "double",     "else",
+      "enum",       "extends",      "final",     "finally",    "float",
+      "for",        "goto",         "if",        "implements", "import",
+      "instanceof", "int",          "interface", "long",       "native",
+      "new",        "package",      "private",   "protected",  "public",
+      "return",     "short",        "static",    "strictfp",   "super",
+      "switch",     "synchronized", "this",      "throw",      "throws",
+      "transient",  "try",          "void",      "volatile",   "while",
+      "true",       "false",        "null",
+  };
+  return std::find(kJavaKeywords.begin(), kJavaKeywords.end(), str) !=
+      kJavaKeywords.end();
+}
+
+} // namespace
 
 bool TypeNamespace::HasType(const string& type_name) const {
   return GetValidatableType(type_name) != nullptr;
