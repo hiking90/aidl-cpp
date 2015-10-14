@@ -70,6 +70,28 @@ return status;
 }  // namespace android
 )";
 
+const char kExpectedTrivialServerHeaderOutput[] =
+R"(#ifndef AIDL_GENERATED__BN_PING_RESPONDER_H_
+#define AIDL_GENERATED__BN_PING_RESPONDER_H_
+
+#include <binder/IInterface.h>
+#include <IPingResponder.h>
+
+namespace android {
+
+namespace generated {
+
+class BnPingResponder : public android::BnInterface<IPingResponder> {
+public:
+android::status_t onTransact(uint32_t code, const android::Parcel& data, android::Parcel* reply, uint32_t flags = 0) override;
+};  // class BnPingResponder
+
+}  // namespace generated
+
+}  // namespace android
+
+#endif  // AIDL_GENERATED__BN_PING_RESPONDER_H_)";
+
 const char kExpectedTrivialServerSourceOutput[] =
 R"(#include <BnPingResponder.h>
 #include <binder/Parcel.h>
@@ -225,6 +247,14 @@ TEST_F(TrivialInterfaceASTTest, GeneratesClientSource) {
   TypeNamespace types;
   unique_ptr<Document> doc = internals::BuildClientSource(types, *interface);
   Compare(doc.get(), kExpectedTrivialClientSourceOutput);
+}
+
+TEST_F(TrivialInterfaceASTTest, GeneratesServerHeader) {
+  AidlInterface* interface = Parse();
+  ASSERT_NE(interface, nullptr);
+  TypeNamespace types;
+  unique_ptr<Document> doc = internals::BuildServerHeader(types, *interface);
+  Compare(doc.get(), kExpectedTrivialServerHeaderOutput);
 }
 
 TEST_F(TrivialInterfaceASTTest, GeneratesServerSource) {
