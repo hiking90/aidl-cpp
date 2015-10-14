@@ -36,6 +36,8 @@ struct buffer_type {
   std::string Literal() const {
     return data ? std::string(data) : "";
   }
+
+  std::string Comments() const;
 };
 
 class AidlNode {
@@ -259,7 +261,7 @@ class Parser {
   // Parse contents of file |filename|.
   bool ParseFile(const std::string& filename);
 
-  void ReportError(const std::string& err);
+  void ReportError(const std::string& err, unsigned line);
 
   bool FoundNoErrors() const { return error_ == 0; }
   const std::string& FileName() const { return filename_; }

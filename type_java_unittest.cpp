@@ -19,7 +19,6 @@
 #include <gtest/gtest.h>
 
 #include "aidl_language.h"
-#include "parse_helpers.h"
 #include "type_java.h"
 
 using std::unique_ptr;

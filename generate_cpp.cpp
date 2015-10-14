@@ -15,7 +15,6 @@
  */
 
 #include "generate_cpp.h"
-#include "parse_helpers.h"
 
 #include <cctype>
 #include <cstring>

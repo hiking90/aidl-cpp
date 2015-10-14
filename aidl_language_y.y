@@ -1,7 +1,6 @@
 %{
 #include "aidl_language.h"
 #include "aidl_language_y.hpp"
-#include "parse_helpers.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,8 +8,6 @@
 int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
 
 #define lex_scanner ps->Scanner()
-
-using android::aidl::cpp_strdup;
 
 %}
 
@@ -73,8 +70,7 @@ import
 
 qualified_name
  : IDENTIFIER {
-    $$ = new AidlQualifiedName($1.data,
-                               android::aidl::gather_comments($1.extra));
+    $$ = new AidlQualifiedName($1.data, $1.Comments());
   }
  | qualified_name '.' IDENTIFIER
   { $$ = $1;
@@ -116,12 +112,12 @@ parcelable_decl
 
 interface_decl
  : INTERFACE IDENTIFIER '{' methods '}' {
-    $$ = new AidlInterface($2.Literal(), @2.begin.line,
-        android::aidl::gather_comments($1.extra), false, $4, ps->Package());
+    $$ = new AidlInterface($2.Literal(), @2.begin.line, $1.Comments(),
+                           false, $4, ps->Package());
   }
  | ONEWAY INTERFACE IDENTIFIER '{' methods '}' {
-    $$ = new AidlInterface($3.Literal(), @3.begin.line,
-        android::aidl::gather_comments($1.extra), true, $5, ps->Package());
+    $$ = new AidlInterface($3.Literal(), @3.begin.line, $1.Comments(),
+                           true, $5, ps->Package());
   }
  | INTERFACE error '{' methods '}' {
     fprintf(stderr, "%s:%d: syntax error in interface declaration.  Expected type name, saw \"%s\"\n",
@@ -153,7 +149,7 @@ method_decl
   }
  | ONEWAY type IDENTIFIER '(' arg_list ')' ';' {
     $$ = new AidlMethod(true, $2, $3.Literal(), $5, @3.begin.line,
-                        android::aidl::gather_comments($1.extra));
+                        $1.Comments());
   }
  | type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';' {
     $$ = new AidlMethod(false, $1, $2.Literal(), $4, @2.begin.line,
@@ -161,8 +157,7 @@ method_decl
   }
  | ONEWAY type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';' {
     $$ = new AidlMethod(true, $2, $3.Literal(), $5, @3.begin.line,
-                        android::aidl::gather_comments($1.extra),
-                        std::stoi($8.data));
+                        $1.Comments(), std::stoi($8.data));
   };
 
 arg_list
@@ -232,5 +227,5 @@ direction
 
 void yy::parser::error(const yy::parser::location_type& l,
                        const std::string& errstr) {
-  ps->ReportError(errstr);
+  ps->ReportError(errstr, l.begin.line);
 }

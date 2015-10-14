@@ -40,7 +40,6 @@
 #include "logging.h"
 #include "options.h"
 #include "os.h"
-#include "parse_helpers.h"
 #include "type_cpp.h"
 #include "type_java.h"
 #include "type_namespace.h"
@@ -184,7 +183,7 @@ bool gather_types(const std::string& filename,
 }
 
 int check_types(const string& filename,
-                AidlInterface* c,
+                const AidlInterface* c,
                 TypeNamespace* types) {
   int err = 0;
 
@@ -386,15 +385,12 @@ int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
         AidlDocumentItem* doc;
 
         if (0 == strcmp("parcelable", type)) {
-            AidlParcelable* parcl = new AidlParcelable(classname, lineno, packagename);
-            doc = reinterpret_cast<AidlDocumentItem*>(parcl);
+            doc = new AidlParcelable(classname, lineno, packagename);
         }
         else if (0 == strcmp("interface", type)) {
             auto temp = new std::vector<std::unique_ptr<AidlMethod>>();
-            AidlInterface* iface = new AidlInterface(classname, lineno, "",
-                                                     false, temp,
-                                                     packagename ?: "");
-            doc = reinterpret_cast<AidlDocumentItem*>(iface);
+            doc = new AidlInterface(classname, lineno, "", false, temp,
+                                    packagename ?: "");
         }
         else {
             fprintf(stderr, "%s:%d: bad type in line: %s\n",

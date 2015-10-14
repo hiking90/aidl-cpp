@@ -8,7 +8,6 @@
 
 #include "aidl_language_y.hpp"
 #include "logging.h"
-#include "parse_helpers.h"
 
 #ifdef _WIN32
 int isatty(int  fd)
@@ -18,7 +17,6 @@ int isatty(int  fd)
 #endif
 
 using android::aidl::IoDelegate;
-using android::aidl::cpp_strdup;
 using std::cerr;
 using std::endl;
 using std::string;
@@ -31,6 +29,25 @@ int yyparse(Parser*);
 YY_BUFFER_STATE yy_scan_buffer(char *, size_t, void *);
 void yy_delete_buffer(YY_BUFFER_STATE, void *);
 
+std::string buffer_type::Comments() const {
+  std::string s;
+  for (extra_text_type* extra = this->extra;
+       extra;
+       extra = extra->next) {
+    if (extra->which == SHORT_COMMENT) {
+      s += extra->data;
+
+    }
+    else if (extra->which == LONG_COMMENT) {
+      s += "/*";
+      s += extra->data;
+      s += "*/";
+
+    }
+  }
+  return s;
+}
+
 AidlType::AidlType(const std::string& name, unsigned line,
                    const std::string& comments, bool is_array)
     : name_(name),
@@ -38,7 +55,8 @@ AidlType::AidlType(const std::string& name, unsigned line,
       is_array_(is_array),
       comments_(comments) {}
 
-string AidlType::ToString() const { return name_ + (is_array_ ? "[]" : "");
+string AidlType::ToString() const {
+  return name_ + (is_array_ ? "[]" : "");
 }
 
 AidlArgument::AidlArgument(AidlArgument::Direction direction, AidlType* type,
@@ -192,12 +210,8 @@ bool Parser::ParseFile(const string& filename) {
   return ret == 0 && error_ == 0;
 }
 
-void Parser::ReportError(const string& err) {
-  /* FIXME: We're printing out the line number as -1. We used to use yylineno
-   * (which was NEVER correct even before reentrant parsing). Now we'll need
-   * another way.
-   */
-  cerr << filename_ << ":" << -1 << ": " << err << endl;
+void Parser::ReportError(const string& err, unsigned line) {
+  cerr << filename_ << ":" << line << ": " << err << endl;
   error_ = 1;
 }
 
