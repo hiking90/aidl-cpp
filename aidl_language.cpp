@@ -29,24 +29,9 @@ int yyparse(Parser*);
 YY_BUFFER_STATE yy_scan_buffer(char *, size_t, void *);
 void yy_delete_buffer(YY_BUFFER_STATE, void *);
 
-std::string buffer_type::Comments() const {
-  std::string s;
-  for (extra_text_type* extra = this->extra;
-       extra;
-       extra = extra->next) {
-    if (extra->which == SHORT_COMMENT) {
-      s += extra->data;
-
-    }
-    else if (extra->which == LONG_COMMENT) {
-      s += "/*";
-      s += extra->data;
-      s += "*/";
-
-    }
-  }
-  return s;
-}
+AidlToken::AidlToken(const std::string& text, const std::string& comments)
+    : text_(text),
+      comments_(comments) {}
 
 AidlType::AidlType(const std::string& name, unsigned line,
                    const std::string& comments, bool is_array)

@@ -45,10 +45,14 @@ interface IExampleInterface {
     int getState();
     String getAddress();
 
+    /* Test long comment */
     ExampleParcelable[] getParcelables();
 
+    // Test short comment
     boolean setScanMode(int mode, int duration);
 
+    /* Test long comment */
+    // And short comment
     void registerBinder(IAuxInterface foo);
     IExampleInterface getRecursiveBinder();
 
@@ -287,6 +291,7 @@ _data.recycle();
 }
 return _result;
 }
+/* Test long comment */
 @Override public android.foo.ExampleParcelable[] getParcelables() throws android.os.RemoteException
 {
 android.os.Parcel _data = android.os.Parcel.obtain();
@@ -304,6 +309,8 @@ _data.recycle();
 }
 return _result;
 }
+// Test short comment
+
 @Override public boolean setScanMode(int mode, int duration) throws android.os.RemoteException
 {
 android.os.Parcel _data = android.os.Parcel.obtain();
@@ -323,6 +330,8 @@ _data.recycle();
 }
 return _result;
 }
+/* Test long comment */// And short comment
+
 @Override public void registerBinder(android.bar.IAuxInterface foo) throws android.os.RemoteException
 {
 android.os.Parcel _data = android.os.Parcel.obtain();
@@ -421,8 +430,13 @@ static final int TRANSACTION_takesAParcelable = (android.os.IBinder.FIRST_CALL_T
 public boolean isEnabled() throws android.os.RemoteException;
 public int getState() throws android.os.RemoteException;
 public java.lang.String getAddress() throws android.os.RemoteException;
+/* Test long comment */
 public android.foo.ExampleParcelable[] getParcelables() throws android.os.RemoteException;
+// Test short comment
+
 public boolean setScanMode(int mode, int duration) throws android.os.RemoteException;
+/* Test long comment */// And short comment
+
 public void registerBinder(android.bar.IAuxInterface foo) throws android.os.RemoteException;
 public android.test.IExampleInterface getRecursiveBinder() throws android.os.RemoteException;
 public int takesAnInterface(android.test.IAuxInterface2 arg) throws android.os.RemoteException;

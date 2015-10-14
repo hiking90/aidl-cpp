@@ -18,7 +18,8 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
 %skeleton "glr.cc"
 
 %union {
-    buffer_type buffer;
+    AidlToken* token;
+    int integer;
     std::string *str;
     AidlType* type;
     AidlArgument* arg;
@@ -31,7 +32,8 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
     AidlParcelable* user_data;
 }
 
-%token<buffer> IDENTIFIER IDVALUE INTERFACE ONEWAY
+%token<token> IDENTIFIER INTERFACE ONEWAY
+%token<integer> IDVALUE
 
 %token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' ';'
 %token IN OUT INOUT PACKAGE IMPORT PARCELABLE
@@ -47,7 +49,7 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
 %type<str> generic_list
 %type<qname> qualified_name
 
-%type<buffer> error
+%type<token> error
 %%
 document
  : package imports parcelable_decls
@@ -70,11 +72,12 @@ import
 
 qualified_name
  : IDENTIFIER {
-    $$ = new AidlQualifiedName($1.data, $1.Comments());
+    $$ = new AidlQualifiedName($1->GetText(), $1->GetComments());
+    delete $1;
   }
  | qualified_name '.' IDENTIFIER
   { $$ = $1;
-    $$->AddTerm($3.data);
+    $$->AddTerm($3->GetText());
   };
 
 parcelable_decls
@@ -91,7 +94,7 @@ parcelable_decls
  | parcelable_decls error {
     fprintf(stderr, "%s:%d: syntax error don't know what to do with \"%s\"\n",
             ps->FileName().c_str(),
-            @2.begin.line, $2.data);
+            @2.begin.line, $2->GetText().c_str());
     $$ = $1;
   };
 
@@ -106,28 +109,37 @@ parcelable_decl
   }
  | PARCELABLE error ';' {
     fprintf(stderr, "%s:%d syntax error in parcelable declaration. Expected type name, saw \"%s\".\n",
-            ps->FileName().c_str(), @2.begin.line, $2.data);
+            ps->FileName().c_str(), @2.begin.line, $2->GetText().c_str());
     $$ = NULL;
   };
 
 interface_decl
  : INTERFACE IDENTIFIER '{' methods '}' {
-    $$ = new AidlInterface($2.Literal(), @2.begin.line, $1.Comments(),
+    $$ = new AidlInterface($2->GetText(), @2.begin.line, $1->GetComments(),
                            false, $4, ps->Package());
+    delete $1;
+    delete $2;
   }
  | ONEWAY INTERFACE IDENTIFIER '{' methods '}' {
-    $$ = new AidlInterface($3.Literal(), @3.begin.line, $1.Comments(),
+    $$ = new AidlInterface($3->GetText(), @3.begin.line, $1->GetComments(),
                            true, $5, ps->Package());
+    delete $1;
+    delete $2;
+    delete $3;
   }
  | INTERFACE error '{' methods '}' {
     fprintf(stderr, "%s:%d: syntax error in interface declaration.  Expected type name, saw \"%s\"\n",
-            ps->FileName().c_str(), @2.begin.line, $2.data);
+            ps->FileName().c_str(), @2.begin.line, $2->GetText().c_str());
     $$ = NULL;
+    delete $1;
+    delete $2;
   }
  | INTERFACE error '}' {
     fprintf(stderr, "%s:%d: syntax error in interface declaration.  Expected type name, saw \"%s\"\n",
-            ps->FileName().c_str(), @2.begin.line, $2.data);
+            ps->FileName().c_str(), @2.begin.line, $2->GetText().c_str());
     $$ = NULL;
+    delete $1;
+    delete $2;
   };
 
 methods
@@ -144,20 +156,26 @@ methods
 
 method_decl
  : type IDENTIFIER '(' arg_list ')' ';' {
-    $$ = new AidlMethod(false, $1, $2.Literal(), $4, @2.begin.line,
+    $$ = new AidlMethod(false, $1, $2->GetText(), $4, @2.begin.line,
                         $1->GetComments());
+    delete $2;
   }
  | ONEWAY type IDENTIFIER '(' arg_list ')' ';' {
-    $$ = new AidlMethod(true, $2, $3.Literal(), $5, @3.begin.line,
-                        $1.Comments());
+    $$ = new AidlMethod(true, $2, $3->GetText(), $5, @3.begin.line,
+                        $1->GetComments());
+    delete $1;
+    delete $3;
   }
  | type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';' {
-    $$ = new AidlMethod(false, $1, $2.Literal(), $4, @2.begin.line,
-                        $1->GetComments(), std::stoi($7.data));
+    $$ = new AidlMethod(false, $1, $2->GetText(), $4, @2.begin.line,
+                        $1->GetComments(), $7);
+    delete $2;
   }
  | ONEWAY type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';' {
-    $$ = new AidlMethod(true, $2, $3.Literal(), $5, @3.begin.line,
-                        $1.Comments(), std::stoi($8.data));
+    $$ = new AidlMethod(true, $2, $3->GetText(), $5, @3.begin.line,
+                        $1->GetComments(), $8);
+    delete $1;
+    delete $3;
   };
 
 arg_list
@@ -178,10 +196,14 @@ arg_list
   };
 
 arg
- : direction type IDENTIFIER
-  { $$ = new AidlArgument($1, $2, $3.data, @3.begin.line); };
- | type IDENTIFIER
-  { $$ = new AidlArgument($1, $2.data, @2.begin.line); };
+ : direction type IDENTIFIER {
+    $$ = new AidlArgument($1, $2, $3->GetText(), @3.begin.line);
+    delete $3;
+  };
+ | type IDENTIFIER {
+    $$ = new AidlArgument($1, $2->GetText(), @2.begin.line);
+    delete $2;
+  };
 
 type
  : qualified_name {

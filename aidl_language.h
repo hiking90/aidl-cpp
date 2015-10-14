@@ -13,31 +13,18 @@
 struct yy_buffer_state;
 typedef yy_buffer_state* YY_BUFFER_STATE;
 
-enum which_extra_text {
-    NO_EXTRA_TEXT = 0,
-    SHORT_COMMENT,
-    LONG_COMMENT,
-    COPY_TEXT,
-    WHITESPACE
-};
+class AidlToken {
+ public:
+  AidlToken(const std::string& text, const std::string& comments);
 
-struct extra_text_type {
-    which_extra_text which;
-    char* data; 
-    unsigned len;
-    struct extra_text_type* next;
-};
+  const std::string& GetText() const { return text_; }
+  const std::string& GetComments() const { return comments_; }
 
-struct buffer_type {
-  unsigned token;
-  char* data;
-  extra_text_type* extra;
+ private:
+  std::string text_;
+  std::string comments_;
 
-  std::string Literal() const {
-    return data ? std::string(data) : "";
-  }
-
-  std::string Comments() const;
+  DISALLOW_COPY_AND_ASSIGN(AidlToken);
 };
 
 class AidlNode {
