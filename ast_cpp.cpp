@@ -117,27 +117,28 @@ void ArgList::Write(CodeWriter* to) const {
 ConstructorDecl::ConstructorDecl(
     const std::string& name,
     ArgList&& arg_list)
-    : ConstructorDecl(name, std::move(arg_list), false, false) {}
+    : ConstructorDecl(name, std::move(arg_list), 0u) {}
 
 ConstructorDecl::ConstructorDecl(
     const std::string& name,
     ArgList&& arg_list,
-    bool is_virtual,
-    bool is_default)
+    uint32_t modifiers)
     : name_(name),
       arguments_(std::move(arg_list)),
-      is_virtual_(is_virtual),
-      is_default_(is_default) {}
+      modifiers_(modifiers) {}
 
 void ConstructorDecl::Write(CodeWriter* to) const {
-  if (is_virtual_)
+  if (modifiers_ & Modifiers::IS_VIRTUAL)
     to->Write("virtual ");
+
+  if (modifiers_ & Modifiers::IS_EXPLICIT)
+    to->Write("explicit ");
 
   to->Write("%s", name_.c_str());
 
   arguments_.Write(to);
 
-  if (is_default_)
+  if (modifiers_ & Modifiers::IS_DEFAULT)
     to->Write(" = default");
 
   to->Write(";\n");
