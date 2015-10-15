@@ -439,16 +439,18 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
 }
 
 unique_ptr<Document> BuildServerHeader(const TypeNamespace& /* types */,
-                                       const AidlInterface& parsed_doc) {
-  const string i_name = ClassName(parsed_doc, ClassNames::INTERFACE);
-  const string bn_name = ClassName(parsed_doc, ClassNames::SERVER);
+                                       const AidlInterface& interface) {
+  const string i_name = ClassName(interface, ClassNames::INTERFACE);
+  const string bn_name = ClassName(interface, ClassNames::SERVER);
 
-  unique_ptr<Declaration> on_transact{new MethodDecl(
+  unique_ptr<Declaration> on_transact{new MethodDecl{
       kAndroidStatusLiteral, "onTransact",
       ArgList{{"uint32_t code",
                StringPrintf("const %s& data", kAndroidParcelLiteral),
                StringPrintf("%s* reply", kAndroidParcelLiteral),
-               "uint32_t flags = 0"}})};
+               "uint32_t flags = 0"}},
+      MethodDecl::IS_OVERRIDE
+  }};
 
   std::vector<unique_ptr<Declaration>> publics;
   publics.push_back(std::move(on_transact));
@@ -461,7 +463,7 @@ unique_ptr<Document> BuildServerHeader(const TypeNamespace& /* types */,
       }};
 
   return unique_ptr<Document>{new CppHeader{
-      bn_name + "_H",
+      BuildHeaderGuard(interface, ClassNames::SERVER),
       {"binder/IInterface.h",
        i_name + ".h"},
       NestInNamespaces(std::move(bn_class))}};

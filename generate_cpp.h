@@ -39,6 +39,8 @@ std::unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& types,
                                                const AidlInterface& parsed_doc);
 std::unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
                                             const AidlInterface& parsed_doc);
+std::unique_ptr<Document> BuildServerHeader(const TypeNamespace& types,
+                                            const AidlInterface& parsed_doc);
 std::unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
                                                const AidlInterface& parsed_doc);
 }
