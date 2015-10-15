@@ -297,9 +297,6 @@ bool HandleServerTransaction(const TypeNamespace& types,
         "%s %s", return_type->CppType().c_str(), kReturnVarName));
   }
 
-  // Declare the status variable
-  b->AddLiteral(StringPrintf("%s status", kAndroidStatusLiteral));
-
   // Deserialize each "in" parameter to the transaction.
   for (const AidlArgument* a : method.GetInArguments()) {
     // Deserialization looks roughly like:
@@ -357,6 +354,10 @@ unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
                StringPrintf("%s* reply", kAndroidParcelLiteral),
                "uint32_t flags"}}
       }};
+
+  // Declare the status variable
+  on_transact->GetStatementBlock()->AddLiteral(
+      StringPrintf("%s status", kAndroidStatusLiteral));
 
   // Add the all important switch statement, but retain a pointer to it.
   SwitchStatement* s = new SwitchStatement{"code"};

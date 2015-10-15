@@ -101,12 +101,12 @@ namespace android {
 namespace generated {
 
 android::status_t BnPingResponder::onTransact(uint32_t code, const android::Parcel& data, android::Parcel* reply, uint32_t flags) {
+android::status_t status;
 switch (code) {
 case Call::PING:
 {
 int32_t in_token;
 int32_t _aidl_return;
-android::status_t status;
 status = data.readInt32(&in_token);
 if (status != android::OK) { break; }
 status = Ping(in_token, &_aidl_return);
