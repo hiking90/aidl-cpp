@@ -113,12 +113,17 @@ class ArgList : public AstNode {
 
 class ConstructorDecl : public Declaration {
  public:
+  enum Modifiers {
+    IS_VIRTUAL = 1 << 0,
+    IS_DEFAULT = 1 << 1,
+    IS_EXPLICIT = 1 << 2,
+  };
+
   ConstructorDecl(const std::string& name,
                   ArgList&& arg_list);
   ConstructorDecl(const std::string& name,
                   ArgList&& arg_list,
-                  bool is_virtual,
-                  bool is_default);
+                  uint32_t modifiers);
 
   virtual ~ConstructorDecl() = default;
 
@@ -127,8 +132,7 @@ class ConstructorDecl : public Declaration {
  private:
   const std::string name_;
   const ArgList arguments_;
-  bool is_virtual_ = false;
-  bool is_default_ = false;
+  const uint32_t modifiers_;
 
   DISALLOW_COPY_AND_ASSIGN(ConstructorDecl);
 };  // class ConstructorDecl

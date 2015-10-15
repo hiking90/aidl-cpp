@@ -144,7 +144,7 @@ namespace generated {
 
 class BpPingResponder : public android::BpInterface<IPingResponder> {
 public:
-BpPingResponder();
+explicit BpPingResponder(const android::sp<android::IBinder>& impl);
 virtual ~BpPingResponder() = default;
 android::status_t Ping(int32_t token, int32_t* _aidl_return) override;
 };  // class BpPingResponder

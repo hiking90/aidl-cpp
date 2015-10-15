@@ -411,9 +411,15 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
   const string i_name = ClassName(interface, ClassNames::INTERFACE);
   const string bp_name = ClassName(interface, ClassNames::CLIENT);
 
-  unique_ptr<ConstructorDecl> constructor{new ConstructorDecl(bp_name, {})};
-  unique_ptr<ConstructorDecl> destructor{new ConstructorDecl(
-      "~" + bp_name, ArgList{}, true /* is virtual */, true /* is default */)};
+  unique_ptr<ConstructorDecl> constructor{new ConstructorDecl{
+      bp_name,
+      ArgList{"const android::sp<android::IBinder>& impl"},
+      ConstructorDecl::IS_EXPLICIT
+  }};
+  unique_ptr<ConstructorDecl> destructor{new ConstructorDecl{
+      "~" + bp_name,
+      ArgList{},
+      ConstructorDecl::IS_VIRTUAL | ConstructorDecl::IS_DEFAULT}};
 
   vector<unique_ptr<Declaration>> publics;
   publics.push_back(std::move(constructor));
