@@ -144,8 +144,6 @@ bool DeclareLocalVariable(const TypeNamespace& types, const AidlArgument& a,
   return true;
 }
 
-}  // namespace
-
 enum class ClassNames { BASE, CLIENT, SERVER, INTERFACE };
 
 string ClassName(const AidlInterface& interface, ClassNames type) {
@@ -170,7 +168,26 @@ string ClassName(const AidlInterface& interface, ClassNames type) {
   return c_name;
 }
 
-namespace {
+string BuildHeaderGuard(const AidlInterface& interface,
+                        ClassNames header_type) {
+  string class_name = ClassName(interface, header_type);
+  for (size_t i = 1; i < class_name.size(); ++i) {
+    if (isupper(class_name[i])) {
+      class_name.insert(i, "_");
+      ++i;
+    }
+  }
+  string ret = StringPrintf("AIDL_GENERATED_%s_%s_H_",
+                            interface.GetPackage().c_str(),
+                            class_name.c_str());
+  for (char& c : ret) {
+    if (c == '.') {
+      c = '_';
+    }
+    c = toupper(c);
+  }
+  return ret;
+}
 
 unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
                                                 const AidlInterface& interface,
@@ -389,9 +406,9 @@ unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& /* types */,
 }
 
 unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
-                                       const AidlInterface& parsed_doc) {
-  const string i_name = ClassName(parsed_doc, ClassNames::INTERFACE);
-  const string bp_name = ClassName(parsed_doc, ClassNames::CLIENT);
+                                       const AidlInterface& interface) {
+  const string i_name = ClassName(interface, ClassNames::INTERFACE);
+  const string bp_name = ClassName(interface, ClassNames::CLIENT);
 
   unique_ptr<ConstructorDecl> constructor{new ConstructorDecl(bp_name, {})};
   unique_ptr<ConstructorDecl> destructor{new ConstructorDecl(
@@ -401,19 +418,19 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
   publics.push_back(std::move(constructor));
   publics.push_back(std::move(destructor));
 
-  for (const auto& method: parsed_doc.GetMethods()) {
+  for (const auto& method: interface.GetMethods()) {
     publics.push_back(BuildMethodDecl(*method, types, false));
   }
 
   unique_ptr<ClassDecl> bp_class{
       new ClassDecl{bp_name,
-                    "public android::BpInterface<" + i_name + ">",
+                    "android::BpInterface<" + i_name + ">",
                     std::move(publics),
                     {}
       }};
 
   return unique_ptr<Document>{new CppHeader{
-      bp_name + "_H",
+      BuildHeaderGuard(interface, ClassNames::CLIENT),
       {kIBinderHeader,
        kIInterfaceHeader,
        "utils/Errors.h",
@@ -438,7 +455,7 @@ unique_ptr<Document> BuildServerHeader(const TypeNamespace& /* types */,
 
   unique_ptr<ClassDecl> bn_class{
       new ClassDecl{bn_name,
-                    "public android::BnInterface<" + i_name + ">",
+                    "android::BnInterface<" + i_name + ">",
                     std::move(publics),
                     {}
       }};
@@ -451,16 +468,17 @@ unique_ptr<Document> BuildServerHeader(const TypeNamespace& /* types */,
 }
 
 unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
-                                          const AidlInterface& parsed_doc) {
+                                          const AidlInterface& interface) {
   unique_ptr<ClassDecl> if_class{
-      new ClassDecl{ClassName(parsed_doc, ClassNames::INTERFACE),
-                    "public android::IInterface"}};
+      new ClassDecl{ClassName(interface, ClassNames::INTERFACE),
+                    "android::IInterface"}};
   if_class->AddPublic(unique_ptr<Declaration>{new ConstructorDecl{
       "DECLARE_META_INTERFACE",
-      ArgList{vector<string>{ClassName(parsed_doc, ClassNames::BASE)}}}});
+      ArgList{vector<string>{ClassName(interface, ClassNames::BASE)}}}});
 
   unique_ptr<Enum> call_enum{new Enum{"Call"}};
-  for (const auto& method : parsed_doc.GetMethods()) {
+  for (const auto& method : interface.GetMethods()) {
+    // Each method gets an enum entry and pure virtual declaration.
     if_class->AddPublic(BuildMethodDecl(*method, types, true));
     call_enum->AddValue(
         UpperCase(method->GetName()),
@@ -469,7 +487,8 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
   }
   if_class->AddPublic(std::move(call_enum));
 
-  return unique_ptr<Document>{new CppSource{
+  return unique_ptr<Document>{new CppHeader{
+      BuildHeaderGuard(interface, ClassNames::INTERFACE),
       {kIBinderHeader,
        kIInterfaceHeader},
       NestInNamespaces(std::move(if_class))}};
