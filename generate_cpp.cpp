@@ -24,7 +24,6 @@
 #include <string>
 
 #include <base/stringprintf.h>
-#include <base/strings.h>
 
 #include "aidl_language.h"
 #include "ast_cpp.h"
@@ -33,8 +32,6 @@
 #include "os.h"
 
 using android::base::StringPrintf;
-using android::base::Join;
-using android::base::Split;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -128,17 +125,29 @@ unique_ptr<Declaration> BuildMethodDecl(const AidlMethod& method,
                      modifiers}};
 }
 
-unique_ptr<CppNamespace> NestInNamespaces(unique_ptr<Declaration> decl) {
-  using N = CppNamespace;
-  using NPtr = unique_ptr<N>;
-  return NPtr{new N{"android", NPtr{new N{"generated", std::move(decl)}}}};
+unique_ptr<CppNamespace> NestInNamespaces(
+    vector<unique_ptr<Declaration>> decls,
+    const vector<string>& package) {
+  if (package.empty()) {
+    // We should also be checking this before we get this far, but do it again
+    // for the sake of unit tests and meaningful errors.
+    LOG(FATAL) << "C++ generation requires a package declaration "
+                  "for namespacing";
+  }
+  auto it = package.crbegin();  // Iterate over the namespaces inner to outer
+  unique_ptr<CppNamespace> inner{new CppNamespace{*it, std::move(decls)}};
+  ++it;
+  for (; it != package.crend(); ++it) {
+    inner.reset(new CppNamespace{*it, std::move(inner)});
+  }
+  return inner;
 }
 
-unique_ptr<CppNamespace> NestInNamespaces(
-    vector<unique_ptr<Declaration>> decls) {
-  using N = CppNamespace;
-  using NPtr = unique_ptr<N>;
-  return NPtr{new N{"android", NPtr{new N{"generated", std::move(decls)}}}};
+unique_ptr<CppNamespace> NestInNamespaces(unique_ptr<Declaration> decl,
+                                          const vector<string>& package) {
+  vector<unique_ptr<Declaration>> decls;
+  decls.push_back(std::move(decl));
+  return NestInNamespaces(std::move(decls), package);
 }
 
 bool DeclareLocalVariable(const TypeNamespace& types, const AidlArgument& a,
@@ -302,7 +311,7 @@ unique_ptr<Document> BuildClientSource(const TypeNamespace& types,
   }
   return unique_ptr<Document>{new CppSource{
       include_list,
-      NestInNamespaces(std::move(file_decls))}};
+      NestInNamespaces(std::move(file_decls), interface.GetSplitPackage())}};
 }
 
 namespace {
@@ -411,7 +420,7 @@ unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
 
   return unique_ptr<Document>{new CppSource{
       include_list,
-      NestInNamespaces(std::move(on_transact))}};
+      NestInNamespaces(std::move(on_transact), interface.GetSplitPackage())}};
 }
 
 unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& /* types */,
@@ -433,7 +442,7 @@ unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& /* types */,
 
   return unique_ptr<Document>{new CppSource{
       include_list,
-      NestInNamespaces(std::move(meta_if))}};
+      NestInNamespaces(std::move(meta_if), interface.GetSplitPackage())}};
 }
 
 unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
@@ -472,7 +481,7 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
        kIInterfaceHeader,
        "utils/Errors.h",
        HeaderFile(interface, ClassNames::INTERFACE, false)},
-      NestInNamespaces(std::move(bp_class))}};
+      NestInNamespaces(std::move(bp_class), interface.GetSplitPackage())}};
 }
 
 unique_ptr<Document> BuildServerHeader(const TypeNamespace& /* types */,
@@ -503,7 +512,7 @@ unique_ptr<Document> BuildServerHeader(const TypeNamespace& /* types */,
       BuildHeaderGuard(interface, ClassNames::SERVER),
       {"binder/IInterface.h",
        HeaderFile(interface, ClassNames::INTERFACE, false)},
-      NestInNamespaces(std::move(bn_class))}};
+      NestInNamespaces(std::move(bn_class), interface.GetSplitPackage())}};
 }
 
 unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
@@ -545,7 +554,7 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
   return unique_ptr<Document>{new CppHeader{
       BuildHeaderGuard(interface, ClassNames::INTERFACE),
       vector<string>(includes.begin(), includes.end()),
-      NestInNamespaces(std::move(if_class))}};
+      NestInNamespaces(std::move(if_class), interface.GetSplitPackage())}};
 }
 
 bool WriteHeader(const CppOptions& options,
@@ -597,7 +606,7 @@ bool GenerateCpp(const CppOptions& options,
   }
 
   if (!io_delegate.CreatedNestedDirs(options.OutputHeaderDir(),
-                                     Split(interface.GetPackage(), "."))) {
+                                     interface.GetSplitPackage())) {
     LOG(ERROR) << "Failed to create directory structure for headers.";
     return false;
   }

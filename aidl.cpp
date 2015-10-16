@@ -563,6 +563,10 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
     }
   }
 
+  if (!types->IsValidPackage(interface->GetPackage())) {
+    LOG(ERROR) << "Invalid package declaration '" << interface->GetPackage() << "'";
+    err += 1;
+  }
   // check the referenced types in parsed_doc to make sure we've imported them
   err |= check_types(input_file_name, interface, types);
 

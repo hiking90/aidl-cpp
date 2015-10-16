@@ -73,6 +73,10 @@ class TypeNamespace : public ::android::aidl::TypeNamespace {
   bool AddBinderType(const AidlInterface* b,
                      const std::string& filename) override;
   bool AddContainerType(const std::string& type_name) override;
+  bool IsValidPackage(const std::string& package) const override;
+  bool IsValidArg(const AidlArgument& a,
+                  int arg_index,
+                  const std::string& filename) const override;
 
   const Type* Find(const std::string& type_name) const;
 
