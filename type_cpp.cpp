@@ -28,7 +28,7 @@ namespace {
 
 class VoidType : public Type {
  public:
-  VoidType() : Type("void", "void", "XXX", "XXX") {}
+  VoidType() : Type("", "void", "void", "XXX", "XXX") {}
   virtual ~VoidType() = default;
   bool CanBeArray() const override { return false; }
   bool CanBeOutParameter() const override { return false; }
@@ -37,11 +37,13 @@ class VoidType : public Type {
 
 }  // namespace
 
-Type::Type(const string& aidl_type,
+Type::Type(const string& header,
+           const string& aidl_type,
            const string& cpp_type,
            const string& read_method,
            const string& write_method)
-    : aidl_type_(aidl_type),
+    : header_(header),
+      aidl_type_(aidl_type),
       cpp_type_(cpp_type),
       parcel_read_method_(read_method),
       parcel_write_method_(write_method) {
@@ -51,26 +53,31 @@ bool Type::CanBeArray() const { return false; }
 bool Type::CanBeOutParameter() const { return false; }
 bool Type::CanWriteToParcel() const { return true; }
 const string& Type::AidlType() const { return aidl_type_; }
+const string& Type::Header() const { return header_; }
 const string& Type::CppType() const { return cpp_type_; }
 const string& Type::ReadFromParcelMethod() const { return parcel_read_method_; }
 const string& Type::WriteToParcelMethod() const { return parcel_write_method_; }
 
 TypeNamespace::TypeNamespace() {
-  // Note that the Java equivalent of the byte type actually calls methods
-  // like write/readByte.  However, those are in Java, and underneath, they
-  // write an int.
   types_.emplace_back(
-      new Type("byte", "int8_t", "readInt32", "writeInt32"));
+      new Type("cstdint", "byte", "int8_t", "readByte", "writeByte"));
 
-  // TODO(wiley): Implement boolean, which is an int + conversion logic.
   types_.emplace_back(
-      new Type("int", "int32_t", "readInt32", "writeInt32"));
+      new Type("cstdint", "int", "int32_t", "readInt32", "writeInt32"));
   types_.emplace_back(
-      new Type("long", "int64_t", "readInt64", "writeInt64"));
+      new Type("cstdint", "long", "int64_t", "readInt64", "writeInt64"));
   types_.emplace_back(
-      new Type("float", "float", "readFloat", "writeFloat"));
+      new Type("", "float", "float", "readFloat", "writeFloat"));
   types_.emplace_back(
-      new Type("double", "double", "readDouble", "writeDouble"));
+      new Type("", "double", "double", "readDouble", "writeDouble"));
+  types_.emplace_back(
+      new Type("", "boolean", "bool", "readBool", "writeBool"));
+  // For whatever reason, char16_t does not need cstdint.
+  types_.emplace_back(
+      new Type("", "char", "char16_t", "readChar", "writeChar"));
+  types_.emplace_back(
+      new Type("utils/String16.h", "String", "android::String16",
+               "readString16", "writeString16"));
 
   void_type_ = new class VoidType();
   types_.emplace_back(void_type_);

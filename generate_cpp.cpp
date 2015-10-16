@@ -20,6 +20,7 @@
 #include <cstring>
 #include <memory>
 #include <random>
+#include <set>
 #include <string>
 
 #include <base/stringprintf.h>
@@ -35,6 +36,7 @@ using android::base::Join;
 using std::string;
 using std::unique_ptr;
 using std::vector;
+using std::set;
 
 namespace android {
 namespace aidl {
@@ -78,6 +80,7 @@ ArgList BuildArgList(const TypeNamespace& types,
       // Method declarations need types, pointers to out params, and variable
       // names that match the .aidl specification.
       const Type* type = types.Find(a->GetType().GetName());
+
       literal = StringPrintf(
           "%s%s %s", type->CppType().c_str(),
           (a->IsOut()) ? "*" : "",
@@ -90,6 +93,7 @@ ArgList BuildArgList(const TypeNamespace& types,
   }
 
   const Type* return_type = types.Find(method.GetType().GetName());
+
   if (return_type != types.VoidType()) {
     string literal;
     if (for_declaration) {
@@ -478,6 +482,22 @@ unique_ptr<Document> BuildServerHeader(const TypeNamespace& /* types */,
 
 unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
                                           const AidlInterface& interface) {
+  set<string> includes = { kIBinderHeader, kIInterfaceHeader };
+
+  for (const auto& method : interface.GetMethods()) {
+    for (const auto& argument : method->GetArguments()) {
+      const Type* type = types.Find(argument->GetType().GetName());
+      const std::string& header = type->Header();
+      if (! header.empty())
+        includes.insert(header);
+    }
+
+    const Type* type = types.Find(method->GetType().GetName());
+    const std::string& header = type->Header();
+    if (! header.empty())
+      includes.insert(header);
+  }
+
   unique_ptr<ClassDecl> if_class{
       new ClassDecl{ClassName(interface, ClassNames::INTERFACE),
                     "android::IInterface"}};
@@ -498,8 +518,7 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
 
   return unique_ptr<Document>{new CppHeader{
       BuildHeaderGuard(interface, ClassNames::INTERFACE),
-      {kIBinderHeader,
-       kIInterfaceHeader},
+      vector<string>(includes.begin(), includes.end()),
       NestInNamespaces(std::move(if_class))}};
 }
 

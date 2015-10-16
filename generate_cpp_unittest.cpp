@@ -37,7 +37,7 @@ namespace {
 
 const char kTrivialInterfaceAIDL[] =
 R"(interface IPingResponder {
-  int Ping(int token);
+  int Ping(String token);
 })";
 
 const char kExpectedTrivialClientSourceOutput[] =
@@ -52,11 +52,11 @@ BpPingResponder::BpPingResponder(const android::sp<android::IBinder>& impl)
     : BpInterface<IPingResponder>(impl){
 }
 
-android::status_t BpPingResponder::Ping(int32_t token, int32_t* _aidl_return) {
+android::status_t BpPingResponder::Ping(android::String16 token, int32_t* _aidl_return) {
 android::Parcel data;
 android::Parcel reply;
 android::status_t status;
-status = data.writeInt32(token);
+status = data.writeString16(token);
 if (status != android::OK) { return status; }
 status = remote()->transact(IPingResponder::PING, data, &reply);
 if (status != android::OK) { return status; }
@@ -105,9 +105,9 @@ android::status_t status;
 switch (code) {
 case Call::PING:
 {
-int32_t in_token;
+android::String16 in_token;
 int32_t _aidl_return;
-status = data.readInt32(&in_token);
+status = data.readString16(&in_token);
 if (status != android::OK) { break; }
 status = Ping(in_token, &_aidl_return);
 if (status != android::OK) { break; }
@@ -146,7 +146,7 @@ class BpPingResponder : public android::BpInterface<IPingResponder> {
 public:
 explicit BpPingResponder(const android::sp<android::IBinder>& impl);
 virtual ~BpPingResponder() = default;
-android::status_t Ping(int32_t token, int32_t* _aidl_return) override;
+android::status_t Ping(android::String16 token, int32_t* _aidl_return) override;
 };  // class BpPingResponder
 
 }  // namespace generated
@@ -161,6 +161,8 @@ R"(#ifndef AIDL_GENERATED__I_PING_RESPONDER_H_
 
 #include <binder/IBinder.h>
 #include <binder/IInterface.h>
+#include <cstdint>
+#include <utils/String16.h>
 
 namespace android {
 
@@ -169,7 +171,7 @@ namespace generated {
 class IPingResponder : public android::IInterface {
 public:
 DECLARE_META_INTERFACE(PingResponder);
-virtual android::status_t Ping(int32_t token, int32_t* _aidl_return) = 0;
+virtual android::status_t Ping(android::String16 token, int32_t* _aidl_return) = 0;
 enum Call {
   PING = android::IBinder::FIRST_CALL_TRANSACTION + 0,
 };
