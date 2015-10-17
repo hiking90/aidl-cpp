@@ -63,7 +63,6 @@ struct ClassElement
     ClassElement() = default;
     virtual ~ClassElement() = default;
 
-    virtual void GatherTypes(set<const Type*>* types) const = 0;
     virtual void Write(CodeWriter* to) const = 0;
 };
 
@@ -103,7 +102,6 @@ struct Variable : public Expression
     Variable(const Type* type, const string& name, int dimension);
     virtual ~Variable() = default;
 
-    virtual void GatherTypes(set<const Type*>* types) const;
     void WriteDeclaration(CodeWriter* to) const;
     void Write(CodeWriter* to) const;
 };
@@ -132,7 +130,6 @@ struct Field : public ClassElement
     Field(int modifiers, Variable* variable);
     virtual ~Field() = default;
 
-    void GatherTypes(set<const Type*>* types) const override;
     void Write(CodeWriter* to) const override;
 };
 
@@ -356,7 +353,6 @@ struct Method : public ClassElement
     Method() = default;
     virtual ~Method() = default;
 
-    void GatherTypes(set<const Type*>* types) const override;
     void Write(CodeWriter* to) const override;
 };
 
@@ -378,7 +374,6 @@ struct Class : public ClassElement
     Class() = default;
     virtual ~Class() = default;
 
-    void GatherTypes(set<const Type*>* types) const override;
     void Write(CodeWriter* to) const override;
 };
 
@@ -387,7 +382,6 @@ struct Document
     string comment;
     string package;
     string originalSrc;
-    set<const Type*> imports;
     vector<Class*> classes;
 
     Document() = default;

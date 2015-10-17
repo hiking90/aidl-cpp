@@ -57,7 +57,6 @@ class Type : public ValidatableType {
   inline bool CanWriteToParcel() const { return m_canWriteToParcel; }
   inline bool CanBeOutParameter() const { return m_canBeOut; }
 
-  virtual string ImportType() const;
   virtual string CreatorName() const;
   virtual string InstantiableName() const;
 
@@ -359,8 +358,6 @@ class GenericType : public Type {
 
   const vector<const Type*>& GenericArgumentTypes() const;
   string GenericArguments() const;
-
-  string ImportType() const override;
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
