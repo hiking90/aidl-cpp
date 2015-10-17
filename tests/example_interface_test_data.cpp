@@ -16,23 +16,27 @@
 
 #include "tests/test_data.h"
 
+namespace android {
 namespace aidl {
 namespace test_data {
+namespace example_interface {
 
-const char kIExampleInterfaceClass[] = "android.test.IExampleInterface";
+const char kCanonicalName[] = "android.test.IExampleInterface";
 
-const char* kIExampleInterfaceParcelables[] = {
+const char kJavaOutputPath[] = "some/path/to/output.java";
+
+const char* kImportedParcelables[] = {
   "android.foo.ExampleParcelable",
   nullptr,
 };
 
-const char* kIExampleInterfaceInterfaces[] = {
+const char* kImportedInterfaces[] = {
   "android.bar.IAuxInterface",
   "android.test.IAuxInterface2",
   nullptr,
 };
 
-const char kIExampleInterfaceContents[] = R"(
+const char kInterfaceDefinition[] = R"(
 package android.test;
 
 import android.foo.ExampleParcelable;
@@ -62,8 +66,8 @@ interface IExampleInterface {
 }
 )";
 
-const char kIExampleInterfaceDeps[] =
-R"(android/test/IExampleInterface.java: \
+const char kExpectedJavaDepsOutput[] =
+R"(some/path/to/output.java: \
   android/test/IExampleInterface.aidl \
   ./android/foo/ExampleParcelable.aidl \
   ./android/test/CompoundParcelable.aidl \
@@ -77,7 +81,7 @@ android/test/IExampleInterface.aidl :
 ./android/test/IAuxInterface2.aidl :
 )";
 
-const char kIExampleInterfaceJava[] =
+const char kExpectedJavaOutput[] =
 R"(/*
  * This file is auto-generated.  DO NOT MODIFY.
  * Original file: android/test/IExampleInterface.aidl
@@ -444,5 +448,7 @@ public int takesAParcelable(android.test.CompoundParcelable.Subclass1 arg, andro
 }
 )";
 
+}  // namespace example_interface
 }  // namespace test_data
 }  // namespace aidl
+}  // namespace android

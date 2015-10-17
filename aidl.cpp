@@ -222,69 +222,54 @@ int check_types(const string& filename,
 
 void generate_dep_file(const JavaOptions& options,
                        const AidlDocumentItem* items,
-                       const std::vector<std::unique_ptr<AidlImport>>& imports) {
-    /* we open the file in binary mode to ensure that the same output is
-     * generated on all platforms !!
-     */
-    FILE* to = NULL;
-    string fileName;
+                       const std::vector<std::unique_ptr<AidlImport>>& imports,
+                       const IoDelegate& io_delegate) {
+  string fileName;
+  if (options.auto_dep_file_) {
+    fileName = options.output_file_name_ + ".d";
+  } else {
+    fileName = options.dep_file_name_;
+  }
+  CodeWriterPtr writer = io_delegate.GetCodeWriter(fileName);
+  if (!writer) {
+    cerr << "Could not open " << fileName << endl;
+    return;
+  }
 
-    if (options.auto_dep_file_) {
-            fileName = options.output_file_name_ + ".d";
-    } else {
-        fileName = options.dep_file_name_;
+
+  if (items->item_type == INTERFACE_TYPE_BINDER) {
+    writer->Write("%s: \\\n", options.output_file_name_.c_str());
+  } else {
+    // parcelable: there's no output file.
+    writer->Write(" : \\\n");
+  }
+  writer->Write("  %s %s\n", options.input_file_name_.c_str(), imports.empty() ? "" : "\\");
+
+  bool first = true;
+  for (const auto& import : imports) {
+    if (! first) {
+      writer->Write(" \\\n");
     }
+    first = false;
 
-    string output_file_name;
-
-    // TODO: Mock IO and remove this weird stuff (b/24816077)
-    if (!options.output_file_name_for_deps_test_.empty())
-        output_file_name = options.output_file_name_for_deps_test_;
-    else
-        output_file_name = options.output_file_name_;
-
-    to = fopen(fileName.c_str(), "wb");
-
-    if (to == NULL) {
-        cerr << "Could not open " << fileName << endl;
-        return;
+    if (! import->GetFilename().empty()) {
+      writer->Write("  %s", import->GetFilename().c_str());
     }
+  }
 
-    if (items->item_type == INTERFACE_TYPE_BINDER) {
-        fprintf(to, "%s: \\\n", output_file_name.c_str());
-    } else {
-        // parcelable: there's no output file.
-        fprintf(to, " : \\\n");
+  writer->Write(first ? "\n" : "\n\n");
+
+  // Output "<input_aidl_file>: " so make won't fail if the input .aidl file
+  // has been deleted, moved or renamed in incremental build.
+  writer->Write("%s :\n", options.input_file_name_.c_str());
+
+  // Output "<imported_file>: " so make won't fail if the imported file has
+  // been deleted, moved or renamed in incremental build.
+  for (const auto& import : imports) {
+    if (! import->GetFilename().empty()) {
+      writer->Write("%s :\n", import->GetFilename().c_str());
     }
-    fprintf(to, "  %s %s\n", options.input_file_name_.c_str(), imports.empty() ? "" : "\\");
-
-    bool first = true;
-    for (const auto& import : imports) {
-        if (! first) {
-          fprintf(to, " \\\n");
-        }
-        first = false;
-
-        if (! import->GetFilename().empty()) {
-            fprintf(to, "  %s", import->GetFilename().c_str());
-        }
-    }
-
-    fprintf(to, first ? "\n" : "\n\n");
-
-    // Output "<input_aidl_file>: " so make won't fail if the input .aidl file
-    // has been deleted, moved or renamed in incremental build.
-    fprintf(to, "%s :\n", options.input_file_name_.c_str());
-
-    // Output "<imported_file>: " so make won't fail if the imported file has
-    // been deleted, moved or renamed in incremental build.
-    for (const auto& import : imports) {
-        if (! import->GetFilename().empty()) {
-            fprintf(to, "%s :\n", import->GetFilename().c_str());
-        }
-    }
-
-    fclose(to);
+  }
 }
 
 string generate_outputFileName2(const JavaOptions& options,
@@ -646,14 +631,14 @@ int compile_aidl_to_java(const JavaOptions& options,
   if (options.auto_dep_file_ || options.dep_file_name_ != "") {
     // make sure the folders of the output file all exists
     check_outputFilePath(output_file_name);
-    generate_dep_file(options, parsed_doc, imports);
+    generate_dep_file(options, parsed_doc, imports, io_delegate);
   }
 
   // make sure the folders of the output file all exists
   check_outputFilePath(output_file_name);
 
   err = generate_java(output_file_name, options.input_file_name_.c_str(),
-                      interface, types.get());
+                      interface, types.get(), io_delegate);
 
   return err;
 }

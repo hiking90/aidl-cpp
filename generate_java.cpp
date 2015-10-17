@@ -49,7 +49,8 @@ namespace java {
 
 int
 generate_java(const string& filename, const string& originalSrc,
-                AidlInterface* iface, JavaTypeNamespace* types)
+                AidlInterface* iface, JavaTypeNamespace* types,
+                const IoDelegate& io_delegate)
 {
     Class* cl;
 
@@ -64,7 +65,7 @@ generate_java(const string& filename, const string& originalSrc,
         document->originalSrc = originalSrc;
         document->classes.push_back(cl);
 
-    CodeWriterPtr code_writer = GetFileWriter(filename);
+    CodeWriterPtr code_writer = io_delegate.GetCodeWriter(filename);
     document->Write(code_writer.get());
 
     return 0;

@@ -5,6 +5,7 @@
 
 #include "aidl_language.h"
 #include "ast_java.h"
+#include "io_delegate.h"
 
 namespace android {
 namespace aidl {
@@ -17,7 +18,8 @@ namespace java {
 class JavaTypeNamespace;
 
 int generate_java(const string& filename, const string& originalSrc,
-                  AidlInterface* iface, java::JavaTypeNamespace* types);
+                  AidlInterface* iface, java::JavaTypeNamespace* types,
+                  const IoDelegate& io_delegate);
 
 android::aidl::java::Class* generate_binder_interface_class(
     const AidlInterface* iface, java::JavaTypeNamespace* types);
