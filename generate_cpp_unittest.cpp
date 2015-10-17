@@ -36,12 +36,15 @@ namespace cpp {
 namespace {
 
 const char kTrivialInterfaceAIDL[] =
-R"(interface IPingResponder {
+R"(
+package android.os;
+
+interface IPingResponder {
   int Ping(String token);
 })";
 
 const char kExpectedTrivialClientSourceOutput[] =
-R"(#include <BpPingResponder.h>
+R"(#include <android/os/BpPingResponder.h>
 #include <binder/Parcel.h>
 
 namespace android {
@@ -71,11 +74,11 @@ return status;
 )";
 
 const char kExpectedTrivialServerHeaderOutput[] =
-R"(#ifndef AIDL_GENERATED__BN_PING_RESPONDER_H_
-#define AIDL_GENERATED__BN_PING_RESPONDER_H_
+R"(#ifndef AIDL_GENERATED_ANDROID_OS_BN_PING_RESPONDER_H_
+#define AIDL_GENERATED_ANDROID_OS_BN_PING_RESPONDER_H_
 
 #include <binder/IInterface.h>
-#include <IPingResponder.h>
+#include <android/os/IPingResponder.h>
 
 namespace android {
 
@@ -90,10 +93,10 @@ android::status_t onTransact(uint32_t code, const android::Parcel& data, android
 
 }  // namespace android
 
-#endif  // AIDL_GENERATED__BN_PING_RESPONDER_H_)";
+#endif  // AIDL_GENERATED_ANDROID_OS_BN_PING_RESPONDER_H_)";
 
 const char kExpectedTrivialServerSourceOutput[] =
-R"(#include <BnPingResponder.h>
+R"(#include <android/os/BnPingResponder.h>
 #include <binder/Parcel.h>
 
 namespace android {
@@ -130,13 +133,13 @@ return status;
 )";
 
 const char kExpectedTrivialClientHeaderOutput[] =
-R"(#ifndef AIDL_GENERATED__BP_PING_RESPONDER_H_
-#define AIDL_GENERATED__BP_PING_RESPONDER_H_
+R"(#ifndef AIDL_GENERATED_ANDROID_OS_BP_PING_RESPONDER_H_
+#define AIDL_GENERATED_ANDROID_OS_BP_PING_RESPONDER_H_
 
 #include <binder/IBinder.h>
 #include <binder/IInterface.h>
 #include <utils/Errors.h>
-#include <IPingResponder.h>
+#include <android/os/IPingResponder.h>
 
 namespace android {
 
@@ -153,11 +156,11 @@ android::status_t Ping(android::String16 token, int32_t* _aidl_return) override;
 
 }  // namespace android
 
-#endif  // AIDL_GENERATED__BP_PING_RESPONDER_H_)";
+#endif  // AIDL_GENERATED_ANDROID_OS_BP_PING_RESPONDER_H_)";
 
 const char kExpectedTrivialInterfaceHeaderOutput[] =
-R"(#ifndef AIDL_GENERATED__I_PING_RESPONDER_H_
-#define AIDL_GENERATED__I_PING_RESPONDER_H_
+R"(#ifndef AIDL_GENERATED_ANDROID_OS_I_PING_RESPONDER_H_
+#define AIDL_GENERATED_ANDROID_OS_I_PING_RESPONDER_H_
 
 #include <binder/IBinder.h>
 #include <binder/IInterface.h>
@@ -181,17 +184,17 @@ enum Call {
 
 }  // namespace android
 
-#endif  // AIDL_GENERATED__I_PING_RESPONDER_H_)";
+#endif  // AIDL_GENERATED_ANDROID_OS_I_PING_RESPONDER_H_)";
 
 const char kExpectedTrivialInterfaceSourceOutput[] =
-R"(#include <IPingResponder.h>
-#include <BpPingResponder.h>
+R"(#include <android/os/IPingResponder.h>
+#include <android/os/BpPingResponder.h>
 
 namespace android {
 
 namespace generated {
 
-IMPLEMENT_META_INTERFACE(PingResponder, "IPingResponder");
+IMPLEMENT_META_INTERFACE(PingResponder, "android.os.IPingResponder");
 
 }  // namespace generated
 
@@ -205,7 +208,7 @@ class TrivialInterfaceASTTest : public ::testing::Test {
   AidlInterface* Parse() {
 
   FakeIoDelegate io_delegate;
-  io_delegate.SetFileContents("IPingResponder.aidl", kTrivialInterfaceAIDL);
+  io_delegate.SetFileContents("android/os/IPingResponder.aidl", kTrivialInterfaceAIDL);
 
   cpp::TypeNamespace types;
   AidlInterface* ret = nullptr;
@@ -213,7 +216,7 @@ class TrivialInterfaceASTTest : public ::testing::Test {
   int err = ::android::aidl::internals::load_and_validate_aidl(
       {},  // no preprocessed files
       {},  // no import paths
-      "IPingResponder.aidl",
+      "android/os/IPingResponder.aidl",
       io_delegate,
       &types,
       &ret,

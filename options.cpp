@@ -16,6 +16,7 @@
 
 #include "options.h"
 
+#include <cstring>
 #include <iostream>
 #include <stdio.h>
 
@@ -173,7 +174,7 @@ unique_ptr<JavaOptions> JavaOptions::Parse(int argc, const char* const* argv) {
 namespace {
 
 unique_ptr<CppOptions> cpp_usage() {
-  cerr << "usage: aidl-cpp INPUT_FILE OUTPUT_DIR" << endl
+  cerr << "usage: aidl-cpp INPUT_FILE HEADER_DIR OUTPUT_FILE" << endl
        << endl
        << "OPTIONS:" << endl
        << "   -I<DIR>   search path for import statements" << endl
@@ -181,8 +182,10 @@ unique_ptr<CppOptions> cpp_usage() {
        << endl
        << "INPUT_FILE:" << endl
        << "   an aidl interface file" << endl
-       << "OUTPUT_DIR:" << endl
-       << "   directory to put generated code" << endl;
+       << "HEADER_DIR:" << endl
+       << "   empty directory to put generated headers" << endl
+       << "OUTPUT_FILE:" << endl
+       << "   path to write generated .cpp code" << endl;
   return unique_ptr<CppOptions>(nullptr);
 }
 
@@ -214,84 +217,23 @@ unique_ptr<CppOptions> CppOptions::Parse(int argc, const char* const* argv) {
     }
   }
 
-  // There are exactly two positional arguments.
+  // There are exactly three positional arguments.
   const int remaining_args = argc - i;
-  if (remaining_args != 2) {
-    cerr << "Expected 2 positional arguments but got " << remaining_args << "." << endl;
+  if (remaining_args != 3) {
+    cerr << "Expected 3 positional arguments but got " << remaining_args << "." << endl;
     return cpp_usage();
   }
+
   options->input_file_name_ = argv[i];
+  options->output_header_dir_ = argv[i + 1];
+  options->output_file_name_ = argv[i + 2];
+
   if (!EndsWith(options->input_file_name_, ".aidl")) {
-    cerr << "Expected .aidl file for input but got "
-         << options->input_file_name_ << endl;
+    cerr << "Expected .aidl file for input but got " << options->input_file_name_ << endl;
     return cpp_usage();
   }
-
-  options->output_base_folder_ = argv[i + 1];
-
-  // C++ generation drops 6 files with very similar names based on the name
-  // of the input .aidl file.  If this file is called foo/Bar.aidl, extract
-  // the substring "Bar" and store it in output_base_name_.
-  string base_name = options->input_file_name_;
-  if (!ReplaceSuffix(".aidl", "", &base_name)) {
-    LOG(FATAL) << "Internal aidl error.";
-    return cpp_usage();
-  }
-  auto pos =  base_name.rfind(OS_PATH_SEPARATOR);
-  if (pos != string::npos) {
-    base_name = base_name.substr(pos + 1);
-  }
-  // If the .aidl file is named something like ITopic.aidl, strip off
-  // the 'I' so that we can generate BpTopic and BnTopic.
-  if (base_name.length() > 2 &&
-      isupper(base_name[0]) &&
-      isupper(base_name[1])) {
-    base_name = base_name.substr(1);
-  }
-  options->output_base_name_ = base_name;
 
   return options;
-}
-
-string CppOptions::InputFileName() const {
-  return input_file_name_;
-}
-
-vector<string> CppOptions::ImportPaths() const {
-  return import_paths_;
-}
-
-string CppOptions::ClientCppFileName() const {
-  return MakeOutputName("Bp", ".cpp");
-}
-
-string CppOptions::ClientHeaderFileName() const {
-  return MakeOutputName("Bp", ".h");
-}
-
-string CppOptions::ServerCppFileName() const {
-  return MakeOutputName("Bn", ".cpp");
-}
-
-string CppOptions::ServerHeaderFileName() const {
-  return MakeOutputName("Bn", ".h");
-}
-
-string CppOptions::InterfaceCppFileName() const {
-  // Note that here we're putting back the 'I' we stripped off earlier.
-  return MakeOutputName("I", ".cpp");
-}
-
-string CppOptions::InterfaceHeaderFileName() const {
-  return MakeOutputName("I", ".h");
-}
-
-string CppOptions::MakeOutputName(const std::string& prefix,
-                                  const std::string& suffix) const {
-  if (output_base_folder_ == "-")
-    return "-";
-  return output_base_folder_ + OS_PATH_SEPARATOR +
-         prefix + output_base_name_ + suffix;
 }
 
 bool EndsWith(const string& str, const string& suffix) {

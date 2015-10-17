@@ -28,7 +28,8 @@ namespace cpp {
 
 bool GenerateCpp(const CppOptions& options,
                  const cpp::TypeNamespace& types,
-                 const AidlInterface& parsed_doc);
+                 const AidlInterface& parsed_doc,
+                 const IoDelegate& io_delegate);
 
 namespace internals {
 std::unique_ptr<Document> BuildClientSource(const TypeNamespace& types,

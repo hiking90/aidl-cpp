@@ -57,23 +57,17 @@ const char* kCompileJavaCommand[] = {
 const char kCompileCommandJavaOutput[] = "directory/ITool.java";
 
 const char kCompileDepFile[] = "-doutput.deps";
-const char kCompileCommandOutputDir[] = "output/dir";
+const char kCompileCommandHeaderDir[] = "output/dir";
+const char kCompileCommandCppOutput[] = "some/file.cpp";
 const char* kCompileCppCommand[] = {
     "aidl-cpp",
     kCompileCommandIncludePath,
     kCompileDepFile,
     kCompileCommandInput,
-    kCompileCommandOutputDir,
+    kCompileCommandHeaderDir,
+    kCompileCommandCppOutput,
     nullptr,
 };
-
-const char kClientCppPath[] = "output/dir/BpTool.cpp";
-const char kClientHeaderPath[] = "output/dir/BpTool.h";
-const char kServerCppPath[] = "output/dir/BnTool.cpp";
-const char kServerHeaderPath[] = "output/dir/BnTool.h";
-const char kInterfaceCppPath[] = "output/dir/ITool.cpp";
-const char kInterfaceHeaderPath[] = "output/dir/ITool.h";
-
 
 template <typename T>
 unique_ptr<T> GetOptions(const char* command[]) {
@@ -128,13 +122,8 @@ TEST(CppOptionsTests, ParsesCompileCpp) {
             options->import_paths_[0]);
   EXPECT_EQ(string{kCompileDepFile}.substr(2), options->dep_file_name_);
   EXPECT_EQ(kCompileCommandInput, options->InputFileName());
-
-  EXPECT_EQ(kClientCppPath, options->ClientCppFileName());
-  EXPECT_EQ(kClientHeaderPath, options->ClientHeaderFileName());
-  EXPECT_EQ(kServerCppPath, options->ServerCppFileName());
-  EXPECT_EQ(kServerHeaderPath, options->ServerHeaderFileName());
-  EXPECT_EQ(kInterfaceCppPath, options->InterfaceCppFileName());
-  EXPECT_EQ(kInterfaceHeaderPath, options->InterfaceHeaderFileName());
+  EXPECT_EQ(kCompileCommandHeaderDir, options->OutputHeaderDir());
+  EXPECT_EQ(kCompileCommandCppOutput, options->OutputCppFilePath());
 }
 
 TEST(OptionsTests, EndsWith) {

@@ -30,9 +30,11 @@
 #include "ast_cpp.h"
 #include "code_writer.h"
 #include "logging.h"
+#include "os.h"
 
 using android::base::StringPrintf;
 using android::base::Join;
+using android::base::Split;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -172,6 +174,24 @@ string ClassName(const AidlInterface& interface, ClassNames type) {
   return c_name;
 }
 
+string HeaderFile(const AidlInterface& interface,
+                  ClassNames class_type,
+                  bool use_os_sep = true) {
+  string file_path = interface.GetPackage();
+  for (char& c: file_path) {
+    if (c == '.') {
+      c = (use_os_sep) ? OS_PATH_SEPARATOR : '/';
+    }
+  }
+  if (!file_path.empty()) {
+    file_path += (use_os_sep) ? OS_PATH_SEPARATOR : '/';
+  }
+  file_path += ClassName(interface, class_type);
+  file_path += ".h";
+
+  return file_path;
+}
+
 string BuildHeaderGuard(const AidlInterface& interface,
                         ClassNames header_type) {
   string class_name = ClassName(interface, header_type);
@@ -260,14 +280,16 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
 
 unique_ptr<Document> BuildClientSource(const TypeNamespace& types,
                                        const AidlInterface& interface) {
-  const string bp_name = ClassName(interface, ClassNames::CLIENT);
-  vector<string> include_list = { bp_name + ".h", kParcelHeader };
+  vector<string> include_list = {
+      HeaderFile(interface, ClassNames::CLIENT, false),
+      kParcelHeader
+  };
   vector<unique_ptr<Declaration>> file_decls;
 
   // The constructor just passes the IBinder instance up to the super
   // class.
   file_decls.push_back(unique_ptr<Declaration>{new ConstructorImpl{
-      bp_name,
+      ClassName(interface, ClassNames::CLIENT),
       ArgList{"const android::sp<android::IBinder>& impl"},
       { "BpInterface<IPingResponder>(impl)" }}});
 
@@ -348,9 +370,12 @@ bool HandleServerTransaction(const TypeNamespace& types,
 }  // namespace
 
 unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
-                                       const AidlInterface& parsed_doc) {
-  const string bn_name = ClassName(parsed_doc, ClassNames::SERVER);
-  vector<string> include_list{bn_name + ".h", kParcelHeader};
+                                       const AidlInterface& interface) {
+  const string bn_name = ClassName(interface, ClassNames::SERVER);
+  vector<string> include_list{
+      HeaderFile(interface, ClassNames::SERVER, false),
+      kParcelHeader
+  };
   unique_ptr<MethodImpl> on_transact{new MethodImpl{
       kAndroidStatusLiteral, bn_name, "onTransact",
       ArgList{{"uint32_t code",
@@ -368,7 +393,7 @@ unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
   on_transact->GetStatementBlock()->AddStatement(s);
 
   // The switch statement has a case statement for each transaction code.
-  for (const auto& method : parsed_doc.GetMethods()) {
+  for (const auto& method : interface.GetMethods()) {
     StatementBlock* b = s->AddCase("Call::" + UpperCase(method->GetName()));
     if (!b) { return nullptr; }
 
@@ -390,19 +415,20 @@ unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
 }
 
 unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& /* types */,
-                                          const AidlInterface& parsed_doc) {
-  const string i_name = ClassName(parsed_doc, ClassNames::INTERFACE);
-  const string bp_name = ClassName(parsed_doc, ClassNames::CLIENT);
-  vector<string> include_list{i_name + ".h", bp_name + ".h"};
+                                          const AidlInterface& interface) {
+  vector<string> include_list{
+      HeaderFile(interface, ClassNames::INTERFACE, false),
+      HeaderFile(interface, ClassNames::CLIENT, false),
+  };
 
-  string fq_name = i_name;
-  if (!parsed_doc.GetPackage().empty()) {
-    fq_name = StringPrintf("%s.%s", parsed_doc.GetPackage().c_str(), i_name.c_str());
+  string fq_name = ClassName(interface, ClassNames::INTERFACE);
+  if (!interface.GetPackage().empty()) {
+    fq_name = interface.GetPackage() + "." + fq_name;
   }
 
   unique_ptr<ConstructorDecl> meta_if{new ConstructorDecl{
       "IMPLEMENT_META_INTERFACE",
-      ArgList{vector<string>{ClassName(parsed_doc, ClassNames::BASE),
+      ArgList{vector<string>{ClassName(interface, ClassNames::BASE),
                              '"' + fq_name + '"'}}}};
 
   return unique_ptr<Document>{new CppSource{
@@ -445,7 +471,7 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
       {kIBinderHeader,
        kIInterfaceHeader,
        "utils/Errors.h",
-       i_name + ".h"},
+       HeaderFile(interface, ClassNames::INTERFACE, false)},
       NestInNamespaces(std::move(bp_class))}};
 }
 
@@ -476,7 +502,7 @@ unique_ptr<Document> BuildServerHeader(const TypeNamespace& /* types */,
   return unique_ptr<Document>{new CppHeader{
       BuildHeaderGuard(interface, ClassNames::SERVER),
       {"binder/IInterface.h",
-       i_name + ".h"},
+       HeaderFile(interface, ClassNames::INTERFACE, false)},
       NestInNamespaces(std::move(bn_class))}};
 }
 
@@ -522,12 +548,35 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
       NestInNamespaces(std::move(if_class))}};
 }
 
-bool GenerateCppForFile(const std::string& name, unique_ptr<Document> doc) {
-  if (!doc) {
+bool WriteHeader(const CppOptions& options,
+                 const TypeNamespace& types,
+                 const AidlInterface& interface,
+                 const IoDelegate& io_delegate,
+                 ClassNames header_type) {
+  unique_ptr<Document> header;
+  switch (header_type) {
+    case ClassNames::INTERFACE:
+      header = BuildInterfaceHeader(types, interface);
+      break;
+    case ClassNames::CLIENT:
+      header = BuildClientHeader(types, interface);
+      break;
+    case ClassNames::SERVER:
+      header = BuildServerHeader(types, interface);
+      break;
+    default:
+      LOG(FATAL) << "aidl internal error";
+  }
+  if (!header) {
+    LOG(ERROR) << "aidl internal error: Failed to generate header.";
     return false;
   }
-  unique_ptr<CodeWriter> writer = GetFileWriter(name);
-  doc->Write(writer.get());
+
+  // TODO(wiley): b/25026025 error checking for file I/O
+  header->Write(io_delegate.GetCodeWriter(
+      options.OutputHeaderDir() + OS_PATH_SEPARATOR +
+      HeaderFile(interface, header_type)).get());
+
   return true;
 }
 
@@ -537,23 +586,40 @@ using namespace internals;
 
 bool GenerateCpp(const CppOptions& options,
                  const TypeNamespace& types,
-                 const AidlInterface& parsed_doc) {
-  bool success = true;
+                 const AidlInterface& interface,
+                 const IoDelegate& io_delegate) {
+  auto interface_src = BuildInterfaceSource(types, interface);
+  auto client_src = BuildClientSource(types, interface);
+  auto server_src = BuildServerSource(types, interface);
 
-  success &= GenerateCppForFile(options.ClientCppFileName(),
-                                BuildClientSource(types, parsed_doc));
-  success &= GenerateCppForFile(options.ClientHeaderFileName(),
-                                BuildClientHeader(types, parsed_doc));
-  success &= GenerateCppForFile(options.ServerCppFileName(),
-                                BuildServerSource(types, parsed_doc));
-  success &= GenerateCppForFile(options.ServerHeaderFileName(),
-                                BuildServerHeader(types, parsed_doc));
-  success &= GenerateCppForFile(options.InterfaceCppFileName(),
-                                BuildInterfaceSource(types, parsed_doc));
-  success &= GenerateCppForFile(options.InterfaceHeaderFileName(),
-                                BuildInterfaceHeader(types, parsed_doc));
+  if (!interface_src || !client_src || !server_src) {
+    return false;
+  }
 
-  return success;
+  if (!io_delegate.CreatedNestedDirs(options.OutputHeaderDir(),
+                                     Split(interface.GetPackage(), "."))) {
+    LOG(ERROR) << "Failed to create directory structure for headers.";
+    return false;
+  }
+
+  if (!WriteHeader(options, types, interface, io_delegate,
+                   ClassNames::INTERFACE) ||
+      !WriteHeader(options, types, interface, io_delegate,
+                   ClassNames::CLIENT) ||
+      !WriteHeader(options, types, interface, io_delegate,
+                   ClassNames::SERVER)) {
+    return false;
+  }
+
+  // TODO(wiley): b/25026025 error checking for file I/O.
+  //              If it fails, we should remove all the partial results.
+  unique_ptr<CodeWriter> writer = io_delegate.GetCodeWriter(
+      options.OutputCppFilePath());
+  interface_src->Write(writer.get());
+  client_src->Write(writer.get());
+  server_src->Write(writer.get());
+
+  return true;
 }
 
 }  // namespace cpp

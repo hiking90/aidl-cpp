@@ -21,6 +21,9 @@
 
 #include <memory>
 #include <string>
+#include <vector>
+
+#include "code_writer.h"
 
 namespace android {
 namespace aidl {
@@ -37,6 +40,13 @@ class IoDelegate {
       const std::string& content_suffix = "") const;
 
   virtual bool FileIsReadable(const std::string& path) const;
+
+  virtual bool CreatedNestedDirs(
+      const std::string& base_dir,
+      const std::vector<std::string>& nested_subdirs) const;
+
+  virtual std::unique_ptr<CodeWriter> GetCodeWriter(
+      const std::string& file_path) const;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(IoDelegate);
