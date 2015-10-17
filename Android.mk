@@ -109,3 +109,29 @@ include $(BUILD_HOST_NATIVE_TEST)
 endif # HOST_OS == linux
 
 endif # No TARGET_BUILD_APPS or TARGET_BUILD_PDK
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := hellod
+LOCAL_C_INCLUDES := tests/ping_responder
+LOCAL_SRC_FILES := \
+    tests/ping_responder/aidl/android/os/IPingResponder.aidl \
+    tests/ping_responder/hellod.cpp
+LOCAL_SHARED_LIBRARIES := \
+    libbinder \
+    liblog \
+    libutils
+LOCAL_CFLAGS := -Wall -Wextra -Werror
+include $(BUILD_EXECUTABLE)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := helloc
+LOCAL_C_INCLUDES := tests/ping_responder
+LOCAL_SRC_FILES := \
+    tests/ping_responder/aidl/android/os/IPingResponder.aidl \
+    tests/ping_responder/helloc.cpp
+LOCAL_SHARED_LIBRARIES := \
+    libbinder \
+    liblog \
+    libutils
+LOCAL_CFLAGS := -Wall -Wextra -Werror
+include $(BUILD_EXECUTABLE)
