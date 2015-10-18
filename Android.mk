@@ -85,10 +85,10 @@ LOCAL_SRC_FILES := \
     ast_java_unittest.cpp \
     generate_cpp_unittest.cpp \
     options_unittest.cpp \
-    test_main.cpp \
     tests/end_to_end_tests.cpp \
     tests/example_interface_test_data.cpp \
     tests/fake_io_delegate.cpp \
+    tests/main.cpp \
     tests/test_util.cpp \
     type_cpp_unittest.cpp \
     type_java_unittest.cpp \
