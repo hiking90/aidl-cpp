@@ -80,10 +80,14 @@ ArgList BuildArgList(const TypeNamespace& types,
       // names that match the .aidl specification.
       const Type* type = types.Find(a->GetType().GetName());
 
-      literal = StringPrintf(
-          "%s%s %s", type->CppType().c_str(),
-          (a->IsOut()) ? "*" : "",
-          a->GetName().c_str());
+      literal = type->CppType(a->GetType().IsArray());
+
+      if (a->IsOut())
+        literal += "*";
+      else if (a->GetType().IsArray())
+        literal = "const " + literal + "&";
+
+      literal += " " + a->GetName();
     } else {
       if (a->IsOut()) { literal = "&"; }
       literal += BuildVarName(*a);
@@ -97,7 +101,8 @@ ArgList BuildArgList(const TypeNamespace& types,
     string literal;
     if (for_declaration) {
       literal = StringPrintf(
-          "%s* %s", return_type->CppType().c_str(), kReturnVarName);
+          "%s* %s", return_type->CppType(false /* not array */).c_str(),
+          kReturnVarName);
     } else {
       literal = string{"&"} + kReturnVarName;
     }
@@ -155,7 +160,9 @@ bool DeclareLocalVariable(const TypeNamespace& types, const AidlArgument& a,
   const Type* cpp_type = types.Find(a.GetType().GetName());
   if (!cpp_type) { return false; }
 
-  b->AddLiteral(cpp_type->CppType() + " " + BuildVarName(a));
+  string type = cpp_type->CppType(a.GetType().IsArray());
+
+  b->AddLiteral(type + " " + BuildVarName(a));
   return true;
 }
 
@@ -242,7 +249,10 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
   //     status = data.WriteInt32(in_param_name);
   //     if (status != android::OK) { return status; }
   for (const AidlArgument* a : method.GetInArguments()) {
-    string method = types.Find(a->GetType().GetName())->WriteToParcelMethod();
+    string method =
+      types.Find(a->GetType().GetName())
+        ->WriteToParcelMethod(a->GetType().IsArray());
+
     string var_name = ((a->IsOut()) ? "*" : "") + a->GetName();
     b->AddStatement(new Assignment(
         "status",
@@ -262,7 +272,7 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
   // If the method is expected to return something, read it first by convention.
   const Type* return_type = types.Find(method.GetType().GetName());
   if (return_type != types.VoidType()) {
-    string method = return_type->ReadFromParcelMethod();
+    string method = return_type->ReadFromParcelMethod(false);
     b->AddStatement(new Assignment(
         "status",
         new MethodCall("reply." + method, ArgList(kReturnVarName))));
@@ -273,7 +283,10 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
     // Deserialization looks roughly like:
     //     status = reply.ReadInt32(out_param_name);
     //     if (status != android::OK) { return status; }
-    string method = types.Find(a->GetType().GetName())->ReadFromParcelMethod();
+    string method =
+      types.Find(a->GetType().GetName())
+        ->ReadFromParcelMethod(a->GetType().IsArray());
+
     b->AddStatement(new Assignment(
         "status",
         new MethodCall("reply." + method, ArgList(a->GetName()))));
@@ -329,7 +342,8 @@ bool HandleServerTransaction(const TypeNamespace& types,
   const Type* return_type = types.Find(method.GetType().GetName());
   if (return_type != types.VoidType()) {
     b->AddLiteral(StringPrintf(
-        "%s %s", return_type->CppType().c_str(), kReturnVarName));
+        "%s %s", return_type->CppType(false /* not array */).c_str(),
+        kReturnVarName));
   }
 
   // Deserialize each "in" parameter to the transaction.
@@ -338,9 +352,11 @@ bool HandleServerTransaction(const TypeNamespace& types,
     //     status = data.ReadInt32(&in_param_name);
     //     if (status != android::OK) { break; }
     const Type* type = types.Find(a->GetType().GetName());
+    string readMethod = type->ReadFromParcelMethod(a->GetType().IsArray());
+
     b->AddStatement(new Assignment{
         "status",
-        new MethodCall{"data." + type->ReadFromParcelMethod(),
+        new MethodCall{"data." + readMethod,
                        "&" + BuildVarName(*a)}});
     b->AddLiteral(kStatusOkOrBreakCheck, false /* no semicolon */);
   }
@@ -352,9 +368,12 @@ bool HandleServerTransaction(const TypeNamespace& types,
           BuildArgList(types, method, false /* not for method decl */)}});
   b->AddLiteral(kStatusOkOrBreakCheck, false /* no semicolon */);
 
+  string writeMethod =
+    return_type->WriteToParcelMethod(method.GetType().IsArray());
+
   // If we have a return value, write it first.
   if (return_type != types.VoidType()) {
-    string method = "reply->" + return_type->WriteToParcelMethod();
+    string method = "reply->" + writeMethod;
     b->AddStatement(new Assignment{
         "status", new MethodCall{method, ArgList{kReturnVarName}}});
     b->AddLiteral(kStatusOkOrBreakCheck, false /* no semicolon */);
@@ -366,9 +385,11 @@ bool HandleServerTransaction(const TypeNamespace& types,
     //     status = data.WriteInt32(out_param_name);
     //     if (status != android::OK) { break; }
     const Type* type = types.Find(a->GetType().GetName());
+    string writeMethod = type->WriteToParcelMethod(a->GetType().IsArray());
+
     b->AddStatement(new Assignment{
         "status",
-        new MethodCall{"reply->" + type->WriteToParcelMethod(),
+        new MethodCall{"reply->" + writeMethod,
                        BuildVarName(*a)}});
     b->AddLiteral(kStatusOkOrBreakCheck, false /* no semicolon */);
   }
@@ -525,6 +546,8 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
       const std::string& header = type->Header();
       if (! header.empty())
         includes.insert(header);
+      if (argument->GetType().IsArray())
+        includes.insert("vector");
     }
 
     const Type* type = types.Find(method->GetType().GetName());

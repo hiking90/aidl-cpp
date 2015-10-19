@@ -36,18 +36,25 @@ class Type : public ValidatableType {
        const std::string& cpp_type,
        const std::string& read_method,
        const std::string& write_method);
+  Type(const std::string& header,
+       const std::string& aidl_type,
+       const std::string& cpp_type,
+       const std::string& read_method,
+       const std::string& write_method,
+       const std::string& read_array_method,
+       const std::string& write_array_method);
   virtual ~Type() = default;
 
   // overrides of ValidatableType
-  bool CanBeArray() const override;
+  bool CanBeArray() const;
   bool CanBeOutParameter() const override;
   bool CanWriteToParcel() const override;
 
   const std::string& AidlType() const;
-  const std::string& CppType() const;
+  std::string CppType(bool is_array) const;
   const std::string& Header() const;
-  const std::string& ReadFromParcelMethod() const;
-  const std::string& WriteToParcelMethod() const;
+  const std::string& ReadFromParcelMethod(bool is_array) const;
+  const std::string& WriteToParcelMethod(bool is_array) const;
 
  private:
   // |header| is the header we must include to use this type
@@ -58,6 +65,8 @@ class Type : public ValidatableType {
   const std::string cpp_type_;
   const std::string parcel_read_method_;
   const std::string parcel_write_method_;
+  const std::string parcel_read_array_method_;
+  const std::string parcel_write_array_method_;
 
   DISALLOW_COPY_AND_ASSIGN(Type);
 };  // class Type

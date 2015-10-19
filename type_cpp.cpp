@@ -61,7 +61,6 @@ class VoidType : public Type {
  public:
   VoidType() : Type("", "void", "void", "XXX", "XXX") {}
   virtual ~VoidType() = default;
-  bool CanBeArray() const override { return false; }
   bool CanBeOutParameter() const override { return false; }
   bool CanWriteToParcel() const override { return false; }
 };  // class VoidType
@@ -73,42 +72,81 @@ Type::Type(const string& header,
            const string& cpp_type,
            const string& read_method,
            const string& write_method)
+    : Type(header, aidl_type, cpp_type, read_method, write_method, "", "") {}
+
+Type::Type(const string& header,
+           const string& aidl_type,
+           const string& cpp_type,
+           const string& read_method,
+           const string& write_method,
+           const string& read_array_method,
+           const string& write_array_method)
     : header_(header),
       aidl_type_(aidl_type),
       cpp_type_(cpp_type),
       parcel_read_method_(read_method),
-      parcel_write_method_(write_method) {
-}
+      parcel_write_method_(write_method),
+      parcel_read_array_method_(read_array_method),
+      parcel_write_array_method_(write_array_method) {}
 
-bool Type::CanBeArray() const { return false; }
+bool Type::CanBeArray() const { return ! parcel_read_array_method_.empty(); }
 bool Type::CanBeOutParameter() const { return false; }
 bool Type::CanWriteToParcel() const { return true; }
 const string& Type::AidlType() const { return aidl_type_; }
 const string& Type::Header() const { return header_; }
-const string& Type::CppType() const { return cpp_type_; }
-const string& Type::ReadFromParcelMethod() const { return parcel_read_method_; }
-const string& Type::WriteToParcelMethod() const { return parcel_write_method_; }
+
+string Type::CppType(bool is_array) const {
+  if (is_array) {
+    return "std::vector<" + cpp_type_ + ">";
+  } else {
+    return cpp_type_;
+  }
+}
+
+const string& Type::ReadFromParcelMethod(bool is_array) const {
+  if (is_array) {
+    return parcel_read_array_method_;
+  } else {
+    return parcel_read_method_;
+  }
+}
+
+const string& Type::WriteToParcelMethod(bool is_array) const {
+  if (is_array) {
+    return parcel_write_array_method_;
+  } else {
+    return parcel_write_method_;
+  }
+}
 
 TypeNamespace::TypeNamespace() {
   types_.emplace_back(
-      new Type("cstdint", "byte", "int8_t", "readByte", "writeByte"));
+      new Type("cstdint", "byte", "int8_t", "readByte", "writeByte",
+               "readByteVector", "writeByteVector"));
 
   types_.emplace_back(
-      new Type("cstdint", "int", "int32_t", "readInt32", "writeInt32"));
+      new Type("cstdint", "int", "int32_t", "readInt32", "writeInt32",
+               "readInt32Vector", "writeInt32Vector"));
   types_.emplace_back(
-      new Type("cstdint", "long", "int64_t", "readInt64", "writeInt64"));
+      new Type("cstdint", "long", "int64_t", "readInt64", "writeInt64",
+               "readInt64Vector", "writeInt64Vector"));
   types_.emplace_back(
-      new Type("", "float", "float", "readFloat", "writeFloat"));
+      new Type("", "float", "float", "readFloat", "writeFloat",
+               "readFloatVector", "writeFloatVector"));
   types_.emplace_back(
-      new Type("", "double", "double", "readDouble", "writeDouble"));
+      new Type("", "double", "double", "readDouble", "writeDouble",
+               "readDoubleVector", "writeDoubleVector"));
   types_.emplace_back(
-      new Type("", "boolean", "bool", "readBool", "writeBool"));
+      new Type("", "boolean", "bool", "readBool", "writeBool",
+               "readBoolVector", "writeBoolVector"));
   // For whatever reason, char16_t does not need cstdint.
   types_.emplace_back(
-      new Type("", "char", "char16_t", "readChar", "writeChar"));
+      new Type("", "char", "char16_t", "readChar", "writeChar",
+               "readCharVector", "writeCharVector"));
   types_.emplace_back(
       new Type("utils/String16.h", "String", "android::String16",
-               "readString16", "writeString16"));
+               "readString16", "writeString16", "readString16Vector",
+               "writeString16Vector"));
 
   void_type_ = new class VoidType();
   types_.emplace_back(void_type_);
