@@ -35,6 +35,9 @@ TEST_F(CppTypeNamespaceTest, HasSomeBasicTypes) {
   EXPECT_NE(types_.Find("long"), nullptr);
   EXPECT_NE(types_.Find("float"), nullptr);
   EXPECT_NE(types_.Find("double"), nullptr);
+  EXPECT_NE(types_.Find("boolean"), nullptr);
+  EXPECT_NE(types_.Find("char"), nullptr);
+  EXPECT_NE(types_.Find("String"), nullptr);
 }
 
 }  // namespace cpp

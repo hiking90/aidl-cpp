@@ -31,7 +31,8 @@ namespace cpp {
 
 class Type : public ValidatableType {
  public:
-  Type(const std::string& aidl_type,
+  Type(const std::string& header,
+       const std::string& aidl_type,
        const std::string& cpp_type,
        const std::string& read_method,
        const std::string& write_method);
@@ -44,10 +45,13 @@ class Type : public ValidatableType {
 
   const std::string& AidlType() const;
   const std::string& CppType() const;
+  const std::string& Header() const;
   const std::string& ReadFromParcelMethod() const;
   const std::string& WriteToParcelMethod() const;
 
  private:
+  // |header| is the header we must include to use this type
+  const std::string header_;
   // |aidl_type| is what we find in the yacc generated AST (e.g. "int").
   const std::string aidl_type_;
   // |cpp_type| is what we use in the generated C++ code (e.g. "int32_t").
