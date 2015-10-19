@@ -296,6 +296,18 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
                      ArgList(args))));
   b->AddStatement(ReturnOnStatusNotOk());
 
+  // Strip off the exception header and fail if we see a remote exception.
+  // if (reply.readExceptionCode()) {
+  //   status = android::FAILED_TRANSACTION;
+  //   return status;
+  // }
+  IfStatement* exception_check = new IfStatement(
+      new LiteralExpression("reply.readExceptionCode()"));
+  b->AddStatement(exception_check);
+  exception_check->OnTrue()->AddStatement(
+      new Assignment("status", "android::FAILED_TRANSACTION"));
+  exception_check->OnTrue()->AddLiteral("return status");
+
   // If the method is expected to return something, read it first by convention.
   const Type* return_type = types.Find(method.GetType().GetName());
   if (return_type != types.VoidType()) {
@@ -395,14 +407,17 @@ bool HandleServerTransaction(const TypeNamespace& types,
           BuildArgList(types, method, false /* not for method decl */)}});
   b->AddStatement(BreakOnStatusNotOk());
 
-  string writeMethod =
-    return_type->WriteToParcelMethod(method.GetType().IsArray());
+  // Write that we encountered no exceptions during transaction handling.
+  b->AddStatement(new Assignment("status", "reply->writeNoException()"));
+  b->AddStatement(BreakOnStatusNotOk());
 
   // If we have a return value, write it first.
   if (return_type != types.VoidType()) {
-    string method = "reply->" + writeMethod;
+    string writeMethod =
+        "reply->" +
+        return_type->WriteToParcelMethod(method.GetType().IsArray());
     b->AddStatement(new Assignment{
-        "status", new MethodCall{method, ArgList{kReturnVarName}}});
+        "status", new MethodCall{writeMethod, ArgList{kReturnVarName}}});
     b->AddStatement(BreakOnStatusNotOk());
   }
 
