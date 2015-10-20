@@ -75,12 +75,6 @@ Field::Field(int m, Variable* v)
 }
 
 void
-Field::GatherTypes(set<const Type*>* types) const
-{
-    types->insert(this->variable->type);
-}
-
-void
 Field::Write(CodeWriter* to) const
 {
     if (this->comment.length() != 0) {
@@ -129,12 +123,6 @@ Variable::Variable(const Type* t, const string& n, int d)
      name(n),
      dimension(d)
 {
-}
-
-void
-Variable::GatherTypes(set<const Type*>* types) const
-{
-    types->insert(this->type);
 }
 
 void
@@ -540,26 +528,6 @@ Break::Write(CodeWriter* to) const
 }
 
 void
-Method::GatherTypes(set<const Type*>* types) const
-{
-    size_t N, i;
-
-    if (this->returnType) {
-        types->insert(this->returnType);
-    }
-
-    N = this->parameters.size();
-    for (i=0; i<N; i++) {
-        this->parameters[i]->GatherTypes(types);
-    }
-
-    N = this->exceptions.size();
-    for (i=0; i<N; i++) {
-        types->insert(this->exceptions[i]);
-    }
-}
-
-void
 Method::Write(CodeWriter* to) const
 {
     size_t N, i;
@@ -606,27 +574,6 @@ Method::Write(CodeWriter* to) const
     } else {
         to->Write("\n");
         this->statements->Write(to);
-    }
-}
-
-void
-Class::GatherTypes(set<const Type*>* types) const
-{
-    int N, i;
-
-    types->insert(this->type);
-    if (this->extends != NULL) {
-        types->insert(this->extends);
-    }
-
-    N = this->interfaces.size();
-    for (i=0; i<N; i++) {
-        types->insert(this->interfaces[i]);
-    }
-
-    N = this->elements.size();
-    for (i=0; i<N; i++) {
-        this->elements[i]->GatherTypes(types);
     }
 }
 

@@ -85,8 +85,6 @@ string Type::HumanReadableKind() const {
 
 bool Type::CanBeArray() const { return false; }
 
-string Type::ImportType() const { return m_qualifiedName; }
-
 string Type::CreatorName() const { return ""; }
 
 string Type::InstantiableName() const { return QualifiedName(); }
@@ -699,8 +697,6 @@ const vector<const Type*>& GenericType::GenericArgumentTypes() const {
 }
 
 string GenericType::GenericArguments() const { return m_genericArguments; }
-
-string GenericType::ImportType() const { return m_importName; }
 
 void GenericType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                 Variable* parcel, int flags) const {
