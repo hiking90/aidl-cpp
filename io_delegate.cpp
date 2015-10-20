@@ -16,10 +16,22 @@
 
 #include "io_delegate.h"
 
+#include <cstring>
 #include <fstream>
+#include <vector>
+
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <sys/stat.h>
+#endif
+
+#include "logging.h"
+#include "os.h"
 
 using std::string;
 using std::unique_ptr;
+using std::vector;
 
 namespace android {
 namespace aidl {
@@ -55,5 +67,38 @@ bool IoDelegate::FileIsReadable(const string& path) const {
   return (0 == access(path.c_str(), R_OK));
 #endif
 }
+
+bool IoDelegate::CreatedNestedDirs(
+    const string& caller_base_dir,
+    const vector<string>& nested_subdirs) const {
+  string base_dir = caller_base_dir;
+  if (base_dir.empty()) {
+    base_dir = ".";
+  }
+  for (const string& subdir : nested_subdirs) {
+    if (base_dir[base_dir.size() - 1] != OS_PATH_SEPARATOR) {
+      base_dir += OS_PATH_SEPARATOR;
+    }
+    base_dir += subdir;
+    bool success;
+#ifdef _WIN32
+    success = _mkdir(base_dir.c_str()) == 0;
+#else
+    success = mkdir(base_dir.c_str(),
+                    S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0;
+#endif
+    if (!success && errno != EEXIST) {
+       LOG(ERROR) << "Error while creating directories: " << strerror(errno);
+       return false;
+    }
+  }
+  return true;
+}
+
+unique_ptr<CodeWriter> IoDelegate::GetCodeWriter(
+    const string& file_path) const {
+  return GetFileWriter(file_path);
+}
+
 }  // namespace android
 }  // namespace aidl
