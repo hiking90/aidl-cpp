@@ -19,6 +19,7 @@
 #include <base/files/file_path.h>
 #include <base/stringprintf.h>
 
+#include "logging.h"
 #include "os.h"
 #include "tests/test_util.h"
 
@@ -53,6 +54,20 @@ bool FakeIoDelegate::FileIsReadable(const string& path) const {
   return file_contents_.find(CleanPath(path)) != file_contents_.end();
 }
 
+bool FakeIoDelegate::CreatedNestedDirs(
+    const std::string& /* base_dir */,
+    const std::vector<std::string>& /* nested_subdirs */) const {
+  // We don't test directory creation explicitly.
+  return true;
+}
+
+std::unique_ptr<CodeWriter> FakeIoDelegate::GetCodeWriter(
+    const std::string& file_path) const {
+  written_file_contents_[file_path] = "";
+  return GetStringWriter(&written_file_contents_[file_path]);
+}
+
+
 void FakeIoDelegate::SetFileContents(const string& filename,
                                      const string& contents) {
   file_contents_[filename] = contents;
@@ -77,6 +92,15 @@ void FakeIoDelegate::AddCompoundParcelable(const string& canonical_name,
                   class_name.c_str(), subclass.c_str());
   }
   SetFileContents(rel_path.value(), contents);
+}
+
+bool FakeIoDelegate::GetWrittenContents(const string& path, string* content) {
+  const auto it = written_file_contents_.find(path);
+  if (it == written_file_contents_.end()) {
+    return false;
+  }
+  *content = it->second;
+  return true;
 }
 
 void FakeIoDelegate::AddStub(const string& canonical_name,

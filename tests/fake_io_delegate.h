@@ -35,19 +35,27 @@ class FakeIoDelegate : public IoDelegate {
   FakeIoDelegate() = default;
   virtual ~FakeIoDelegate() = default;
 
-  // Returns a unique_ptr to the contents of |filename|.
+  // Overrides from the real IoDelegate
   std::unique_ptr<std::string> GetFileContents(
       const std::string& filename,
       const std::string& append_content_suffix = "") const override;
-
   bool FileIsReadable(const std::string& path) const override;
+  bool CreatedNestedDirs(
+      const std::string& base_dir,
+      const std::vector<std::string>& nested_subdirs) const override;
+  std::unique_ptr<CodeWriter> GetCodeWriter(
+      const std::string& file_path) const override;
 
+  // Methods added to facilitate testing.
   void SetFileContents(const std::string& filename,
                        const std::string& contents);
   void AddStubParcelable(const std::string& canonical_name);
   void AddStubInterface(const std::string& canonical_name);
   void AddCompoundParcelable(const std::string& canonical_name,
                              const std::vector<std::string>& subclasses);
+  // Returns true iff we've previously written to |path|.
+  // When we return true, we'll set *contents to the written string.
+  bool GetWrittenContents(const std::string& path, std::string* content);
 
  private:
   void AddStub(const std::string& canonical_name, const char* format_str);
@@ -55,6 +63,10 @@ class FakeIoDelegate : public IoDelegate {
   std::string CleanPath(const std::string& path) const;
 
   std::map<std::string, std::string> file_contents_;
+  // Normally, writing to files leaves the IoDelegate unchanged, so
+  // GetCodeWriter is a const method.  However, for tests, we break this
+  // intentionally by storing the written strings.
+  mutable std::map<std::string, std::string> written_file_contents_;
 
   DISALLOW_COPY_AND_ASSIGN(FakeIoDelegate);
 };  // class FakeIoDelegate

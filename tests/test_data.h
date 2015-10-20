@@ -17,17 +17,25 @@
 #ifndef AIDL_TESTS_TEST_DATA_H_
 #define AIDL_TESTS_TEST_DATA_H_
 
+namespace android {
 namespace aidl {
 namespace test_data {
 
-extern const char kIExampleInterfaceClass[];
-extern const char kIExampleInterfaceContents[];
-extern const char* kIExampleInterfaceParcelables[];
-extern const char* kIExampleInterfaceInterfaces[];
+namespace example_interface {
 
-extern const char kIExampleInterfaceDeps[];
-extern const char kIExampleInterfaceJava[];
+extern const char kCanonicalName[];
+extern const char kJavaOutputPath[];
+extern const char kInterfaceDefinition[];
+extern const char* kImportedParcelables[];
+extern const char* kImportedInterfaces[];
+
+extern const char kExpectedJavaDepsOutput[];
+extern const char kExpectedJavaOutput[];
+
+}  // namespace example_interface
 
 }  // namespace test_data
 }  // namespace aidl
+}  // namespace android
+
 #endif // AIDL_TESTS_TEST_DATA_H_

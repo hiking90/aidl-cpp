@@ -20,6 +20,7 @@
 
 #include <base/logging.h>
 #include <base/files/file_path.h>
+#include <base/files/scoped_temp_dir.h>
 #include <base/files/file_util.h>
 #include <base/stringprintf.h>
 #include <gtest/gtest.h>
@@ -34,105 +35,80 @@ using android::aidl::test::CanonicalNameToPath;
 using android::aidl::test::FakeIoDelegate;
 using android::base::StringAppendF;
 using android::base::StringPrintf;
-using base::CreateDirectory;
-using base::CreateNewTempDirectory;
 using base::FilePath;
+using base::ScopedTempDir;
 using base::WriteFile;
 using std::string;
 using std::unique_ptr;
 using std::vector;
 
-using namespace aidl::test_data;
-
 namespace android {
 namespace aidl {
-namespace {
-
-const char kDiffTemplate[] = "diff -u %s %s";
-
-}  // namespace
 
 class EndToEndTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    ASSERT_TRUE(CreateNewTempDirectory(
-        string{"end_to_end_testsyyyy"}, &tmpDir_));
-    outputDir_ = tmpDir_.Append("output");
-    ASSERT_TRUE(CreateDirectory(outputDir_));
   }
 
-  virtual void TearDown() {
-    ASSERT_TRUE(DeleteFile(tmpDir_, true))
-        << "Failed to remove temp directory: " << tmpDir_.value();
-  }
-
-  void AddStubAidls(const char** parcelables, const char** interfaces,
-                    FakeIoDelegate* io_delegate) {
+  void AddStubAidls(const char** parcelables, const char** interfaces) {
     for ( ; *parcelables; ++parcelables) {
-      io_delegate->AddStubParcelable(*parcelables);
+      io_delegate_.AddStubParcelable(*parcelables);
     }
     for ( ; *interfaces; ++interfaces) {
-      io_delegate->AddStubInterface(*interfaces);
+      io_delegate_.AddStubInterface(*interfaces);
     }
   }
 
-  void CheckFileContents(const FilePath& rel_path,
+  void CheckFileContents(const string& rel_path,
                          const string& expected_content) {
-    string actual_contents;
-    FilePath actual_path = outputDir_.Append(rel_path);
-    if (!ReadFileToString(actual_path, &actual_contents)) {
-      FAIL() << "Failed to read expected output file: " << rel_path.value();
+    string actual_content;
+    ASSERT_TRUE(io_delegate_.GetWrittenContents(rel_path, &actual_content))
+        << "Expected aidl to write to " << rel_path << " but it did not.";
+
+    if (actual_content == expected_content) {
+      return;  // success!
     }
 
-    if (actual_contents != expected_content) {
-      // When the match fails, display a diff of what's wrong.  This greatly
-      // aids in debugging.
-      FilePath expected_path;
-      EXPECT_TRUE(CreateTemporaryFileInDir(tmpDir_, &expected_path));
-      WriteFile(expected_path, expected_content.c_str(),
-                expected_content.length());
-      const size_t buf_len =
-          strlen(kDiffTemplate) + actual_path.value().length() +
-          expected_path.value().length() + 1;
-      unique_ptr<char[]> diff_cmd(new char[buf_len]);
-      EXPECT_GT(snprintf(diff_cmd.get(), buf_len, kDiffTemplate,
-                         expected_path.value().c_str(),
-                         actual_path.value().c_str()), 0);
-      system(diff_cmd.get());
-      FAIL() << "Actual contents of " << rel_path.value()
-             << " did not match expected content";
-    }
+    ScopedTempDir tmp_dir;
+    ASSERT_TRUE(tmp_dir.CreateUniqueTempDir());
+    FilePath expected_path = tmp_dir.path().Append("expected");
+    FilePath actual_path = tmp_dir.path().Append("actual");
+    WriteFile(expected_path, expected_content.c_str(),
+              expected_content.length());
+    WriteFile(actual_path, actual_content.c_str(),
+              actual_content.length());
+    string diff_cmd = StringPrintf("diff -u %s %s",
+                                   expected_path.value().c_str(),
+                                   actual_path.value().c_str());
+    system(diff_cmd.c_str());
+    FAIL() << "Actual contents of " << rel_path
+           << " did not match expected content";
   }
 
-  FilePath tmpDir_;
-  FilePath outputDir_;
+  FakeIoDelegate io_delegate_;
 };
 
 TEST_F(EndToEndTest, IExampleInterface) {
-  FakeIoDelegate io_delegate;
+  using namespace ::android::aidl::test_data::example_interface;
+
   JavaOptions options;
   options.fail_on_parcelable_ = true;
   options.import_paths_.push_back("");
   options.input_file_name_ =
-      CanonicalNameToPath(kIExampleInterfaceClass, ".aidl").value();
-  options.output_file_name_for_deps_test_ =
-      CanonicalNameToPath(kIExampleInterfaceClass, ".java").value();
-  options.output_base_folder_ = outputDir_.value();
-  options.dep_file_name_ = outputDir_.Append(FilePath("test.d")).value();
+      CanonicalNameToPath(kCanonicalName, ".aidl").value();
+  options.output_file_name_ = kJavaOutputPath;
+  options.dep_file_name_ = "an/arbitrary/path/to/deps.P";
 
   // Load up our fake file system with data.
-  io_delegate.SetFileContents(options.input_file_name_,
-                              kIExampleInterfaceContents);
-  io_delegate.AddCompoundParcelable("android.test.CompoundParcelable", 
-                                    {"Subclass1", "Subclass2"});
-  AddStubAidls(kIExampleInterfaceParcelables, kIExampleInterfaceInterfaces,
-               &io_delegate);
+  io_delegate_.SetFileContents(options.input_file_name_, kInterfaceDefinition);
+  io_delegate_.AddCompoundParcelable("android.test.CompoundParcelable",
+                                     {"Subclass1", "Subclass2"});
+  AddStubAidls(kImportedParcelables, kImportedInterfaces);
 
   // Check that we parse correctly.
-  EXPECT_EQ(android::aidl::compile_aidl_to_java(options, io_delegate), 0);
-  CheckFileContents(CanonicalNameToPath(kIExampleInterfaceClass, ".java"),
-                    kIExampleInterfaceJava);
-  CheckFileContents(FilePath("test.d"), kIExampleInterfaceDeps);
+  EXPECT_EQ(android::aidl::compile_aidl_to_java(options, io_delegate_), 0);
+  CheckFileContents(kJavaOutputPath, kExpectedJavaOutput);
+  CheckFileContents(options.dep_file_name_, kExpectedJavaDepsOutput);
 }
 
 }  // namespace android
