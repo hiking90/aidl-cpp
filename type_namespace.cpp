@@ -74,7 +74,7 @@ bool TypeNamespace::IsValidReturnType(const AidlType& raw_type,
     return false;
   }
 
-  if (!return_type->CanWriteToParcel()) {
+  if (raw_type.GetName() != "void" && !return_type->CanWriteToParcel()) {
     cerr << error_prefix << "return type cannot be marshalled" << endl;
     return false;
   }

@@ -81,6 +81,7 @@ LOCAL_CFLAGS := -g -DUNIT_TEST -Wall -Werror
 # Tragically, the code is riddled with unused parameters.
 LOCAL_CLANG_CFLAGS := -Wno-unused-parameter
 LOCAL_SRC_FILES := \
+    aidl_unittest.cpp \
     ast_cpp_unittest.cpp \
     ast_java_unittest.cpp \
     generate_cpp_unittest.cpp \
