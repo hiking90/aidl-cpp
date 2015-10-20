@@ -55,6 +55,9 @@ class TypeNamespace {
   // Returns true iff this has a type for |type_name|.
   virtual bool HasType(const std::string& type_name) const;
 
+  // Returns true iff |package| is a valid package name.
+  virtual bool IsValidPackage(const std::string& package) const;
+
   // Returns true iff |raw_type| is a valid return type.
   virtual bool IsValidReturnType(const AidlType& raw_type,
                                  const std::string& filename) const;

@@ -58,6 +58,10 @@ bool TypeNamespace::HasType(const string& type_name) const {
   return GetValidatableType(type_name) != nullptr;
 }
 
+bool TypeNamespace::IsValidPackage(const string& /* package */) const {
+  return true;
+}
+
 bool TypeNamespace::IsValidReturnType(const AidlType& raw_type,
                                       const string& filename) const {
   const string error_prefix = StringPrintf(
@@ -130,7 +134,7 @@ bool TypeNamespace::IsValidArg(const AidlArgument& a,
 
   // check that the name doesn't match a keyword
   if (is_java_keyword(a.GetName().c_str())) {
-    cerr << error_prefix << "Argument name is a C++, Java, or aidl keyword"
+    cerr << error_prefix << "Argument name is a Java or aidl keyword"
          << endl;
     return false;
   }

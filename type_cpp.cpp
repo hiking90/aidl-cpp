@@ -16,15 +16,46 @@
 
 #include "type_cpp.h"
 
+#include <algorithm>
+#include <iostream>
+
+#include <base/stringprintf.h>
+#include <base/strings.h>
+
 #include "logging.h"
 
+using std::cerr;
+using std::endl;
 using std::string;
 using std::unique_ptr;
+
+using android::base::Split;
+using android::base::StringPrintf;
 
 namespace android {
 namespace aidl {
 namespace cpp {
 namespace {
+
+bool is_cpp_keyword(const std::string& str) {
+  static const std::vector<std::string> kCppKeywords{
+    "alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", "bitor",
+    "bool", "break", "case", "catch", "char", "char16_t", "char32_t", "class",
+    "compl", "concept", "const", "constexpr", "const_cast", "continue",
+    "decltype", "default", "delete", "do", "double", "dynamic_cast", "else",
+    "enum", "explicit", "export", "extern", "false", "float", "for", "friend",
+    "goto", "if", "inline", "int", "long", "mutable", "namespace", "new",
+    "noexcept", "not", "not_eq", "nullptr", "operator", "or", "or_eq",
+    "private", "protected", "public", "register", "reinterpret_cast",
+    "requires", "return", "short", "signed", "sizeof", "static",
+    "static_assert", "static_cast", "struct", "switch", "template", "this",
+    "thread_local", "throw", "true", "try", "typedef", "typeid", "typename",
+    "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t",
+    "while", "xor", "xor_eq",
+  };
+  return std::find(kCppKeywords.begin(), kCppKeywords.end(), str) !=
+      kCppKeywords.end();
+}
 
 class VoidType : public Type {
  public:
@@ -83,23 +114,58 @@ TypeNamespace::TypeNamespace() {
   types_.emplace_back(void_type_);
 }
 
-bool TypeNamespace::AddParcelableType(const AidlParcelable* p,
-                                      const string& filename) {
+bool TypeNamespace::AddParcelableType(const AidlParcelable* /* p */,
+                                      const string& /* filename */) {
   // TODO Support parcelables b/23600712
   LOG(ERROR) << "Passing parcelables in unimplemented in C++ generation.";
   return true;
 }
 
-bool TypeNamespace::AddBinderType(const AidlInterface* b,
-                                  const string& filename) {
+bool TypeNamespace::AddBinderType(const AidlInterface* /* b */,
+                                  const string& /* filename */) {
   // TODO Support passing binders b/24470875
   LOG(ERROR) << "Passing binders is unimplemented in C++ generation.";
   return true;
 }
 
-bool TypeNamespace::AddContainerType(const string& type_name) {
+bool TypeNamespace::AddContainerType(const string& /* type_name */) {
   // TODO Support container types b/24470786
   LOG(ERROR) << "Passing container is unimplemented in C++ generation.";
+  return true;
+}
+
+bool TypeNamespace::IsValidPackage(const string& package) const {
+  if (package.empty()) {
+    return false;
+  }
+
+  auto pieces = Split(package, ".");
+  for (const string& piece : pieces) {
+    if (is_cpp_keyword(piece)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool TypeNamespace::IsValidArg(const AidlArgument& a,
+                               int arg_index,
+                               const std::string& filename) const {
+  if (!::android::aidl::TypeNamespace::IsValidArg(a, arg_index, filename)) {
+    return false;
+  }
+  const string error_prefix = StringPrintf(
+      "In file %s line %d parameter %s (%d):\n    ",
+      filename.c_str(), a.GetLine(), a.GetName().c_str(), arg_index);
+
+  // check that the name doesn't match a keyword
+  if (is_cpp_keyword(a.GetName().c_str())) {
+    cerr << error_prefix << "Argument name is a C++ keyword"
+         << endl;
+    return false;
+  }
+
   return true;
 }
 

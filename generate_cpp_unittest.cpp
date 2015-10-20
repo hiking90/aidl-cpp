@@ -49,7 +49,7 @@ R"(#include <android/os/BpPingResponder.h>
 
 namespace android {
 
-namespace generated {
+namespace os {
 
 BpPingResponder::BpPingResponder(const android::sp<android::IBinder>& impl)
     : BpInterface<IPingResponder>(impl){
@@ -68,7 +68,7 @@ if (status != android::OK) { return status; }
 return status;
 }
 
-}  // namespace generated
+}  // namespace os
 
 }  // namespace android
 )";
@@ -82,14 +82,14 @@ R"(#ifndef AIDL_GENERATED_ANDROID_OS_BN_PING_RESPONDER_H_
 
 namespace android {
 
-namespace generated {
+namespace os {
 
 class BnPingResponder : public android::BnInterface<IPingResponder> {
 public:
 android::status_t onTransact(uint32_t code, const android::Parcel& data, android::Parcel* reply, uint32_t flags = 0) override;
 };  // class BnPingResponder
 
-}  // namespace generated
+}  // namespace os
 
 }  // namespace android
 
@@ -101,7 +101,7 @@ R"(#include <android/os/BnPingResponder.h>
 
 namespace android {
 
-namespace generated {
+namespace os {
 
 android::status_t BnPingResponder::onTransact(uint32_t code, const android::Parcel& data, android::Parcel* reply, uint32_t flags) {
 android::status_t status;
@@ -127,7 +127,7 @@ break;
 return status;
 }
 
-}  // namespace generated
+}  // namespace os
 
 }  // namespace android
 )";
@@ -143,7 +143,7 @@ R"(#ifndef AIDL_GENERATED_ANDROID_OS_BP_PING_RESPONDER_H_
 
 namespace android {
 
-namespace generated {
+namespace os {
 
 class BpPingResponder : public android::BpInterface<IPingResponder> {
 public:
@@ -152,7 +152,7 @@ virtual ~BpPingResponder() = default;
 android::status_t Ping(android::String16 token, int32_t* _aidl_return) override;
 };  // class BpPingResponder
 
-}  // namespace generated
+}  // namespace os
 
 }  // namespace android
 
@@ -169,7 +169,7 @@ R"(#ifndef AIDL_GENERATED_ANDROID_OS_I_PING_RESPONDER_H_
 
 namespace android {
 
-namespace generated {
+namespace os {
 
 class IPingResponder : public android::IInterface {
 public:
@@ -180,7 +180,7 @@ enum Call {
 };
 };  // class IPingResponder
 
-}  // namespace generated
+}  // namespace os
 
 }  // namespace android
 
@@ -192,11 +192,11 @@ R"(#include <android/os/IPingResponder.h>
 
 namespace android {
 
-namespace generated {
+namespace os {
 
 IMPLEMENT_META_INTERFACE(PingResponder, "android.os.IPingResponder");
 
-}  // namespace generated
+}  // namespace os
 
 }  // namespace android
 )";
