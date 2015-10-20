@@ -17,6 +17,10 @@
 #ifndef AIDL_AIDL_H_
 #define AIDL_AIDL_H_
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "aidl_language.h"
 #include "io_delegate.h"
 #include "options.h"
@@ -39,7 +43,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
                            const std::string& input_file_name,
                            const IoDelegate& io_delegate,
                            TypeNamespace* types,
-                           AidlInterface** returned_interface,
+                           std::unique_ptr<AidlInterface>* returned_interface,
                            std::vector<std::unique_ptr<AidlImport>>* returned_imports);
 
 } // namespace internals

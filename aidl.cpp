@@ -237,7 +237,6 @@ int check_types(const string& filename,
 }
 
 void generate_dep_file(const JavaOptions& options,
-                       const AidlDocumentItem* items,
                        const std::vector<std::unique_ptr<AidlImport>>& imports,
                        const IoDelegate& io_delegate) {
   string fileName;
@@ -253,13 +252,9 @@ void generate_dep_file(const JavaOptions& options,
   }
 
 
-  if (items->item_type == INTERFACE_TYPE_BINDER) {
-    writer->Write("%s: \\\n", options.output_file_name_.c_str());
-  } else {
-    // parcelable: there's no output file.
-    writer->Write(" : \\\n");
-  }
-  writer->Write("  %s %s\n", options.input_file_name_.c_str(), imports.empty() ? "" : "\\");
+  writer->Write("%s: \\\n", options.output_file_name_.c_str());
+  writer->Write("  %s %s\n", options.input_file_name_.c_str(),
+                imports.empty() ? "" : "\\");
 
   bool first = true;
   for (const auto& import : imports) {
@@ -288,9 +283,10 @@ void generate_dep_file(const JavaOptions& options,
   }
 }
 
-string generate_outputFileName2(const JavaOptions& options,
-                                const std::string& name,
-                                const std::string& package) {
+string generate_outputFileName(const JavaOptions& options,
+                               const AidlInterface& interface) {
+    string name = interface.GetName();
+    string package = interface.GetPackage();
     string result;
 
     // create the path to the destination folder based on the
@@ -315,25 +311,6 @@ string generate_outputFileName2(const JavaOptions& options,
 
     return result;
 }
-
-string generate_outputFileName(const JavaOptions& options,
-                               const AidlDocumentItem* items) {
-    // items has already been checked to have only one interface.
-    if (items->item_type == INTERFACE_TYPE_BINDER) {
-        const AidlInterface* type = reinterpret_cast<const AidlInterface*>(items);
-
-        return generate_outputFileName2(options, type->GetName(), type->GetPackage());
-    } else if (items->item_type == USER_DATA_TYPE) {
-        const AidlParcelable* type = reinterpret_cast<const AidlParcelable*>(items);
-
-        return generate_outputFileName2(options, type->GetName(), type->GetPackage());
-    }
-
-    // I don't think we can come here, but safer than returning NULL.
-    string result;
-    return result;
-}
-
 
 void check_outputFilePath(const string& path) {
     size_t len = path.length();
@@ -481,7 +458,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
                            const std::string& input_file_name,
                            const IoDelegate& io_delegate,
                            TypeNamespace* types,
-                           AidlInterface** returned_interface,
+                           std::unique_ptr<AidlInterface>* returned_interface,
                            std::vector<std::unique_ptr<AidlImport>>* returned_imports) {
   int err = 0;
 
@@ -513,7 +490,9 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
     cerr << "aidl expects exactly one interface per input file";
     return 1;
   }
-  AidlInterface* interface = reinterpret_cast<AidlInterface*>(parsed_doc);
+  unique_ptr<AidlInterface> interface(
+      reinterpret_cast<AidlInterface*>(parsed_doc));
+
   if (!check_filename(input_file_name.c_str(), interface->GetPackage(),
                       interface->GetName(), interface->GetLine()))
     err |= 1;
@@ -569,7 +548,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
     err += 1;
   }
   // check the referenced types in parsed_doc to make sure we've imported them
-  err |= check_types(input_file_name, interface, types);
+  err |= check_types(input_file_name, interface.get(), types);
 
 
   // assign method ids and validate.
@@ -583,9 +562,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
   }
 
   if (returned_interface)
-      *returned_interface = interface;
-  else
-      delete interface;
+    *returned_interface = std::move(interface);
 
   if (returned_imports)
     p.ReleaseImports(returned_imports);
@@ -597,7 +574,7 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
 
 int compile_aidl_to_cpp(const CppOptions& options,
                         const IoDelegate& io_delegate) {
-  AidlInterface* interface = nullptr;
+  unique_ptr<AidlInterface> interface;
   std::vector<std::unique_ptr<AidlImport>> imports;
   unique_ptr<cpp::TypeNamespace> types(new cpp::TypeNamespace());
   int err = internals::load_and_validate_aidl(
@@ -619,7 +596,7 @@ int compile_aidl_to_cpp(const CppOptions& options,
 
 int compile_aidl_to_java(const JavaOptions& options,
                          const IoDelegate& io_delegate) {
-  AidlInterface* interface = nullptr;
+  unique_ptr<AidlInterface> interface;
   std::vector<std::unique_ptr<AidlImport>> imports;
   unique_ptr<java::JavaTypeNamespace> types(new java::JavaTypeNamespace());
   int err = internals::load_and_validate_aidl(
@@ -633,13 +610,12 @@ int compile_aidl_to_java(const JavaOptions& options,
   if (err != 0) {
     return err;
   }
-  AidlDocumentItem* parsed_doc = reinterpret_cast<AidlDocumentItem*>(interface);
 
   string output_file_name = options.output_file_name_;
   // if needed, generate the output file name from the base folder
   if (output_file_name.length() == 0 &&
       options.output_base_folder_.length() > 0) {
-    output_file_name = generate_outputFileName(options, parsed_doc);
+    output_file_name = generate_outputFileName(options, *interface);
   }
 
   // if we were asked to, generate a make dependency file
@@ -647,14 +623,14 @@ int compile_aidl_to_java(const JavaOptions& options,
   if (options.auto_dep_file_ || options.dep_file_name_ != "") {
     // make sure the folders of the output file all exists
     check_outputFilePath(output_file_name);
-    generate_dep_file(options, parsed_doc, imports, io_delegate);
+    generate_dep_file(options, imports, io_delegate);
   }
 
   // make sure the folders of the output file all exists
   check_outputFilePath(output_file_name);
 
   err = generate_java(output_file_name, options.input_file_name_.c_str(),
-                      interface, types.get(), io_delegate);
+                      interface.get(), types.get(), io_delegate);
 
   return err;
 }

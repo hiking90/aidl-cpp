@@ -253,14 +253,13 @@ class Parser {
 
   bool FoundNoErrors() const { return error_ == 0; }
   const std::string& FileName() const { return filename_; }
-  const std::vector<std::string>& Package() const {
-    return package_->GetTerms();
-  }
   void* Scanner() const { return scanner_; }
 
   void SetDocument(AidlDocumentItem* items) { document_ = items; };
 
   void AddImport(AidlQualifiedName* name, unsigned line);
+
+  std::vector<std::string> Package() const;
   void SetPackage(AidlQualifiedName* name) { package_.reset(name); }
 
   AidlDocumentItem* GetDocument() const { return document_; }

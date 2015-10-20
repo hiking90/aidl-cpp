@@ -218,6 +218,13 @@ void Parser::ReportError(const string& err, unsigned line) {
   error_ = 1;
 }
 
+std::vector<std::string> Parser::Package() const {
+  if (!package_) {
+    return {};
+  }
+  return package_->GetTerms();
+}
+
 void Parser::AddImport(AidlQualifiedName* name, unsigned line) {
   imports_.emplace_back(new AidlImport(this->FileName(),
                                        name->GetDotName(), line));
