@@ -26,17 +26,6 @@ using std::unique_ptr;
 namespace android {
 namespace aidl {
 namespace java {
-namespace {
-
-AidlParcelable* MakeFakeUserDataType(const std::string& package,
-                                     const std::string& class_name) {
-  // This leaks memory, like all usages of these structs.
-  // See b/24410295
-  AidlParcelable* parcl = new AidlParcelable(class_name, 0, package);
-  return parcl;
-}
-
-}  // namespace
 
 class JavaTypeNamespaceTest : public ::testing::Test {
  protected:
@@ -53,9 +42,10 @@ TEST_F(JavaTypeNamespaceTest, ContainerTypeCreation) {
   // We start with no knowledge of parcelables or lists of them.
   EXPECT_EQ(types_.Find("Foo"), nullptr);
   EXPECT_EQ(types_.Find("List<Foo>"), nullptr);
+  unique_ptr<AidlParcelable> parcelable(
+      new AidlParcelable("Foo", 0, {"a", "goog"}));
   // Add the parcelable type we care about.
-  EXPECT_TRUE(types_.AddParcelableType(MakeFakeUserDataType("a.goog", "Foo"),
-                                       __FILE__));
+  EXPECT_TRUE(types_.AddParcelableType(parcelable.get(), __FILE__));
   // Now we can find the parcelable type, but not the List of them.
   EXPECT_NE(types_.Find("Foo"), nullptr);
   EXPECT_EQ(types_.Find("List<Foo>"), nullptr);
