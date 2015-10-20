@@ -192,15 +192,31 @@ int check_types(const string& filename,
   // Has to be a pointer due to deleting copy constructor. No idea why.
   map<string, const AidlMethod*> method_names;
   for (const auto& m : c->GetMethods()) {
+    bool oneway = m->IsOneway() || c->IsOneway();
+
     if (!types->AddContainerType(m->GetType().GetName()) ||
         !types->IsValidReturnType(m->GetType(), filename)) {
       err = 1;  // return type is invalid
+    }
+
+    if (oneway && m->GetType().GetName() != "void") {
+        cerr << filename << ":" << m->GetLine()
+            << "oneway method cannot return a value: "
+            << m->GetName() << endl;
+        err = 1;
     }
 
     int index = 1;
     for (const auto& arg : m->GetArguments()) {
       if (!types->AddContainerType(arg->GetType().GetName()) ||
           !types->IsValidArg(*arg, index, filename)) {
+        err = 1;
+      }
+
+      if (oneway && arg->IsOut()) {
+        cerr << filename << ":" << m->GetLine()
+            << "oneway method cannot have out parameters: "
+            << m->GetName() << endl;
         err = 1;
       }
     }
