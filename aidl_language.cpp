@@ -6,6 +6,8 @@
 #include <string.h>
 #include <string>
 
+#include <base/strings.h>
+
 #include "aidl_language_y.hpp"
 #include "logging.h"
 
@@ -17,6 +19,7 @@ int isatty(int  fd)
 #endif
 
 using android::aidl::IoDelegate;
+using android::base::Join;
 using std::cerr;
 using std::endl;
 using std::string;
@@ -114,23 +117,27 @@ Parser::Parser(const IoDelegate& io_delegate)
 }
 
 AidlParcelable::AidlParcelable(AidlQualifiedName* name, unsigned line,
-                               const std::string& package)
+                               const std::vector<std::string>& package)
     : AidlParcelable(name->GetDotName(), line, package) {
   delete name;
 }
 
 AidlParcelable::AidlParcelable(const std::string& name, unsigned line,
-                               const std::string& package)
+                               const std::vector<std::string>& package)
     : name_(name),
       line_(line),
       package_(package) {
   item_type = USER_DATA_TYPE;
 }
 
+std::string AidlParcelable::GetPackage() const {
+  return Join(package_, '.');
+}
+
 AidlInterface::AidlInterface(const std::string& name, unsigned line,
                              const std::string& comments, bool oneway,
                              std::vector<std::unique_ptr<AidlMethod>>* methods,
-                             const std::string& package)
+                             const std::vector<std::string>& package)
     : name_(name),
       comments_(comments),
       line_(line),
@@ -139,6 +146,17 @@ AidlInterface::AidlInterface(const std::string& name, unsigned line,
       package_(package) {
   item_type = INTERFACE_TYPE_BINDER;
   delete methods;
+}
+
+std::string AidlInterface::GetPackage() const {
+  return Join(package_, '.');
+}
+
+std::string AidlInterface::GetCanonicalName() const {
+  if (package_.empty()) {
+    return GetName();
+  }
+  return GetPackage() + "." + GetName();
 }
 
 AidlQualifiedName::AidlQualifiedName(std::string term,
@@ -184,7 +202,7 @@ bool Parser::ParseFile(const string& filename) {
   // nulls at the end.
   raw_buffer_->append(2u, '\0');
   filename_ = filename;
-  package_.clear();
+  package_.reset();
   error_ = 0;
   document_ = nullptr;
 

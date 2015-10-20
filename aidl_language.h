@@ -1,6 +1,5 @@
 #ifndef AIDL_AIDL_LANGUAGE_H_
-#define AIDL_AIDL_LANGUAGE_H_
-
+#define AIDL_AIDL_LANGUAGE_H_ 
 #include <memory>
 #include <string>
 #include <vector>
@@ -172,20 +171,21 @@ class AidlQualifiedName : public AidlNode {
 class AidlParcelable : public AidlDocumentItem {
  public:
   AidlParcelable(const std::string& name, unsigned line,
-                 const std::string& package);
+                 const std::vector<std::string>& package);
   AidlParcelable(AidlQualifiedName* name, unsigned line,
-                 const std::string& package);
+                 const std::vector<std::string>& package);
   virtual ~AidlParcelable() = default;
 
   const std::string& GetName() const { return name_; }
   unsigned GetLine() const { return line_; }
-  const std::string& GetPackage() const { return package_; }
+  std::string GetPackage() const;
+  const std::vector<std::string>& GetSplitPackage() const { return package_; }
 
   AidlParcelable* next = nullptr;
  private:
   std::string name_;
   unsigned line_;
-  std::string package_;
+  const std::vector<std::string> package_;
 
   DISALLOW_COPY_AND_ASSIGN(AidlParcelable);
 };
@@ -195,7 +195,7 @@ class AidlInterface : public AidlDocumentItem {
   AidlInterface(const std::string& name, unsigned line,
                 const std::string& comments, bool oneway_,
                 std::vector<std::unique_ptr<AidlMethod>>* methods,
-                const std::string& package);
+                const std::vector<std::string>& package);
   virtual ~AidlInterface() = default;
 
   const std::string& GetName() const { return name_; }
@@ -204,8 +204,9 @@ class AidlInterface : public AidlDocumentItem {
   bool IsOneway() const { return oneway_; }
   const std::vector<std::unique_ptr<AidlMethod>>& GetMethods() const
       { return methods_; }
-  const std::string& GetPackage() const { return package_; }
-  std::string GetCanonicalName() const { return package_ + "." + name_; }
+  std::string GetPackage() const;
+  std::string GetCanonicalName() const;
+  const std::vector<std::string>& GetSplitPackage() const { return package_; }
 
  private:
   std::string name_;
@@ -213,7 +214,7 @@ class AidlInterface : public AidlDocumentItem {
   unsigned line_;
   bool oneway_;
   std::vector<std::unique_ptr<AidlMethod>> methods_;
-  std::string package_;
+  std::vector<std::string> package_;
 
   DISALLOW_COPY_AND_ASSIGN(AidlInterface);
 };
@@ -252,19 +253,20 @@ class Parser {
 
   bool FoundNoErrors() const { return error_ == 0; }
   const std::string& FileName() const { return filename_; }
-  const std::string& Package() const { return package_; }
+  const std::vector<std::string>& Package() const {
+    return package_->GetTerms();
+  }
   void* Scanner() const { return scanner_; }
 
   void SetDocument(AidlDocumentItem* items) { document_ = items; };
 
   void AddImport(AidlQualifiedName* name, unsigned line);
-  void SetPackage(AidlQualifiedName* name) {
-    package_ = name->GetDotName();
-    delete name;
-  }
+  void SetPackage(AidlQualifiedName* name) { package_.reset(name); }
 
   AidlDocumentItem* GetDocument() const { return document_; }
-  const std::vector<std::unique_ptr<AidlImport>>& GetImports() { return imports_; }
+  const std::vector<std::unique_ptr<AidlImport>>& GetImports() {
+    return imports_;
+  }
 
   void ReleaseImports(std::vector<std::unique_ptr<AidlImport>>* ret) {
       *ret = std::move(imports_);
@@ -275,7 +277,7 @@ class Parser {
   const android::aidl::IoDelegate& io_delegate_;
   int error_ = 0;
   std::string filename_;
-  std::string package_;
+  std::unique_ptr<AidlQualifiedName> package_;
   void* scanner_ = nullptr;
   AidlDocumentItem* document_ = nullptr;
   std::vector<std::unique_ptr<AidlImport>> imports_;

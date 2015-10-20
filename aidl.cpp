@@ -32,6 +32,7 @@
 #include <sys/stat.h>
 #endif
 
+#include <base/strings.h>
 
 #include "aidl_language.h"
 #include "generate_cpp.h"
@@ -48,6 +49,7 @@
 #  define O_BINARY  0
 #endif
 
+using android::base::Split;
 using std::cerr;
 using std::endl;
 using std::map;
@@ -369,15 +371,14 @@ int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
 
         sscanf(line, "%s %[^; \r\n\t];", type, fullname);
 
-        char* packagename;
         char* classname = strrchr(fullname, '.');
+        vector<string> package;
         if (classname != NULL) {
             *classname = '\0';
             classname++;
-            packagename = fullname;
+            package = Split(fullname, ".");
         } else {
             classname = fullname;
-            packagename = NULL;
         }
 
         //printf("%s:%d:...%s...%s...%s...\n", filename.c_str(), lineno,
@@ -385,12 +386,12 @@ int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
         AidlDocumentItem* doc;
 
         if (0 == strcmp("parcelable", type)) {
-            doc = new AidlParcelable(classname, lineno, packagename);
+            doc = new AidlParcelable(classname, lineno, package);
         }
         else if (0 == strcmp("interface", type)) {
             auto temp = new std::vector<std::unique_ptr<AidlMethod>>();
             doc = new AidlInterface(classname, lineno, "", false, temp,
-                                    packagename ?: "");
+                                    package);
         }
         else {
             fprintf(stderr, "%s:%d: bad type in line: %s\n",
