@@ -34,6 +34,23 @@ extern const char kExpectedJavaOutput[];
 
 }  // namespace example_interface
 
+namespace ping_responder {
+
+extern const char kCanonicalName[];
+extern const char kInterfaceDefinition[];
+
+extern const char kGenHeaderDir[];
+extern const char kGenInterfaceHeaderPath[];
+extern const char kGenClientHeaderPath[];
+extern const char kGenServerHeaderPath[];
+
+extern const char kExpectedCppOutput[];
+extern const char kExpectedIHeaderOutput[];
+extern const char kExpectedBpHeaderOutput[];
+extern const char kExpectedBnHeaderOutput[];
+
+}  // namespace ping_responder
+
 }  // namespace test_data
 }  // namespace aidl
 }  // namespace android

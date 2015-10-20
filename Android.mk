@@ -86,9 +86,10 @@ LOCAL_SRC_FILES := \
     generate_cpp_unittest.cpp \
     options_unittest.cpp \
     tests/end_to_end_tests.cpp \
-    tests/example_interface_test_data.cpp \
     tests/fake_io_delegate.cpp \
     tests/main.cpp \
+    tests/test_data_example_interface.cpp \
+    tests/test_data_ping_responder.cpp \
     tests/test_util.cpp \
     type_cpp_unittest.cpp \
     type_java_unittest.cpp \
