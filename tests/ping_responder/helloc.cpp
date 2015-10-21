@@ -44,7 +44,7 @@ const char kServiceName[] = "android.os.IPingResponder";
 
 }  // namespace
 
-int main(int argc, char *argv[]) {
+int main(int /* argc */, char * /* argv */ []) {
   sp<IPingResponder> service;
   cout << "helloc: Retrieving ping service binder" << endl;
   status_t status = getService(String16(kServiceName), &service);
