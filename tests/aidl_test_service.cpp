@@ -28,7 +28,7 @@
 
 // Used implicitly.
 #undef LOG_TAG
-#define LOG_TAG "hellod"
+#define LOG_TAG "aidl_native_service"
 
 // libutils:
 using android::Looper;
@@ -64,10 +64,10 @@ class BinderCallback : public LooperCallback {
   }
 };
 
-class HelloService : public BnPingResponder {
+class NativeService : public BnPingResponder {
  public:
-  HelloService() {}
-  ~HelloService() override {}
+  NativeService() {}
+  ~NativeService() override {}
 
   int Run() {
     sp<Looper> looper(Looper::prepare(0 /* opts */));
@@ -109,6 +109,6 @@ class HelloService : public BnPingResponder {
 }  // namespace android
 
 int main(int /* argc */, char* /* argv */ []) {
-  android::generated::HelloService service;
+  android::generated::NativeService service;
   return service.Run();
 }

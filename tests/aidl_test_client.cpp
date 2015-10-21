@@ -42,30 +42,44 @@ namespace {
 
 const char kServiceName[] = "android.os.IPingResponder";
 
+bool ConfirmBasicPing(const sp<IPingResponder>& service) {
+  cout << "Confirming basic ping functionality." << endl;
+  const int32_t kIncrement = 1 << 20;
+  for (int32_t i = 0; i < 3; ++i) {
+    const int32_t token = -kIncrement + i * kIncrement;
+    int32_t reply = -1;
+    if (service->Ping(token, &reply) != OK) {
+      cerr << "Failed to ping server with token=" << token << endl;
+      return false;
+    }
+    if (token != reply) {
+      cerr << "Server replied to token=" << token
+           << " with reply=" << reply << endl;
+      return false;
+    }
+  }
+  return true;
+}
+
+bool GetService(sp<IPingResponder>* service) {
+  cout << "Retrieving ping service binder" << endl;
+  status_t status = getService(String16(kServiceName), service);
+  if (status != OK) {
+    cerr << "Failed to get service binder: '" << kServiceName
+         << "' status=" << status << endl;
+    return false;
+  }
+  return true;
+}
+
 }  // namespace
 
 int main(int /* argc */, char * /* argv */ []) {
   sp<IPingResponder> service;
-  cout << "helloc: Retrieving ping service binder" << endl;
-  status_t status = getService(String16(kServiceName), &service);
-  if (status != OK) {
-    cerr << "Failed to get service binder: '" << kServiceName
-         << "' status=" << status << endl;
-    return 1;
-  }
 
-  int32_t token = 1;
-  while (true) {
-    int32_t reply = -1;
-    cout << "Pinging service with " << token << "...";
-    status_t status = service->Ping(token, &reply);
-    if (status == OK)
-      cout << "received " << reply << endl;
-    else
-      cout << "got error " << status << endl;
-    token++;
-    sleep(1);
-  }
+  if (!GetService(&service)) return 1;
+
+  if (!ConfirmBasicPing(service)) return 1;
 
   return 0;
 }
