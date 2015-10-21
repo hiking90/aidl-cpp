@@ -35,7 +35,7 @@ namespace aidl {
 namespace cpp {
 namespace {
 
-const char kTrivialInterfaceAIDL[] =
+const string kPrimitiveInterfaceAIDL =
 R"(
 package android.os;
 
@@ -43,7 +43,7 @@ interface IPingResponder {
   int Ping(String token);
 })";
 
-const char kExpectedTrivialClientSourceOutput[] =
+const char kExpectedPrimitiveClientSourceOutput[] =
 R"(#include <android/os/BpPingResponder.h>
 #include <binder/Parcel.h>
 
@@ -73,7 +73,7 @@ return status;
 }  // namespace android
 )";
 
-const char kExpectedTrivialServerHeaderOutput[] =
+const char kExpectedPrimitiveServerHeaderOutput[] =
 R"(#ifndef AIDL_GENERATED_ANDROID_OS_BN_PING_RESPONDER_H_
 #define AIDL_GENERATED_ANDROID_OS_BN_PING_RESPONDER_H_
 
@@ -95,7 +95,7 @@ android::status_t onTransact(uint32_t code, const android::Parcel& data, android
 
 #endif  // AIDL_GENERATED_ANDROID_OS_BN_PING_RESPONDER_H_)";
 
-const char kExpectedTrivialServerSourceOutput[] =
+const char kExpectedPrimitiveServerSourceOutput[] =
 R"(#include <android/os/BnPingResponder.h>
 #include <binder/Parcel.h>
 
@@ -132,7 +132,7 @@ return status;
 }  // namespace android
 )";
 
-const char kExpectedTrivialClientHeaderOutput[] =
+const char kExpectedPrimitiveClientHeaderOutput[] =
 R"(#ifndef AIDL_GENERATED_ANDROID_OS_BP_PING_RESPONDER_H_
 #define AIDL_GENERATED_ANDROID_OS_BP_PING_RESPONDER_H_
 
@@ -158,7 +158,7 @@ android::status_t Ping(android::String16 token, int32_t* _aidl_return) override;
 
 #endif  // AIDL_GENERATED_ANDROID_OS_BP_PING_RESPONDER_H_)";
 
-const char kExpectedTrivialInterfaceHeaderOutput[] =
+const char kExpectedPrimitiveInterfaceHeaderOutput[] =
 R"(#ifndef AIDL_GENERATED_ANDROID_OS_I_PING_RESPONDER_H_
 #define AIDL_GENERATED_ANDROID_OS_I_PING_RESPONDER_H_
 
@@ -186,7 +186,7 @@ enum Call {
 
 #endif  // AIDL_GENERATED_ANDROID_OS_I_PING_RESPONDER_H_)";
 
-const char kExpectedTrivialInterfaceSourceOutput[] =
+const char kExpectedPrimitiveInterfaceSourceOutput[] =
 R"(#include <android/os/IPingResponder.h>
 #include <android/os/BpPingResponder.h>
 
@@ -201,13 +201,185 @@ IMPLEMENT_META_INTERFACE(PingResponder, "android.os.IPingResponder");
 }  // namespace android
 )";
 
+const string kComplexTypeInterfaceAIDL =
+R"(package android.os;
+interface IComplexTypeInterface {
+  int Send(in int[] token, out boolean[] item);
+})";
+
+const char kExpectedComplexTypeClientHeaderOutput[] =
+R"(#ifndef AIDL_GENERATED_ANDROID_OS_BP_COMPLEX_TYPE_INTERFACE_H_
+#define AIDL_GENERATED_ANDROID_OS_BP_COMPLEX_TYPE_INTERFACE_H_
+
+#include <binder/IBinder.h>
+#include <binder/IInterface.h>
+#include <utils/Errors.h>
+#include <android/os/IComplexTypeInterface.h>
+
+namespace android {
+
+namespace os {
+
+class BpComplexTypeInterface : public android::BpInterface<IComplexTypeInterface> {
+public:
+explicit BpComplexTypeInterface(const android::sp<android::IBinder>& impl);
+virtual ~BpComplexTypeInterface() = default;
+android::status_t Send(const std::vector<int32_t>& token, std::vector<bool>* item, int32_t* _aidl_return) override;
+};  // class BpComplexTypeInterface
+
+}  // namespace os
+
+}  // namespace android
+
+#endif  // AIDL_GENERATED_ANDROID_OS_BP_COMPLEX_TYPE_INTERFACE_H_)";
+
+const char kExpectedComplexTypeClientSourceOutput[] =
+R"(#include <android/os/BpComplexTypeInterface.h>
+#include <binder/Parcel.h>
+
+namespace android {
+
+namespace os {
+
+BpComplexTypeInterface::BpComplexTypeInterface(const android::sp<android::IBinder>& impl)
+    : BpInterface<IPingResponder>(impl){
+}
+
+android::status_t BpComplexTypeInterface::Send(const std::vector<int32_t>& token, std::vector<bool>* item, int32_t* _aidl_return) {
+android::Parcel data;
+android::Parcel reply;
+android::status_t status;
+status = data.writeInt32Vector(token);
+if (status != android::OK) { return status; }
+status = remote()->transact(IComplexTypeInterface::SEND, data, &reply);
+if (status != android::OK) { return status; }
+status = reply.readInt32(_aidl_return);
+if (status != android::OK) { return status; }
+status = reply.readBoolVector(item);
+if (status != android::OK) { return status; }
+return status;
+}
+
+}  // namespace os
+
+}  // namespace android
+)";
+
+const char kExpectedComplexTypeServerHeaderOutput[] =
+R"(#ifndef AIDL_GENERATED_ANDROID_OS_BN_COMPLEX_TYPE_INTERFACE_H_
+#define AIDL_GENERATED_ANDROID_OS_BN_COMPLEX_TYPE_INTERFACE_H_
+
+#include <binder/IInterface.h>
+#include <android/os/IComplexTypeInterface.h>
+
+namespace android {
+
+namespace os {
+
+class BnComplexTypeInterface : public android::BnInterface<IComplexTypeInterface> {
+public:
+android::status_t onTransact(uint32_t code, const android::Parcel& data, android::Parcel* reply, uint32_t flags = 0) override;
+};  // class BnComplexTypeInterface
+
+}  // namespace os
+
+}  // namespace android
+
+#endif  // AIDL_GENERATED_ANDROID_OS_BN_COMPLEX_TYPE_INTERFACE_H_)";
+
+const char kExpectedComplexTypeServerSourceOutput[] =
+R"(#include <android/os/BnComplexTypeInterface.h>
+#include <binder/Parcel.h>
+
+namespace android {
+
+namespace os {
+
+android::status_t BnComplexTypeInterface::onTransact(uint32_t code, const android::Parcel& data, android::Parcel* reply, uint32_t flags) {
+android::status_t status;
+switch (code) {
+case Call::SEND:
+{
+std::vector<int32_t> in_token;
+std::vector<bool> out_item;
+int32_t _aidl_return;
+status = data.readInt32Vector(&in_token);
+if (status != android::OK) { break; }
+status = Send(in_token, &out_item, &_aidl_return);
+if (status != android::OK) { break; }
+status = reply->writeInt32(_aidl_return);
+if (status != android::OK) { break; }
+status = reply->writeBoolVector(out_item);
+if (status != android::OK) { break; }
+}
+break;
+default:
+{
+status = android::BBinder::onTransact(code, data, reply, flags);
+}
+break;
+}
+return status;
+}
+
+}  // namespace os
+
+}  // namespace android
+)";
+
+const char kExpectedComplexTypeInterfaceHeaderOutput[] =
+R"(#ifndef AIDL_GENERATED_ANDROID_OS_I_COMPLEX_TYPE_INTERFACE_H_
+#define AIDL_GENERATED_ANDROID_OS_I_COMPLEX_TYPE_INTERFACE_H_
+
+#include <binder/IBinder.h>
+#include <binder/IInterface.h>
+#include <cstdint>
+#include <vector>
+
+namespace android {
+
+namespace os {
+
+class IComplexTypeInterface : public android::IInterface {
+public:
+DECLARE_META_INTERFACE(ComplexTypeInterface);
+virtual android::status_t Send(const std::vector<int32_t>& token, std::vector<bool>* item, int32_t* _aidl_return) = 0;
+enum Call {
+  SEND = android::IBinder::FIRST_CALL_TRANSACTION + 0,
+};
+};  // class IComplexTypeInterface
+
+}  // namespace os
+
+}  // namespace android
+
+#endif  // AIDL_GENERATED_ANDROID_OS_I_COMPLEX_TYPE_INTERFACE_H_)";
+
+const char kExpectedComplexTypeInterfaceSourceOutput[] =
+R"(#include <android/os/IComplexTypeInterface.h>
+#include <android/os/BpComplexTypeInterface.h>
+
+namespace android {
+
+namespace os {
+
+IMPLEMENT_META_INTERFACE(ComplexTypeInterface, "android.os.IComplexTypeInterface");
+
+}  // namespace os
+
+}  // namespace android
+)";
+
 }  // namespace
 
-class TrivialInterfaceASTTest : public ::testing::Test {
+class ASTTest : public ::testing::Test {
  protected:
+  virtual const string& FilePath() = 0;
+  virtual const string& FileContents() = 0;
+
   unique_ptr<AidlInterface> Parse() {
     FakeIoDelegate io_delegate;
-    io_delegate.SetFileContents("android/os/IPingResponder.aidl", kTrivialInterfaceAIDL);
+    io_delegate.SetFileContents(FilePath(), FileContents());
 
     cpp::TypeNamespace types;
     unique_ptr<AidlInterface> ret;
@@ -215,7 +387,7 @@ class TrivialInterfaceASTTest : public ::testing::Test {
     int err = ::android::aidl::internals::load_and_validate_aidl(
         {},  // no preprocessed files
         {},  // no import paths
-        "android/os/IPingResponder.aidl",
+        FilePath(),
         io_delegate,
         &types,
         &ret,
@@ -237,52 +409,114 @@ class TrivialInterfaceASTTest : public ::testing::Test {
   }
 };
 
-TEST_F(TrivialInterfaceASTTest, GeneratesClientHeader) {
+class PrimitiveInterfaceASTTest : public ASTTest {
+ protected:
+  const string fp_ = "android/os/IPingResponder.aidl";
+  const string& FilePath() override { return fp_; }
+  const string& FileContents() override { return kPrimitiveInterfaceAIDL; }
+};
+
+TEST_F(PrimitiveInterfaceASTTest, GeneratesClientHeader) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
   TypeNamespace types;
   unique_ptr<Document> doc = internals::BuildClientHeader(types, *interface);
-  Compare(doc.get(), kExpectedTrivialClientHeaderOutput);
+  Compare(doc.get(), kExpectedPrimitiveClientHeaderOutput);
 }
 
-TEST_F(TrivialInterfaceASTTest, GeneratesClientSource) {
+TEST_F(PrimitiveInterfaceASTTest, GeneratesClientSource) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
   TypeNamespace types;
   unique_ptr<Document> doc = internals::BuildClientSource(types, *interface);
-  Compare(doc.get(), kExpectedTrivialClientSourceOutput);
+  Compare(doc.get(), kExpectedPrimitiveClientSourceOutput);
 }
 
-TEST_F(TrivialInterfaceASTTest, GeneratesServerHeader) {
+TEST_F(PrimitiveInterfaceASTTest, GeneratesServerHeader) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
   TypeNamespace types;
   unique_ptr<Document> doc = internals::BuildServerHeader(types, *interface);
-  Compare(doc.get(), kExpectedTrivialServerHeaderOutput);
+  Compare(doc.get(), kExpectedPrimitiveServerHeaderOutput);
 }
 
-TEST_F(TrivialInterfaceASTTest, GeneratesServerSource) {
+TEST_F(PrimitiveInterfaceASTTest, GeneratesServerSource) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
   TypeNamespace types;
   unique_ptr<Document> doc = internals::BuildServerSource(types, *interface);
-  Compare(doc.get(), kExpectedTrivialServerSourceOutput);
+  Compare(doc.get(), kExpectedPrimitiveServerSourceOutput);
 }
 
-TEST_F(TrivialInterfaceASTTest, GeneratesInterfaceHeader) {
+TEST_F(PrimitiveInterfaceASTTest, GeneratesInterfaceHeader) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
   TypeNamespace types;
   unique_ptr<Document> doc = internals::BuildInterfaceHeader(types, *interface);
-  Compare(doc.get(), kExpectedTrivialInterfaceHeaderOutput);
+  Compare(doc.get(), kExpectedPrimitiveInterfaceHeaderOutput);
 }
 
-TEST_F(TrivialInterfaceASTTest, GeneratesInterfaceSource) {
+TEST_F(PrimitiveInterfaceASTTest, GeneratesInterfaceSource) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
   TypeNamespace types;
   unique_ptr<Document> doc = internals::BuildInterfaceSource(types, *interface);
-  Compare(doc.get(), kExpectedTrivialInterfaceSourceOutput);
+  Compare(doc.get(), kExpectedPrimitiveInterfaceSourceOutput);
+}
+
+class ComplexTypeInterfaceASTTest : public ASTTest {
+ protected:
+  const string fp_ = "android/os/IComplexTypeInterface.aidl";
+  const string& FilePath() override { return fp_; }
+  const string& FileContents() override { return kComplexTypeInterfaceAIDL; }
+};
+
+TEST_F(ComplexTypeInterfaceASTTest, GeneratesClientHeader) {
+  unique_ptr<AidlInterface> interface = Parse();
+  ASSERT_NE(interface, nullptr);
+  TypeNamespace types;
+  unique_ptr<Document> doc = internals::BuildClientHeader(types, *interface);
+  Compare(doc.get(), kExpectedComplexTypeClientHeaderOutput);
+}
+
+TEST_F(ComplexTypeInterfaceASTTest, GeneratesClientSource) {
+  unique_ptr<AidlInterface> interface = Parse();
+  ASSERT_NE(interface, nullptr);
+  TypeNamespace types;
+  unique_ptr<Document> doc = internals::BuildClientSource(types, *interface);
+  Compare(doc.get(), kExpectedComplexTypeClientSourceOutput);
+}
+
+TEST_F(ComplexTypeInterfaceASTTest, GeneratesServerHeader) {
+  unique_ptr<AidlInterface> interface = Parse();
+  ASSERT_NE(interface, nullptr);
+  TypeNamespace types;
+  unique_ptr<Document> doc = internals::BuildServerHeader(types, *interface);
+  Compare(doc.get(), kExpectedComplexTypeServerHeaderOutput);
+}
+
+TEST_F(ComplexTypeInterfaceASTTest, GeneratesServerSource) {
+  unique_ptr<AidlInterface> interface = Parse();
+  ASSERT_NE(interface, nullptr);
+  TypeNamespace types;
+  unique_ptr<Document> doc = internals::BuildServerSource(types, *interface);
+  Compare(doc.get(), kExpectedComplexTypeServerSourceOutput);
+}
+
+TEST_F(ComplexTypeInterfaceASTTest, GeneratesInterfaceHeader) {
+  unique_ptr<AidlInterface> interface = Parse();
+  ASSERT_NE(interface, nullptr);
+  TypeNamespace types;
+  unique_ptr<Document> doc = internals::BuildInterfaceHeader(types, *interface);
+  Compare(doc.get(), kExpectedComplexTypeInterfaceHeaderOutput);
+}
+
+TEST_F(ComplexTypeInterfaceASTTest, GeneratesInterfaceSource) {
+  unique_ptr<AidlInterface> interface = Parse();
+  ASSERT_NE(interface, nullptr);
+  TypeNamespace types;
+  unique_ptr<Document> doc = internals::BuildInterfaceSource(types, *interface);
+  Compare(doc.get(), kExpectedComplexTypeInterfaceSourceOutput);
 }
 
 }  // namespace cpp
