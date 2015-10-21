@@ -293,6 +293,20 @@ class LiteralStatement : public AstNode {
   DISALLOW_COPY_AND_ASSIGN(LiteralStatement);
 };  // class LiteralStatement
 
+class Comparison : public AstNode {
+ public:
+  Comparison(AstNode* lhs, const std::string& comparison, AstNode* rhs);
+  ~Comparison() = default;
+  void Write(CodeWriter* to) const override;
+
+ private:
+  std::unique_ptr<AstNode> left_;
+  std::unique_ptr<AstNode> right_;
+  const std::string operator_;
+
+  DISALLOW_COPY_AND_ASSIGN(Comparison);
+};  // class Comparison
+
 class LiteralExpression : public AstNode {
  public:
   explicit LiteralExpression(const std::string& expression);

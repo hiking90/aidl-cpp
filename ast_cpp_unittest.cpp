@@ -163,6 +163,12 @@ TEST_F(AstCppTests, GeneratesLiteralStatement) {
   CompareGeneratedCode(s, "foo;\n");
 }
 
+TEST_F(AstCppTests, GeneratesComparison) {
+  Comparison c(
+      new LiteralExpression("lhs"), "&&", new LiteralExpression("rhs"));
+  CompareGeneratedCode(c, "((lhs) && (rhs))");
+}
+
 TEST_F(AstCppTests, GeneratesStatementBlock) {
   StatementBlock block;
   block.AddStatement(unique_ptr<AstNode>(new LiteralStatement("foo")));
