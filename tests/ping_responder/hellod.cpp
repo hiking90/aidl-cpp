@@ -58,7 +58,7 @@ class BinderCallback : public LooperCallback {
   BinderCallback() {}
   ~BinderCallback() override {}
 
-  int handleEvent(int fd, int events, void* data) override {
+  int handleEvent(int /* fd */, int /* events */, void* /* data */ ) override {
     IPCThreadState::self()->handlePolledCommands();
     return 1;  // Continue receiving callbacks.
   }
@@ -108,7 +108,7 @@ class HelloService : public BnPingResponder {
 }  // namespace generated
 }  // namespace android
 
-int main(int argc, char* argv[]) {
+int main(int /* argc */, char* /* argv */ []) {
   android::generated::HelloService service;
   return service.Run();
 }
