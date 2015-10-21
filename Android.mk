@@ -1,11 +1,23 @@
-# Copyright 2007 The Android Open Source Project
 #
-# Copies files into the directory structure described by a manifest
+# Copyright (C) 2015 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+LOCAL_PATH := $(call my-dir)
 
 # This tool is prebuilt if we're doing an app-only build.
 ifeq ($(TARGET_BUILD_APPS)$(filter true,$(TARGET_BUILD_PDK)),)
-
-LOCAL_PATH:= $(call my-dir)
 
 aidl_static_libraries := libbase libcutils
 
@@ -136,3 +148,23 @@ LOCAL_SHARED_LIBRARIES := \
     libutils
 LOCAL_CFLAGS := -Wall -Wextra -Werror
 include $(BUILD_EXECUTABLE)
+
+
+# aidl on its own doesn't need the framework, but testing native/java
+# compatibility introduces java dependencies.
+ifndef BRILLO
+
+include $(CLEAR_VARS)
+LOCAL_PACKAGE_NAME := aidl_test_services
+LOCAL_MODULE_OWNER := google
+LOCAL_DEX_PREOPT := false
+LOCAL_CERTIFICATE := platform
+LOCAL_MANIFEST_FILE := tests/java_app/AndroidManifest.xml
+LOCAL_PRIVILEGED_MODULE := true
+LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/tests/java_app/resources
+LOCAL_SRC_FILES := \
+    tests/ping_responder/aidl/android/os/IPingResponder.aidl \
+    tests/java_app/src/android/aidl/tests/PingResponderClient.java
+include $(BUILD_PACKAGE)
+
+endif  # not defined BRILLO
