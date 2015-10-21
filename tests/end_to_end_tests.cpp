@@ -19,10 +19,6 @@
 #include <vector>
 
 #include <base/logging.h>
-#include <base/files/file_path.h>
-#include <base/files/scoped_temp_dir.h>
-#include <base/files/file_util.h>
-#include <base/stringprintf.h>
 #include <gtest/gtest.h>
 
 #include "aidl.h"
@@ -33,11 +29,6 @@
 
 using android::aidl::test::CanonicalNameToPath;
 using android::aidl::test::FakeIoDelegate;
-using android::base::StringAppendF;
-using android::base::StringPrintf;
-using base::FilePath;
-using base::ScopedTempDir;
-using base::WriteFile;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -69,18 +60,7 @@ class EndToEndTest : public ::testing::Test {
       return;  // success!
     }
 
-    ScopedTempDir tmp_dir;
-    ASSERT_TRUE(tmp_dir.CreateUniqueTempDir());
-    FilePath expected_path = tmp_dir.path().Append("expected");
-    FilePath actual_path = tmp_dir.path().Append("actual");
-    WriteFile(expected_path, expected_content.c_str(),
-              expected_content.length());
-    WriteFile(actual_path, actual_content.c_str(),
-              actual_content.length());
-    string diff_cmd = StringPrintf("diff -u %s %s",
-                                   expected_path.value().c_str(),
-                                   actual_path.value().c_str());
-    system(diff_cmd.c_str());
+    test::PrintDiff(expected_content, actual_content);
     FAIL() << "Actual contents of " << rel_path
            << " did not match expected content";
   }

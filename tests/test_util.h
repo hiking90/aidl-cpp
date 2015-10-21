@@ -33,6 +33,8 @@ void SplitPackageClass(const std::string& package_class,
                        std::string* package,
                        std::string* class_name);
 
+void PrintDiff(const std::string& a, const std::string& b);
+
 }  // namespace test
 }  // namespace android
 }  // namespace aidl
