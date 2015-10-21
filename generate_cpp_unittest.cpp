@@ -205,6 +205,7 @@ const string kComplexTypeInterfaceAIDL =
 R"(package android.os;
 interface IComplexTypeInterface {
   int Send(in int[] token, out boolean[] item);
+  oneway void Piff(int times);
 })";
 
 const char kExpectedComplexTypeClientHeaderOutput[] =
@@ -225,6 +226,7 @@ public:
 explicit BpComplexTypeInterface(const android::sp<android::IBinder>& impl);
 virtual ~BpComplexTypeInterface() = default;
 android::status_t Send(const std::vector<int32_t>& token, std::vector<bool>* item, int32_t* _aidl_return) override;
+android::status_t Piff(int32_t times) override;
 };  // class BpComplexTypeInterface
 
 }  // namespace os
@@ -256,6 +258,16 @@ if (status != android::OK) { return status; }
 status = reply.readInt32(_aidl_return);
 if (status != android::OK) { return status; }
 status = reply.readBoolVector(item);
+if (status != android::OK) { return status; }
+return status;
+}
+
+android::status_t BpComplexTypeInterface::Piff(int32_t times) {
+android::Parcel data;
+android::status_t status;
+status = data.writeInt32(times);
+if (status != android::OK) { return status; }
+status = remote()->transact(IComplexTypeInterface::PIFF, data, &reply, android::IBinder::FLAG_ONEWAY);
 if (status != android::OK) { return status; }
 return status;
 }
@@ -313,6 +325,15 @@ status = reply->writeBoolVector(out_item);
 if (status != android::OK) { break; }
 }
 break;
+case Call::PIFF:
+{
+int32_t in_times;
+status = data.readInt32(&in_times);
+if (status != android::OK) { break; }
+status = Piff(in_times);
+if (status != android::OK) { break; }
+}
+break;
 default:
 {
 status = android::BBinder::onTransact(code, data, reply, flags);
@@ -344,8 +365,10 @@ class IComplexTypeInterface : public android::IInterface {
 public:
 DECLARE_META_INTERFACE(ComplexTypeInterface);
 virtual android::status_t Send(const std::vector<int32_t>& token, std::vector<bool>* item, int32_t* _aidl_return) = 0;
+virtual android::status_t Piff(int32_t times) = 0;
 enum Call {
   SEND = android::IBinder::FIRST_CALL_TRANSACTION + 0,
+  PIFF = android::IBinder::FIRST_CALL_TRANSACTION + 1,
 };
 };  // class IComplexTypeInterface
 

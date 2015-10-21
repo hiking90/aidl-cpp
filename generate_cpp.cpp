@@ -241,7 +241,11 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
 
   // Declare parcels to hold our query and the response.
   b->AddLiteral(StringPrintf("%s data", kAndroidParcelLiteral));
-  b->AddLiteral(StringPrintf("%s reply", kAndroidParcelLiteral));
+
+  if (!interface.IsOneway() && !method.IsOneway()) {
+    b->AddLiteral(StringPrintf("%s reply", kAndroidParcelLiteral));
+  }
+
   // And declare the status variable we need for error handling.
   b->AddLiteral(StringPrintf("%s status", kAndroidStatusLiteral));
 
@@ -263,10 +267,20 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
   // Invoke the transaction on the remote binder and confirm status.
   string transaction_code = StringPrintf(
       "%s::%s", i_name.c_str(), UpperCase(method.GetName()).c_str());
+
+  vector<string> args = {transaction_code, "data", "&reply"};
+
+  if (interface.IsOneway() || method.IsOneway()) {
+    args.push_back("android::IBinder::FLAG_ONEWAY");
+  }
+
+  // Type checking should guarantee that nothing below emits code until "return
+  // status" if we are a oneway method, so no more fear of accessing reply.
+
   b->AddStatement(new Assignment(
       "status",
       new MethodCall("remote()->transact",
-                     ArgList({transaction_code, "data", "&reply"}))));
+                     ArgList(args))));
   b->AddLiteral(kStatusOkOrReturnLiteral, false /* no semicolon */);
 
   // If the method is expected to return something, read it first by convention.
