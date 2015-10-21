@@ -158,8 +158,8 @@ TEST_F(AstCppTests, GeneratesArgList) {
   CompareGeneratedCode(compound, "(foo, bar, baz)");
 }
 
-TEST_F(AstCppTests, GeneratesLiteralStatement) {
-  LiteralStatement s("foo");
+TEST_F(AstCppTests, GeneratesStatement) {
+  Statement s(new LiteralExpression("foo"));
   CompareGeneratedCode(s, "foo;\n");
 }
 
@@ -171,8 +171,8 @@ TEST_F(AstCppTests, GeneratesComparison) {
 
 TEST_F(AstCppTests, GeneratesStatementBlock) {
   StatementBlock block;
-  block.AddStatement(unique_ptr<AstNode>(new LiteralStatement("foo")));
-  block.AddStatement(unique_ptr<AstNode>(new LiteralStatement("bar")));
+  block.AddStatement(unique_ptr<AstNode>(new Statement("foo")));
+  block.AddStatement(unique_ptr<AstNode>(new Statement("bar")));
   CompareGeneratedCode(block, "{\nfoo;\nbar;\n}\n");
 }
 
@@ -219,10 +219,10 @@ TEST_F(AstCppTests, GeneratesSwitchStatement) {
   // These are intentionally out of alphanumeric order.  We're testing
   // that switch respects case addition order.
   auto case2 = s.AddCase("2");
-  case2->AddStatement(unique_ptr<AstNode>{new LiteralStatement{"baz"}});
+  case2->AddStatement(unique_ptr<AstNode>{new Statement{"baz"}});
   auto case1 = s.AddCase("1");
-  case1->AddStatement(unique_ptr<AstNode>{new LiteralStatement{"foo"}});
-  case1->AddStatement(unique_ptr<AstNode>{new LiteralStatement{"bar"}});
+  case1->AddStatement(unique_ptr<AstNode>{new Statement{"foo"}});
+  case1->AddStatement(unique_ptr<AstNode>{new Statement{"bar"}});
   CompareGeneratedCode(s, kExpectedSwitchOutput);
 }
 

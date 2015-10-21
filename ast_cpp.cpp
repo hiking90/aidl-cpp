@@ -189,10 +189,14 @@ void StatementBlock::AddStatement(AstNode* statement) {
   statements_.emplace_back(statement);
 }
 
-void StatementBlock::AddLiteral(const std::string& expression,
+void StatementBlock::AddLiteral(const std::string& expression_str,
                                 bool add_semicolon) {
-  statements_.push_back(unique_ptr<AstNode>{
-      new LiteralStatement{expression, add_semicolon}});
+  if (add_semicolon) {
+    statements_.push_back(unique_ptr<AstNode>(new Statement(expression_str)));
+  } else {
+    statements_.push_back(unique_ptr<AstNode>(
+        new LiteralExpression(expression_str)));
+  }
 }
 
 void StatementBlock::Write(CodeWriter* to) const {
@@ -328,12 +332,17 @@ void IfStatement::Write(CodeWriter* to) const {
   }
 }
 
-LiteralStatement::LiteralStatement(const string& expression, bool use_semicolon)
-    : expression_(expression),
-      use_semicolon_(use_semicolon) {}
+Statement::Statement(unique_ptr<AstNode> expression)
+    : expression_(std::move(expression)) {}
 
-void LiteralStatement::Write(CodeWriter* to) const {
-  to->Write("%s%s\n", expression_.c_str(), (use_semicolon_) ? ";" : "");
+Statement::Statement(AstNode* expression) : expression_(expression) {}
+
+Statement::Statement(const string& expression)
+    : expression_(new LiteralExpression(expression)) {}
+
+void Statement::Write(CodeWriter* to) const {
+  expression_->Write(to);
+  to->Write(";\n");
 }
 
 Comparison::Comparison(AstNode* lhs, const string& comparison, AstNode* rhs)
