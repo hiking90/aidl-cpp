@@ -64,11 +64,17 @@ android::Parcel data;
 android::Parcel reply;
 android::status_t status;
 status = data.writeInt32(token);
-if (status != android::OK) { return status; }
+if (((status) != (android::OK))) {
+return status;
+}
 status = remote()->transact(IPingResponder::PING, data, &reply);
-if (status != android::OK) { return status; }
+if (((status) != (android::OK))) {
+return status;
+}
 status = reply.readInt32(_aidl_return);
-if (status != android::OK) { return status; }
+if (((status) != (android::OK))) {
+return status;
+}
 return status;
 }
 
@@ -90,11 +96,17 @@ case Call::PING:
 int32_t in_token;
 int32_t _aidl_return;
 status = data.readInt32(&in_token);
-if (status != android::OK) { break; }
+if (((status) != (android::OK))) {
+break;
+}
 status = Ping(in_token, &_aidl_return);
-if (status != android::OK) { break; }
+if (((status) != (android::OK))) {
+break;
+}
 status = reply->writeInt32(_aidl_return);
-if (status != android::OK) { break; }
+if (((status) != (android::OK))) {
+break;
+}
 }
 break;
 default:

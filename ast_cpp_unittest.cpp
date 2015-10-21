@@ -203,6 +203,17 @@ TEST_F(AstCppTests, GeneratesMethodCall) {
   CompareGeneratedCode(multi, "multi(has, some, args)");
 }
 
+TEST_F(AstCppTests, GeneratesIfStatement) {
+  IfStatement s(new LiteralExpression("foo"));
+  s.OnTrue()->AddLiteral("on true1");
+  s.OnFalse()->AddLiteral("on false");
+  CompareGeneratedCode(s, "if (foo) {\non true1;\n}\nelse {\non false;\n}\n");
+
+  IfStatement s2(new LiteralExpression("bar"));
+  s2.OnTrue()->AddLiteral("on true1");
+  CompareGeneratedCode(s2, "if (bar) {\non true1;\n}\n");
+}
+
 TEST_F(AstCppTests, GeneratesSwitchStatement) {
   SwitchStatement s("var");
   // These are intentionally out of alphanumeric order.  We're testing

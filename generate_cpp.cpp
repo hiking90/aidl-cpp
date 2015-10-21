@@ -43,15 +43,28 @@ namespace cpp {
 namespace internals {
 namespace {
 
-const char kStatusOkOrBreakCheck[] = "if (status != android::OK) { break; }";
-const char kStatusOkOrReturnLiteral[] =
-    "if (status != android::OK) { return status; }";
 const char kReturnVarName[] = "_aidl_return";
 const char kAndroidStatusLiteral[] = "android::status_t";
 const char kAndroidParcelLiteral[] = "android::Parcel";
 const char kIBinderHeader[] = "binder/IBinder.h";
 const char kIInterfaceHeader[] = "binder/IInterface.h";
 const char kParcelHeader[] = "binder/Parcel.h";
+
+unique_ptr<AstNode> BreakOnStatusNotOk() {
+  IfStatement* ret = new IfStatement(new Comparison(
+      new LiteralExpression("status"), "!=",
+      new LiteralExpression("android::OK")));
+  ret->OnTrue()->AddLiteral("break");
+  return unique_ptr<AstNode>(ret);
+}
+
+unique_ptr<AstNode> ReturnOnStatusNotOk() {
+  IfStatement* ret = new IfStatement(new Comparison(
+      new LiteralExpression("status"), "!=",
+      new LiteralExpression("android::OK")));
+  ret->OnTrue()->AddLiteral("return status");
+  return unique_ptr<AstNode>(ret);
+}
 
 string UpperCase(const std::string& s) {
   string result = s;
@@ -261,7 +274,7 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
     b->AddStatement(new Assignment(
         "status",
         new MethodCall("data." + method, ArgList(var_name))));
-    b->AddLiteral(kStatusOkOrReturnLiteral, false /* no semicolon */);
+    b->AddStatement(ReturnOnStatusNotOk());
   }
 
   // Invoke the transaction on the remote binder and confirm status.
@@ -281,7 +294,7 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
       "status",
       new MethodCall("remote()->transact",
                      ArgList(args))));
-  b->AddLiteral(kStatusOkOrReturnLiteral, false /* no semicolon */);
+  b->AddStatement(ReturnOnStatusNotOk());
 
   // If the method is expected to return something, read it first by convention.
   const Type* return_type = types.Find(method.GetType().GetName());
@@ -290,7 +303,7 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
     b->AddStatement(new Assignment(
         "status",
         new MethodCall("reply." + method, ArgList(kReturnVarName))));
-    b->AddLiteral(kStatusOkOrReturnLiteral, false /* no semicolon */);
+    b->AddStatement(ReturnOnStatusNotOk());
   }
 
   for (const AidlArgument* a : method.GetOutArguments()) {
@@ -304,7 +317,7 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
     b->AddStatement(new Assignment(
         "status",
         new MethodCall("reply." + method, ArgList(a->GetName()))));
-    b->AddLiteral(kStatusOkOrReturnLiteral, false /* no semicolon */);
+    b->AddStatement(ReturnOnStatusNotOk());
   }
 
   b->AddLiteral("return status");
@@ -372,7 +385,7 @@ bool HandleServerTransaction(const TypeNamespace& types,
         "status",
         new MethodCall{"data." + readMethod,
                        "&" + BuildVarName(*a)}});
-    b->AddLiteral(kStatusOkOrBreakCheck, false /* no semicolon */);
+    b->AddStatement(BreakOnStatusNotOk());
   }
 
   // Call the actual method.  This is implemented by the subclass.
@@ -380,7 +393,7 @@ bool HandleServerTransaction(const TypeNamespace& types,
       "status", new MethodCall{
           method.GetName(),
           BuildArgList(types, method, false /* not for method decl */)}});
-  b->AddLiteral(kStatusOkOrBreakCheck, false /* no semicolon */);
+  b->AddStatement(BreakOnStatusNotOk());
 
   string writeMethod =
     return_type->WriteToParcelMethod(method.GetType().IsArray());
@@ -390,7 +403,7 @@ bool HandleServerTransaction(const TypeNamespace& types,
     string method = "reply->" + writeMethod;
     b->AddStatement(new Assignment{
         "status", new MethodCall{method, ArgList{kReturnVarName}}});
-    b->AddLiteral(kStatusOkOrBreakCheck, false /* no semicolon */);
+    b->AddStatement(BreakOnStatusNotOk());
   }
 
   // Write each out parameter to the reply parcel.
@@ -405,7 +418,7 @@ bool HandleServerTransaction(const TypeNamespace& types,
         "status",
         new MethodCall{"reply->" + writeMethod,
                        BuildVarName(*a)}});
-    b->AddLiteral(kStatusOkOrBreakCheck, false /* no semicolon */);
+    b->AddStatement(BreakOnStatusNotOk());
   }
 
   return true;
