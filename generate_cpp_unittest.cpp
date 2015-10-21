@@ -24,6 +24,7 @@
 #include "code_writer.h"
 #include "generate_cpp.h"
 #include "tests/fake_io_delegate.h"
+#include "tests/test_util.h"
 #include "type_cpp.h"
 
 using android::aidl::test::FakeIoDelegate;
@@ -428,7 +429,12 @@ class ASTTest : public ::testing::Test {
 
     doc->Write(cw.get());
 
-    EXPECT_EQ(expected, output);
+    if (expected == output) {
+      return; // Success
+    }
+
+    test::PrintDiff(expected, output);
+    FAIL() << "Document contents did not match expected contents";
   }
 };
 
