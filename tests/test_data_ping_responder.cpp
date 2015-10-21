@@ -63,6 +63,10 @@ android::status_t BpPingResponder::Ping(int32_t token, int32_t* _aidl_return) {
 android::Parcel data;
 android::Parcel reply;
 android::status_t status;
+status = data.writeInterfaceToken(getInterfaceDescriptor());
+if (((status) != (android::OK))) {
+return status;
+}
 status = data.writeInt32(token);
 if (((status) != (android::OK))) {
 return status;
@@ -99,6 +103,10 @@ case Call::PING:
 {
 int32_t in_token;
 int32_t _aidl_return;
+if ((!data.checkInterface(this))) {
+status = android::BAD_TYPE;
+break;
+}
 status = data.readInt32(&in_token);
 if (((status) != (android::OK))) {
 break;
