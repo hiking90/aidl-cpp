@@ -156,11 +156,9 @@ ifndef BRILLO
 
 include $(CLEAR_VARS)
 LOCAL_PACKAGE_NAME := aidl_test_services
-LOCAL_MODULE_OWNER := google
 LOCAL_DEX_PREOPT := false
 LOCAL_CERTIFICATE := platform
 LOCAL_MANIFEST_FILE := tests/java_app/AndroidManifest.xml
-LOCAL_PRIVILEGED_MODULE := true
 LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/tests/java_app/resources
 LOCAL_SRC_FILES := \
     tests/aidl/android/os/IPingResponder.aidl \
