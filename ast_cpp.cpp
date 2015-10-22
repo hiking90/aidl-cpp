@@ -320,6 +320,19 @@ void LiteralStatement::Write(CodeWriter* to) const {
   to->Write("%s%s\n", expression_.c_str(), (use_semicolon_) ? ";" : "");
 }
 
+Comparison::Comparison(AstNode* lhs, const string& comparison, AstNode* rhs)
+    : left_(lhs),
+      right_(rhs),
+      operator_(comparison) {}
+
+void Comparison::Write(CodeWriter* to) const {
+  to->Write("((");
+  left_->Write(to);
+  to->Write(") %s (", operator_.c_str());
+  right_->Write(to);
+  to->Write("))");
+}
+
 LiteralExpression::LiteralExpression(const std::string& expression)
     : expression_(expression) {}
 
