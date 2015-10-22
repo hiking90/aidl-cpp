@@ -23,8 +23,8 @@
 #include <utils/Looper.h>
 #include <utils/StrongPointer.h>
 
-#include "android/os/BnPingResponder.h"
-#include "android/os/IPingResponder.h"
+#include "android/aidl/tests/BnTestService.h"
+#include "android/aidl/tests/ITestService.h"
 
 // Used implicitly.
 #undef LOG_TAG
@@ -47,7 +47,7 @@ using android::Parcel;
 using android::ProcessState;
 
 // Generated code:
-using android::os::BnPingResponder;
+using android::aidl::tests::BnTestService;
 
 namespace android {
 namespace generated {
@@ -64,7 +64,7 @@ class BinderCallback : public LooperCallback {
   }
 };
 
-class NativeService : public BnPingResponder {
+class NativeService : public BnTestService {
  public:
   NativeService() {}
   ~NativeService() override {}
@@ -96,7 +96,7 @@ class NativeService : public BnPingResponder {
     return 0;
   }
 
-  // BnPingResponder:
+  // BnTestService:
   status_t Ping(int32_t token, int32_t* returned_token) override {
     ALOGI("Got ping with token %d", token);
     *returned_token = token;

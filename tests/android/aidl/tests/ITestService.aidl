@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-package android.os;
+package android.aidl.tests;
 
-interface IPingResponder {
+interface ITestService {
   int Ping(int token);
 }

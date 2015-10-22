@@ -12,6 +12,6 @@ To use this APK do something like:
     $ adb shell "(hellod ) </dev/null >/dev/null 2>&1 &"
 7) Start Java client:
     $ adb shell am start -S -a android.intent.action.MAIN \
-                           -n "android.aidl.tests/.PingResponderClient"
+                           -n "android.aidl.tests/.TestServiceClient"
 8) Watch output on logcat:
-    $ adb logcat -s PingResponderClient hellod
+    $ adb logcat -s TestServiceClient hellod

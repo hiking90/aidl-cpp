@@ -25,17 +25,17 @@ import android.util.Log;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 // Generated
-import android.os.IPingResponder;
+import android.aidl.tests.ITestService;
 
-public class PingResponderClient extends Activity {
-    private static final String TAG = "PingResponderClient";
+public class TestServiceClient extends Activity {
+    private static final String TAG = "TestServiceClient";
     private AtomicBoolean mKeepGoing = new AtomicBoolean(true);
 
     private Runnable mPingThread = new Runnable() {
         private static final int PERIOD_SECONDS = 5;
 
         private final ServiceManager mServiceManager = new ServiceManager();
-        private IPingResponder mService;
+        private ITestService mService;
 
         public void run() {
             while (mKeepGoing.get()) {
@@ -49,12 +49,12 @@ public class PingResponderClient extends Activity {
         public void checkService() {
             if (mService == null) {
                 IBinder service = mServiceManager.getService(
-                        IPingResponder.class.getName());
+                        ITestService.class.getName());
                 if (service == null) {
                     Log.i(TAG, "Failed to obtain binder...");
                     return;
                 }
-                mService = IPingResponder.Stub.asInterface(service);
+                mService = ITestService.Stub.asInterface(service);
                 if (mService == null) {
                     Log.wtf(TAG, "Failed to cast IBinder instance.");
                     return;
@@ -75,7 +75,7 @@ public class PingResponderClient extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.i(TAG, "PingResponderClient.onCreate()");
+        Log.i(TAG, "TestServiceClient.onCreate()");
         // Keep the main thread free for event handling.
         new Thread(mPingThread).start();
     }
@@ -83,7 +83,7 @@ public class PingResponderClient extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.i(TAG, "PingResponderClient.onDestroy()");
+        Log.i(TAG, "TestServiceClient.onDestroy()");
         mKeepGoing.set(false);
     }
 }

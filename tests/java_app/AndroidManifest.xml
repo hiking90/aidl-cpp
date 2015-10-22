@@ -5,7 +5,7 @@
 
   <application android:label="@string/application_title">
 
-    <activity android:name="android.aidl.tests.PingResponderClient">
+    <activity android:name="android.aidl.tests.TestServiceClient">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
