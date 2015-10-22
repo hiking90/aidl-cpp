@@ -49,6 +49,7 @@ const char kAndroidParcelLiteral[] = "android::Parcel";
 const char kIBinderHeader[] = "binder/IBinder.h";
 const char kIInterfaceHeader[] = "binder/IInterface.h";
 const char kParcelHeader[] = "binder/Parcel.h";
+const char kStrongPointerHeader[] = "utils/StrongPointer.h";
 
 unique_ptr<AstNode> BreakOnStatusNotOk() {
   IfStatement* ret = new IfStatement(new Comparison(
@@ -275,11 +276,12 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
   //     status = data.WriteInt32(in_param_name);
   //     if (status != android::OK) { return status; }
   for (const AidlArgument* a : method.GetInArguments()) {
+    const Type* type = types.Find(a->GetType().GetName());
     string method =
-      types.Find(a->GetType().GetName())
-        ->WriteToParcelMethod(a->GetType().IsArray());
+      type->WriteToParcelMethod(a->GetType().IsArray());
 
     string var_name = ((a->IsOut()) ? "*" : "") + a->GetName();
+    var_name = type->WriteCast(var_name);
     b->AddStatement(new Assignment(
         "status",
         new MethodCall("data." + method, ArgList(var_name))));
@@ -439,7 +441,8 @@ bool HandleServerTransaction(const TypeNamespace& types,
         "reply->" +
         return_type->WriteToParcelMethod(method.GetType().IsArray());
     b->AddStatement(new Assignment{
-        "status", new MethodCall{writeMethod, ArgList{kReturnVarName}}});
+        "status", new MethodCall{writeMethod,
+        ArgList{return_type->WriteCast(kReturnVarName)}}});
     b->AddStatement(BreakOnStatusNotOk());
   }
 
@@ -454,7 +457,7 @@ bool HandleServerTransaction(const TypeNamespace& types,
     b->AddStatement(new Assignment{
         "status",
         new MethodCall{"reply->" + writeMethod,
-                       BuildVarName(*a)}});
+                       type->WriteCast(BuildVarName(*a))}});
     b->AddStatement(BreakOnStatusNotOk());
   }
 
@@ -602,7 +605,8 @@ unique_ptr<Document> BuildServerHeader(const TypeNamespace& /* types */,
 
 unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
                                           const AidlInterface& interface) {
-  set<string> includes = { kIBinderHeader, kIInterfaceHeader };
+  set<string> includes = { kIBinderHeader, kIInterfaceHeader,
+                           kStrongPointerHeader };
 
   for (const auto& method : interface.GetMethods()) {
     for (const auto& argument : method->GetArguments()) {

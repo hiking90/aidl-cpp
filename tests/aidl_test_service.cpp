@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -29,6 +30,9 @@
 
 #include "android/aidl/tests/BnTestService.h"
 #include "android/aidl/tests/ITestService.h"
+
+#include "android/aidl/tests/BnNamedCallback.h"
+#include "android/aidl/tests/INamedCallback.h"
 
 // Used implicitly.
 #undef LOG_TAG
@@ -52,7 +56,11 @@ using android::ProcessState;
 
 // Generated code:
 using android::aidl::tests::BnTestService;
+using android::aidl::tests::BnNamedCallback;
+using android::aidl::tests::INamedCallback;
 
+// Standard library
+using std::map;
 using std::vector;
 
 namespace android {
@@ -68,6 +76,19 @@ class BinderCallback : public LooperCallback {
     IPCThreadState::self()->handlePolledCommands();
     return 1;  // Continue receiving callbacks.
   }
+};
+
+class NamedCallback : public BnNamedCallback {
+ public:
+  NamedCallback(String16 name) : name_(name) {}
+
+  status_t GetName(String16* ret) {
+    *ret = name_;
+    return OK;
+  }
+
+ private:
+  String16 name_;
 };
 
 class NativeService : public BnTestService {
@@ -207,6 +228,32 @@ class NativeService : public BnTestService {
                          vector<String16>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
+
+  status_t GetOtherTestService(const String16& name,
+                               sp<INamedCallback>* returned_service) override {
+    if (service_map_.find(name) == service_map_.end()) {
+      sp<INamedCallback> new_item(new NamedCallback(name));
+      service_map_[name] = new_item;
+    }
+
+    *returned_service = service_map_[name];
+    return OK;
+  }
+
+  status_t VerifyName(const sp<INamedCallback>& service, const String16& name,
+                      bool* returned_value) override {
+    String16 foundName;
+    status_t err = service->GetName(&foundName);
+
+    if (err == OK) {
+      *returned_value = foundName == name;
+    }
+
+    return err;
+  }
+
+ private:
+  map<String16, sp<INamedCallback>> service_map_;
 };
 
 }  // namespace

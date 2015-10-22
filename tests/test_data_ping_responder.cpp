@@ -146,6 +146,7 @@ R"(#ifndef AIDL_GENERATED_ANDROID_OS_I_PING_RESPONDER_H_
 #include <binder/IBinder.h>
 #include <binder/IInterface.h>
 #include <cstdint>
+#include <utils/StrongPointer.h>
 
 namespace android {
 

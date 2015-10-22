@@ -129,30 +129,35 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := aidl_test_service
 LOCAL_SRC_FILES := \
     tests/android/aidl/tests/ITestService.aidl \
+    tests/android/aidl/tests/INamedCallback.aidl \
     tests/aidl_test_service.cpp
 LOCAL_SHARED_LIBRARIES := \
     libbinder \
     liblog \
     libutils
 LOCAL_CFLAGS := $(aidl_cflags) -Wunused-parameter
+LOCAL_AIDL_INCLUDES := system/tools/aidl/tests/
 include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := aidl_test_client
 LOCAL_SRC_FILES := \
     tests/android/aidl/tests/ITestService.aidl \
+    tests/android/aidl/tests/INamedCallback.aidl \
     tests/aidl_test_client.cpp
 LOCAL_SHARED_LIBRARIES := \
     libbinder \
     liblog \
     libutils
 LOCAL_CFLAGS := $(aidl_cflags) -Wunused-parameter
+LOCAL_AIDL_INCLUDES := system/tools/aidl/tests/
 include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := aidl_test_sentinel_searcher
 LOCAL_SRC_FILES := tests/aidl_test_sentinel_searcher.cpp
 LOCAL_CFLAGS := $(aidl_cflags) -Wunused-parameter
+LOCAL_AIDL_INCLUDES := system/tools/aidl/tests/
 include $(BUILD_EXECUTABLE)
 
 
@@ -168,7 +173,9 @@ LOCAL_MANIFEST_FILE := tests/java_app/AndroidManifest.xml
 LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/tests/java_app/resources
 LOCAL_SRC_FILES := \
     tests/android/aidl/tests/ITestService.aidl \
+    tests/android/aidl/tests/INamedCallback.aidl \
     tests/java_app/src/android/aidl/tests/TestServiceClient.java
+LOCAL_AIDL_INCLUDES := system/tools/aidl/tests/
 include $(BUILD_PACKAGE)
 
 endif  # not defined BRILLO
