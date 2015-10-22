@@ -262,6 +262,12 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
   // And declare the status variable we need for error handling.
   b->AddLiteral(StringPrintf("%s status", kAndroidStatusLiteral));
 
+  // Add the name of the interface we're hoping to call.
+  b->AddStatement(new Assignment(
+      "status",
+      new MethodCall("data.writeInterfaceToken", "getInterfaceDescriptor()")));
+  b->AddStatement(ReturnOnStatusNotOk());
+
   // Serialization looks roughly like:
   //     status = data.WriteInt32(in_param_name);
   //     if (status != android::OK) { return status; }
@@ -384,6 +390,15 @@ bool HandleServerTransaction(const TypeNamespace& types,
         "%s %s", return_type->CppType(false /* not array */).c_str(),
         kReturnVarName));
   }
+
+  // Check that the client is calling the correct interface.
+  IfStatement* interface_check = new IfStatement(
+      new MethodCall("data.checkInterface", "this"),
+      true /* invert the check */);
+  b->AddStatement(interface_check);
+  interface_check->OnTrue()->AddStatement(
+      new Assignment("status", "android::BAD_TYPE"));
+  interface_check->OnTrue()->AddLiteral("break");
 
   // Deserialize each "in" parameter to the transaction.
   for (const AidlArgument* a : method.GetInArguments()) {

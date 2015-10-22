@@ -60,6 +60,10 @@ android::status_t BpPingResponder::Ping(android::String16 token, int32_t* _aidl_
 android::Parcel data;
 android::Parcel reply;
 android::status_t status;
+status = data.writeInterfaceToken(getInterfaceDescriptor());
+if (((status) != (android::OK))) {
+return status;
+}
 status = data.writeString16(token);
 if (((status) != (android::OK))) {
 return status;
@@ -121,6 +125,10 @@ case Call::PING:
 {
 android::String16 in_token;
 int32_t _aidl_return;
+if ((!data.checkInterface(this))) {
+status = android::BAD_TYPE;
+break;
+}
 status = data.readString16(&in_token);
 if (((status) != (android::OK))) {
 break;
@@ -272,6 +280,10 @@ android::status_t BpComplexTypeInterface::Send(const std::vector<int32_t>& token
 android::Parcel data;
 android::Parcel reply;
 android::status_t status;
+status = data.writeInterfaceToken(getInterfaceDescriptor());
+if (((status) != (android::OK))) {
+return status;
+}
 status = data.writeInt32Vector(token);
 if (((status) != (android::OK))) {
 return status;
@@ -298,6 +310,10 @@ return status;
 android::status_t BpComplexTypeInterface::Piff(int32_t times) {
 android::Parcel data;
 android::status_t status;
+status = data.writeInterfaceToken(getInterfaceDescriptor());
+if (((status) != (android::OK))) {
+return status;
+}
 status = data.writeInt32(times);
 if (((status) != (android::OK))) {
 return status;
@@ -356,6 +372,10 @@ case Call::SEND:
 std::vector<int32_t> in_token;
 std::vector<bool> out_item;
 int32_t _aidl_return;
+if ((!data.checkInterface(this))) {
+status = android::BAD_TYPE;
+break;
+}
 status = data.readInt32Vector(&in_token);
 if (((status) != (android::OK))) {
 break;
@@ -381,6 +401,10 @@ break;
 case Call::PIFF:
 {
 int32_t in_times;
+if ((!data.checkInterface(this))) {
+status = android::BAD_TYPE;
+break;
+}
 status = data.readInt32(&in_times);
 if (((status) != (android::OK))) {
 break;
