@@ -177,6 +177,7 @@ class StatementBlock : public Declaration {
   void AddStatement(std::unique_ptr<AstNode> statement);
   void AddStatement(AstNode* statement);  // Takes ownership
   void AddLiteral(const std::string& expression, bool add_semicolon = true);
+  bool Empty() const { return statements_.empty(); }
 
   void Write(CodeWriter* to) const override;
 
@@ -279,6 +280,24 @@ class MethodCall : public AstNode {
 
   DISALLOW_COPY_AND_ASSIGN(MethodCall);
 };  // class MethodCall
+
+class IfStatement : public AstNode {
+ public:
+  IfStatement(AstNode* expression,
+              bool invert_expression = false);
+  virtual ~IfStatement() = default;
+  StatementBlock* OnTrue() { return &on_true_; }
+  StatementBlock* OnFalse() { return &on_false_; }
+  void Write(CodeWriter* to) const override;
+
+ private:
+  std::unique_ptr<AstNode> expression_;
+  bool invert_expression_ = false;
+  StatementBlock on_true_;
+  StatementBlock on_false_;
+
+  DISALLOW_COPY_AND_ASSIGN(IfStatement);
+};  // class IfStatement
 
 class LiteralStatement : public AstNode {
  public:

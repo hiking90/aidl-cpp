@@ -312,6 +312,22 @@ void MethodCall::Write(CodeWriter* to) const {
   arguments_.Write(to);
 }
 
+IfStatement::IfStatement(AstNode* expression, bool invert_expression)
+    : expression_(expression),
+      invert_expression_(invert_expression) {}
+
+void IfStatement::Write(CodeWriter* to) const {
+  to->Write("if (%s", (invert_expression_) ? "(!" : "");
+  expression_->Write(to);
+  to->Write(")%s ", (invert_expression_) ? ")" : "");
+  on_true_.Write(to);
+
+  if (!on_false_.Empty()) {
+    to->Write("else ");
+    on_false_.Write(to);
+  }
+}
+
 LiteralStatement::LiteralStatement(const string& expression, bool use_semicolon)
     : expression_(expression),
       use_semicolon_(use_semicolon) {}
