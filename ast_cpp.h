@@ -299,18 +299,19 @@ class IfStatement : public AstNode {
   DISALLOW_COPY_AND_ASSIGN(IfStatement);
 };  // class IfStatement
 
-class LiteralStatement : public AstNode {
+class Statement : public AstNode {
  public:
-  LiteralStatement(const std::string& expression, bool use_semicolon = true);
-  ~LiteralStatement() = default;
+  explicit Statement(std::unique_ptr<AstNode> expression);
+  explicit Statement(AstNode* expression);  // Takes possession.
+  explicit Statement(const std::string& expression);
+  ~Statement() = default;
   void Write(CodeWriter* to) const override;
 
  private:
-  const std::string expression_;
-  bool use_semicolon_;
+  std::unique_ptr<AstNode> expression_;
 
-  DISALLOW_COPY_AND_ASSIGN(LiteralStatement);
-};  // class LiteralStatement
+  DISALLOW_COPY_AND_ASSIGN(Statement);
+};  // class Statement
 
 class Comparison : public AstNode {
  public:
