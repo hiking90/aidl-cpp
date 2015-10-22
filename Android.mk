@@ -124,29 +124,29 @@ endif # HOST_OS == linux
 endif # No TARGET_BUILD_APPS or TARGET_BUILD_PDK
 
 include $(CLEAR_VARS)
-LOCAL_MODULE := hellod
+LOCAL_MODULE := aidl_test_service
 LOCAL_C_INCLUDES := tests/ping_responder
 LOCAL_SRC_FILES := \
-    tests/ping_responder/aidl/android/os/IPingResponder.aidl \
-    tests/ping_responder/hellod.cpp
+    tests/aidl/android/os/IPingResponder.aidl \
+    tests/aidl_test_service.cpp
 LOCAL_SHARED_LIBRARIES := \
     libbinder \
     liblog \
     libutils
-LOCAL_CFLAGS := -Wall -Wextra -Werror
+LOCAL_CFLAGS := -Wall -Wextra -Werror -Wunused-parameter
 include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
-LOCAL_MODULE := helloc
+LOCAL_MODULE := aidl_test_client
 LOCAL_C_INCLUDES := tests/ping_responder
 LOCAL_SRC_FILES := \
-    tests/ping_responder/aidl/android/os/IPingResponder.aidl \
-    tests/ping_responder/helloc.cpp
+    tests/aidl/android/os/IPingResponder.aidl \
+    tests/aidl_test_client.cpp
 LOCAL_SHARED_LIBRARIES := \
     libbinder \
     liblog \
     libutils
-LOCAL_CFLAGS := -Wall -Wextra -Werror
+LOCAL_CFLAGS := -Wall -Wextra -Werror -Wunused-parameter
 include $(BUILD_EXECUTABLE)
 
 
@@ -163,7 +163,7 @@ LOCAL_MANIFEST_FILE := tests/java_app/AndroidManifest.xml
 LOCAL_PRIVILEGED_MODULE := true
 LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/tests/java_app/resources
 LOCAL_SRC_FILES := \
-    tests/ping_responder/aidl/android/os/IPingResponder.aidl \
+    tests/aidl/android/os/IPingResponder.aidl \
     tests/java_app/src/android/aidl/tests/PingResponderClient.java
 include $(BUILD_PACKAGE)
 
