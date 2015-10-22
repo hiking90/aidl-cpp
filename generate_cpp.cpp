@@ -355,10 +355,11 @@ unique_ptr<Document> BuildClientSource(const TypeNamespace& types,
 
   // The constructor just passes the IBinder instance up to the super
   // class.
+  const string i_name = ClassName(interface, ClassNames::INTERFACE);
   file_decls.push_back(unique_ptr<Declaration>{new ConstructorImpl{
       ClassName(interface, ClassNames::CLIENT),
       ArgList{"const android::sp<android::IBinder>& impl"},
-      { "BpInterface<IPingResponder>(impl)" }}});
+      { "BpInterface<" + i_name + ">(impl)" }}});
 
   // Clients define a method per transaction.
   for (const auto& method : interface.GetMethods()) {

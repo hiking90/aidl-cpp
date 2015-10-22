@@ -273,7 +273,7 @@ namespace android {
 namespace os {
 
 BpComplexTypeInterface::BpComplexTypeInterface(const android::sp<android::IBinder>& impl)
-    : BpInterface<IPingResponder>(impl){
+    : BpInterface<IComplexTypeInterface>(impl){
 }
 
 android::status_t BpComplexTypeInterface::Send(const std::vector<int32_t>& token, std::vector<bool>* item, int32_t* _aidl_return) {
