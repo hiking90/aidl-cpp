@@ -68,6 +68,10 @@ status = remote()->transact(IPingResponder::PING, data, &reply);
 if (((status) != (android::OK))) {
 return status;
 }
+if (reply.readExceptionCode()) {
+status = android::FAILED_TRANSACTION;
+return status;
+}
 status = reply.readInt32(_aidl_return);
 if (((status) != (android::OK))) {
 return status;
@@ -122,6 +126,10 @@ if (((status) != (android::OK))) {
 break;
 }
 status = Ping(in_token, &_aidl_return);
+if (((status) != (android::OK))) {
+break;
+}
+status = reply->writeNoException();
 if (((status) != (android::OK))) {
 break;
 }
@@ -272,6 +280,10 @@ status = remote()->transact(IComplexTypeInterface::SEND, data, &reply);
 if (((status) != (android::OK))) {
 return status;
 }
+if (reply.readExceptionCode()) {
+status = android::FAILED_TRANSACTION;
+return status;
+}
 status = reply.readInt32(_aidl_return);
 if (((status) != (android::OK))) {
 return status;
@@ -292,6 +304,10 @@ return status;
 }
 status = remote()->transact(IComplexTypeInterface::PIFF, data, &reply, android::IBinder::FLAG_ONEWAY);
 if (((status) != (android::OK))) {
+return status;
+}
+if (reply.readExceptionCode()) {
+status = android::FAILED_TRANSACTION;
 return status;
 }
 return status;
@@ -348,6 +364,10 @@ status = Send(in_token, &out_item, &_aidl_return);
 if (((status) != (android::OK))) {
 break;
 }
+status = reply->writeNoException();
+if (((status) != (android::OK))) {
+break;
+}
 status = reply->writeInt32(_aidl_return);
 if (((status) != (android::OK))) {
 break;
@@ -366,6 +386,10 @@ if (((status) != (android::OK))) {
 break;
 }
 status = Piff(in_times);
+if (((status) != (android::OK))) {
+break;
+}
+status = reply->writeNoException();
 if (((status) != (android::OK))) {
 break;
 }

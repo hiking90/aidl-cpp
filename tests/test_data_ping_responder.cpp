@@ -71,6 +71,10 @@ status = remote()->transact(IPingResponder::PING, data, &reply);
 if (((status) != (android::OK))) {
 return status;
 }
+if (reply.readExceptionCode()) {
+status = android::FAILED_TRANSACTION;
+return status;
+}
 status = reply.readInt32(_aidl_return);
 if (((status) != (android::OK))) {
 return status;
@@ -100,6 +104,10 @@ if (((status) != (android::OK))) {
 break;
 }
 status = Ping(in_token, &_aidl_return);
+if (((status) != (android::OK))) {
+break;
+}
+status = reply->writeNoException();
 if (((status) != (android::OK))) {
 break;
 }
