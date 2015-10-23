@@ -17,73 +17,126 @@
 package android.aidl.tests;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.util.Log;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.FileOutputStream;
 
 // Generated
 import android.aidl.tests.ITestService;
 
 public class TestServiceClient extends Activity {
     private static final String TAG = "TestServiceClient";
-    private AtomicBoolean mKeepGoing = new AtomicBoolean(true);
 
-    private Runnable mPingThread = new Runnable() {
-        private static final int PERIOD_SECONDS = 5;
-
-        private final ServiceManager mServiceManager = new ServiceManager();
-        private ITestService mService;
-
-        public void run() {
-            while (mKeepGoing.get()) {
-                checkService();
-                try {
-                    Thread.sleep(PERIOD_SECONDS * 1000);
-                } catch (InterruptedException e) { }
-            }
+    public class TestFailException extends Exception {
+        public TestFailException(String message) {
+            super(message);
         }
+    }
 
-        public void checkService() {
-            if (mService == null) {
-                IBinder service = mServiceManager.getService(
-                        ITestService.class.getName());
-                if (service == null) {
-                    Log.i(TAG, "Failed to obtain binder...");
-                    return;
-                }
-                mService = ITestService.Stub.asInterface(service);
-                if (mService == null) {
-                    Log.wtf(TAG, "Failed to cast IBinder instance.");
-                    return;
-                }
-            }
+    private class Logger {
+      private PrintWriter mLogFile;
+
+      public Logger() {
+        try {
+            mLogFile = new PrintWriter(openFileOutput(
+                    "test-client.log", Context.MODE_WORLD_READABLE));
+        } catch (IOException ex) {
+            throw new RuntimeException("Failed to open log file for writing.");
+        }
+      }
+
+      public void log(String line) {
+          Log.i(TAG, line);
+          mLogFile.println(line);
+      }
+
+      public void logAndThrow(String line) throws TestFailException {
+          Log.e(TAG, line);
+          mLogFile.println(line);
+          throw new TestFailException(line);
+      }
+
+      public void close() {
+          if (mLogFile != null) {
+              mLogFile.close();
+          }
+      }
+    }
+
+
+    private Logger mLog;
+    private String mSuccessSentinel;
+    private String mFailureSentinel;
+
+    private void init() {
+        Intent intent = getIntent();
+        mLog = new Logger();
+        mLog.log("Reading sentinels from intent...");
+        mSuccessSentinel = intent.getStringExtra("sentinel.success");
+        mFailureSentinel = intent.getStringExtra("sentinel.failure");
+        if (mSuccessSentinel == null || mFailureSentinel == null) {
+            String message = "Failed to read intent extra input.";
+            Log.e(TAG, message);
+            mLog.close();
+            throw new RuntimeException(message);
+        }
+    }
+
+    private ITestService getService() throws TestFailException {
+        IBinder service = new ServiceManager().getService(
+                ITestService.class.getName());
+        if (service == null) {
+            mLog.logAndThrow("Failed to obtain binder...");
+        }
+        ITestService ret = ITestService.Stub.asInterface(service);
+        if (ret == null) {
+            mLog.logAndThrow("Failed to cast IBinder instance.");
+        }
+        return ret;
+    }
+
+    private void checkBasicPing(ITestService service) throws TestFailException {
+        mLog.log("Checking that basic ping works.");
+        final int INCREMENT = 1 << 20;
+        for (int i = 0; i < 3; ++i) {
+            int query = -INCREMENT + i * INCREMENT;
+            int response = -1;
             try {
-                int query = 8;  // extremely lucky value
-                Log.i(TAG, "Querying with token=" + query);
-                int response = mService.Ping(query);
-                Log.i(TAG, "Got response=" + response);
+                response = service.Ping(query);
             } catch (RemoteException ex) {
-                Log.e(TAG, "Ping failed.");
-                mService = null;
+                mLog.log(ex.toString());
+                mLog.logAndThrow("Failed pinging service with " + query);
+            }
+            if (query != response) {
+                mLog.logAndThrow(
+                        "Ping with " + query + " responded " + response);
             }
         }
-    };
+        mLog.log("...Basic ping works.");
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.i(TAG, "TestServiceClient.onCreate()");
-        // Keep the main thread free for event handling.
-        new Thread(mPingThread).start();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        Log.i(TAG, "TestServiceClient.onDestroy()");
-        mKeepGoing.set(false);
+        Log.i(TAG, "Starting!");
+        try {
+          init();
+          ITestService service = getService();
+          mLog.log(mSuccessSentinel);
+        } catch (TestFailException e) {
+            mLog.close();
+            throw new RuntimeException(e);
+        } finally {
+            if (mLog != null) {
+                mLog.close();
+            }
+        }
     }
 }
