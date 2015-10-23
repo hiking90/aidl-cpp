@@ -16,6 +16,8 @@
 
 LOCAL_PATH := $(call my-dir)
 
+aidl_cflags := -Wall -Wextra -Werror
+
 # This tool is prebuilt if we're doing an app-only build.
 ifeq ($(TARGET_BUILD_APPS)$(filter true,$(TARGET_BUILD_PDK)),)
 
@@ -27,7 +29,7 @@ LOCAL_MODULE := libaidl-common
 LOCAL_MODULE_HOST_OS := darwin linux windows
 
 LOCAL_C_INCLUDES := external/gtest/include
-LOCAL_CLANG_CFLAGS := -Wall -Werror
+LOCAL_CLANG_CFLAGS := $(aidl_cflags)
 # Tragically, the code is riddled with unused parameters.
 LOCAL_CLANG_CFLAGS += -Wno-unused-parameter
 # yacc dumps a lot of code *just in case*.
@@ -65,7 +67,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := aidl
 
 LOCAL_MODULE_HOST_OS := darwin linux windows
-LOCAL_CFLAGS := -Wall -Werror
+LOCAL_CFLAGS := $(aidl_cflags)
 LOCAL_C_INCLUDES := external/gtest/include
 LOCAL_SRC_FILES := main_java.cpp
 LOCAL_STATIC_LIBRARIES := libaidl-common $(aidl_static_libraries)
@@ -76,7 +78,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := aidl-cpp
 
 LOCAL_MODULE_HOST_OS := darwin linux windows
-LOCAL_CFLAGS := -Wall -Werror
+LOCAL_CFLAGS := $(aidl_cflags)
 LOCAL_C_INCLUDES := external/gtest/include
 LOCAL_SRC_FILES := main_cpp.cpp
 LOCAL_STATIC_LIBRARIES := libaidl-common $(aidl_static_libraries)
@@ -89,7 +91,7 @@ ifeq ($(HOST_OS),linux)
 include $(CLEAR_VARS)
 LOCAL_MODULE := aidl_unittests
 
-LOCAL_CFLAGS := -g -DUNIT_TEST -Wall -Werror
+LOCAL_CFLAGS := $(aidl_cflags) -g -DUNIT_TEST
 # Tragically, the code is riddled with unused parameters.
 LOCAL_CLANG_CFLAGS := -Wno-unused-parameter
 LOCAL_SRC_FILES := \
@@ -125,7 +127,6 @@ endif # No TARGET_BUILD_APPS or TARGET_BUILD_PDK
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := aidl_test_service
-LOCAL_C_INCLUDES := tests/ping_responder
 LOCAL_SRC_FILES := \
     tests/android/aidl/tests/ITestService.aidl \
     tests/aidl_test_service.cpp
@@ -133,12 +134,11 @@ LOCAL_SHARED_LIBRARIES := \
     libbinder \
     liblog \
     libutils
-LOCAL_CFLAGS := -Wall -Wextra -Werror -Wunused-parameter
+LOCAL_CFLAGS := $(aidl_cflags) -Wunused-parameter
 include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := aidl_test_client
-LOCAL_C_INCLUDES := tests/ping_responder
 LOCAL_SRC_FILES := \
     tests/android/aidl/tests/ITestService.aidl \
     tests/aidl_test_client.cpp
@@ -146,7 +146,7 @@ LOCAL_SHARED_LIBRARIES := \
     libbinder \
     liblog \
     libutils
-LOCAL_CFLAGS := -Wall -Wextra -Werror -Wunused-parameter
+LOCAL_CFLAGS := $(aidl_cflags) -Wunused-parameter
 include $(BUILD_EXECUTABLE)
 
 
