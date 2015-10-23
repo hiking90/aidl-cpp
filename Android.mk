@@ -127,7 +127,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := aidl_test_service
 LOCAL_C_INCLUDES := tests/ping_responder
 LOCAL_SRC_FILES := \
-    tests/aidl/android/os/IPingResponder.aidl \
+    tests/android/aidl/tests/ITestService.aidl \
     tests/aidl_test_service.cpp
 LOCAL_SHARED_LIBRARIES := \
     libbinder \
@@ -140,7 +140,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := aidl_test_client
 LOCAL_C_INCLUDES := tests/ping_responder
 LOCAL_SRC_FILES := \
-    tests/aidl/android/os/IPingResponder.aidl \
+    tests/android/aidl/tests/ITestService.aidl \
     tests/aidl_test_client.cpp
 LOCAL_SHARED_LIBRARIES := \
     libbinder \
@@ -161,8 +161,8 @@ LOCAL_CERTIFICATE := platform
 LOCAL_MANIFEST_FILE := tests/java_app/AndroidManifest.xml
 LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/tests/java_app/resources
 LOCAL_SRC_FILES := \
-    tests/aidl/android/os/IPingResponder.aidl \
-    tests/java_app/src/android/aidl/tests/PingResponderClient.java
+    tests/android/aidl/tests/ITestService.aidl \
+    tests/java_app/src/android/aidl/tests/TestServiceClient.java
 include $(BUILD_PACKAGE)
 
 endif  # not defined BRILLO

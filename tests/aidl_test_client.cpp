@@ -20,7 +20,7 @@
 #include <utils/String16.h>
 #include <utils/StrongPointer.h>
 
-#include "android/os/IPingResponder.h"
+#include "android/aidl/tests/ITestService.h"
 
 // libutils:
 using android::OK;
@@ -32,7 +32,7 @@ using android::String16;
 using android::getService;
 
 // generated
-using android::os::IPingResponder;
+using android::aidl::tests::ITestService;
 
 using std::cerr;
 using std::cout;
@@ -40,9 +40,9 @@ using std::endl;
 
 namespace {
 
-const char kServiceName[] = "android.os.IPingResponder";
+const char kServiceName[] = "android.aidl.tests.ITestService";
 
-bool ConfirmBasicPing(const sp<IPingResponder>& service) {
+bool ConfirmBasicPing(const sp<ITestService>& service) {
   cout << "Confirming basic ping functionality." << endl;
   const int32_t kIncrement = 1 << 20;
   for (int32_t i = 0; i < 3; ++i) {
@@ -61,8 +61,8 @@ bool ConfirmBasicPing(const sp<IPingResponder>& service) {
   return true;
 }
 
-bool GetService(sp<IPingResponder>* service) {
-  cout << "Retrieving ping service binder" << endl;
+bool GetService(sp<ITestService>* service) {
+  cout << "Retrieving test service binder" << endl;
   status_t status = getService(String16(kServiceName), service);
   if (status != OK) {
     cerr << "Failed to get service binder: '" << kServiceName
@@ -75,7 +75,7 @@ bool GetService(sp<IPingResponder>* service) {
 }  // namespace
 
 int main(int /* argc */, char * /* argv */ []) {
-  sp<IPingResponder> service;
+  sp<ITestService> service;
 
   if (!GetService(&service)) return 1;
 
