@@ -149,6 +149,12 @@ LOCAL_SHARED_LIBRARIES := \
 LOCAL_CFLAGS := $(aidl_cflags) -Wunused-parameter
 include $(BUILD_EXECUTABLE)
 
+include $(CLEAR_VARS)
+LOCAL_MODULE := aidl_test_sentinel_searcher
+LOCAL_SRC_FILES := tests/aidl_test_sentinel_searcher.cpp
+LOCAL_CFLAGS := $(aidl_cflags) -Wunused-parameter
+include $(BUILD_EXECUTABLE)
+
 
 # aidl on its own doesn't need the framework, but testing native/java
 # compatibility introduces java dependencies.
