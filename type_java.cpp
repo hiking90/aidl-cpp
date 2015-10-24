@@ -698,21 +698,6 @@ const vector<const Type*>& GenericType::GenericArgumentTypes() const {
 
 string GenericType::GenericArguments() const { return m_genericArguments; }
 
-void GenericType::WriteToParcel(StatementBlock* addTo, Variable* v,
-                                Variable* parcel, int flags) const {
-  fprintf(stderr, "implement GenericType::WriteToParcel\n");
-}
-
-void GenericType::CreateFromParcel(StatementBlock* addTo, Variable* v,
-                                   Variable* parcel, Variable**) const {
-  fprintf(stderr, "implement GenericType::CreateFromParcel\n");
-}
-
-void GenericType::ReadFromParcel(StatementBlock* addTo, Variable* v,
-                                 Variable* parcel, Variable**) const {
-  fprintf(stderr, "implement GenericType::ReadFromParcel\n");
-}
-
 // ================================================================
 
 GenericListType::GenericListType(const JavaTypeNamespace* types,
