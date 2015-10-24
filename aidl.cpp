@@ -312,22 +312,6 @@ string generate_outputFileName(const JavaOptions& options,
     return result;
 }
 
-void check_outputFilePath(const string& path) {
-    size_t len = path.length();
-    for (size_t i=0; i<len ; i++) {
-        if (path[i] == OS_PATH_SEPARATOR) {
-            string p = path.substr(0, i);
-            if (access(path.data(), F_OK) != 0) {
-#ifdef _WIN32
-                _mkdir(p.data());
-#else
-                mkdir(p.data(), S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP);
-#endif
-            }
-        }
-    }
-}
-
 
 int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
     FILE* f = fopen(filename.c_str(), "rb");
@@ -618,16 +602,16 @@ int compile_aidl_to_java(const JavaOptions& options,
     output_file_name = generate_outputFileName(options, *interface);
   }
 
+  // make sure the folders of the output file all exists
+  if (!io_delegate.CreatePathForFile(output_file_name)) {
+    return 1;
+  }
+
   // if we were asked to, generate a make dependency file
   // unless it's a parcelable *and* it's supposed to fail on parcelable
   if (options.auto_dep_file_ || options.dep_file_name_ != "") {
-    // make sure the folders of the output file all exists
-    check_outputFilePath(output_file_name);
     generate_dep_file(options, imports, io_delegate);
   }
-
-  // make sure the folders of the output file all exists
-  check_outputFilePath(output_file_name);
 
   err = generate_java(output_file_name, options.input_file_name_.c_str(),
                       interface.get(), types.get(), io_delegate);
