@@ -254,10 +254,8 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
 
   // Declare parcels to hold our query and the response.
   b->AddLiteral(StringPrintf("%s data", kAndroidParcelLiteral));
-
-  if (!interface.IsOneway() && !method.IsOneway()) {
-    b->AddLiteral(StringPrintf("%s reply", kAndroidParcelLiteral));
-  }
+  // Even if we're oneway, the transact method still takes a parcel.
+  b->AddLiteral(StringPrintf("%s reply", kAndroidParcelLiteral));
 
   // And declare the status variable we need for error handling.
   b->AddLiteral(StringPrintf("%s status", kAndroidStatusLiteral));
@@ -293,26 +291,28 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
     args.push_back("android::IBinder::FLAG_ONEWAY");
   }
 
-  // Type checking should guarantee that nothing below emits code until "return
-  // status" if we are a oneway method, so no more fear of accessing reply.
-
   b->AddStatement(new Assignment(
       "status",
       new MethodCall("remote()->transact",
                      ArgList(args))));
   b->AddStatement(ReturnOnStatusNotOk());
 
-  // Strip off the exception header and fail if we see a remote exception.
-  // if (reply.readExceptionCode()) {
-  //   status = android::FAILED_TRANSACTION;
-  //   return status;
-  // }
-  IfStatement* exception_check = new IfStatement(
-      new LiteralExpression("reply.readExceptionCode()"));
-  b->AddStatement(exception_check);
-  exception_check->OnTrue()->AddStatement(
-      new Assignment("status", "android::FAILED_TRANSACTION"));
-  exception_check->OnTrue()->AddLiteral("return status");
+  if (!interface.IsOneway() && !method.IsOneway()) {
+    // Strip off the exception header and fail if we see a remote exception.
+    // if (reply.readExceptionCode()) {
+    //   status = android::FAILED_TRANSACTION;
+    //   return status;
+    // }
+    IfStatement* exception_check = new IfStatement(
+        new LiteralExpression("reply.readExceptionCode()"));
+    b->AddStatement(exception_check);
+    exception_check->OnTrue()->AddStatement(
+        new Assignment("status", "android::FAILED_TRANSACTION"));
+    exception_check->OnTrue()->AddLiteral("return status");
+  }
+
+  // Type checking should guarantee that nothing below emits code until "return
+  // status" if we are a oneway method, so no more fear of accessing reply.
 
   // If the method is expected to return something, read it first by convention.
   const Type* return_type = types.Find(method.GetType().GetName());

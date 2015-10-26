@@ -309,6 +309,7 @@ return status;
 
 android::status_t BpComplexTypeInterface::Piff(int32_t times) {
 android::Parcel data;
+android::Parcel reply;
 android::status_t status;
 status = data.writeInterfaceToken(getInterfaceDescriptor());
 if (((status) != (android::OK))) {
@@ -320,10 +321,6 @@ return status;
 }
 status = remote()->transact(IComplexTypeInterface::PIFF, data, &reply, android::IBinder::FLAG_ONEWAY);
 if (((status) != (android::OK))) {
-return status;
-}
-if (reply.readExceptionCode()) {
-status = android::FAILED_TRANSACTION;
 return status;
 }
 return status;
