@@ -97,22 +97,24 @@ bool TypeNamespace::IsValidArg(const AidlArgument& a,
   // check the arg type
   const ValidatableType* t = GetValidatableType(a.GetType().GetName());
   if (t == nullptr) {
-    cerr << error_prefix << "unknown type " << a.GetType().GetName().c_str() << endl;
+    cerr << error_prefix << "unknown type " << a.GetType().GetName().c_str()
+         << endl;
     return false;
   }
 
   if (!t->CanWriteToParcel()) {
     cerr << error_prefix
-         << StringPrintf("'%s %s' can't be marshalled.",
-                         a.GetType().GetName().c_str(), a.GetName().c_str()) << endl;
+         << StringPrintf("'%s' can't be marshalled.",
+                         a.GetType().ToString().c_str()) << endl;
     return false;
   }
 
   if (!a.DirectionWasSpecified() &&
       (a.GetType().IsArray() || t->CanBeOutParameter())) {
     cerr << error_prefix << StringPrintf(
-        "'%s %s' can be an out parameter, so you must declare it as in,"
-        " out or inout.", a.GetType().GetName().c_str(), a.GetName().c_str()) << endl;
+        "'%s' can be an out type, so you must declare it as in,"
+        " out or inout.",
+        a.GetType().ToString().c_str()) << endl;
     return false;
   }
 
