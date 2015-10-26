@@ -762,15 +762,6 @@ ClassLoaderType::ClassLoaderType(const JavaTypeNamespace* types)
 
 // ================================================================
 
-JavaTypeNamespace::ContainerClass::ContainerClass(const string& package,
-                                                  const string& class_name,
-                                                  size_t nargs)
-    : package(package),
-      class_name(class_name),
-      canonical_name(package + "." + class_name),
-      args(nargs) {
-}
-
 JavaTypeNamespace::JavaTypeNamespace() {
   Add(new BasicType(this, "void", "XXX", "XXX", "XXX", "XXX", "XXX"));
 
@@ -847,9 +838,6 @@ JavaTypeNamespace::JavaTypeNamespace() {
   SUPER_VALUE = new LiteralExpression("super");
   TRUE_VALUE = new LiteralExpression("true");
   FALSE_VALUE = new LiteralExpression("false");
-
-  m_containers.emplace_back("java.util", "List", 1);
-  m_containers.emplace_back("java.util", "Map", 2);
 }
 
 JavaTypeNamespace::~JavaTypeNamespace() {
@@ -886,22 +874,25 @@ bool JavaTypeNamespace::Add(const Type* type) {
   return true;
 }
 
-const Type* JavaTypeNamespace::Find(const string& unstripped_name) const {
-  const ContainerClass* g = nullptr;
-  vector<const Type*> template_arg_types;
-  if (!CanonicalizeContainerClass(unstripped_name, &g, &template_arg_types)) {
-    LOG(ERROR) << "Error canonicalizing type '" << unstripped_name << "'";
-    return nullptr;
+const Type* JavaTypeNamespace::Find(const string& raw_name) const {
+  string name = Trim(raw_name);
+  if (IsContainerType(name)) {
+    vector<string> container_class;
+    vector<string> contained_type_names;
+    if (!CanonicalizeContainerType(name, &container_class,
+                                   &contained_type_names)) {
+      return nullptr;
+    }
+    for (string& contained_type_name : contained_type_names) {
+      const Type* contained_type = Find(contained_type_name);
+      if (!contained_type) {
+        return nullptr;
+      }
+      contained_type_name = contained_type->QualifiedName();
+    }
+    name = Join(container_class, '.') +
+           "<" + Join(contained_type_names, ',') + ">";
   }
-
-  string name = Trim(unstripped_name);
-  if (g != nullptr) {
-    vector<string> template_args;
-    for (const Type* type : template_arg_types) {
-      template_args.push_back(type->QualifiedName());
-     }
-    name = g->canonical_name + "<" + Join(template_args, ',') + ">";
-   }
 
   // Always prefer a exact match if possible.
   // This works for primitives and class names qualified with a package.
@@ -964,116 +955,26 @@ bool JavaTypeNamespace::AddBinderType(const AidlInterface* b,
   return success;
 }
 
-bool JavaTypeNamespace::AddContainerType(const string& type_name) {
-  if (Find(type_name) != nullptr) {
-    return true;  // Don't add duplicates of the same templated type.
-  }
-
-  const ContainerClass* g = nullptr;
-  vector<const Type*> template_arg_types;
-  if (!CanonicalizeContainerClass(type_name, &g, &template_arg_types)) {
-    LOG(ERROR) << "Error canonicalizing type '" << type_name << "'";
+bool JavaTypeNamespace::AddListType(const std::string& contained_type_name) {
+  const Type* contained_type = Find(contained_type_name);
+  if (!contained_type) {
     return false;
   }
-
-  if (g == nullptr) {
-    // We parsed the type correctly, but it wasn't a container type.  No error.
-    return true;
-  }
-
-  // construct an instance of a container type, add it to our name set so they
-  // always get the same object, and return it.
-  Type* result = nullptr;
-  if (g->canonical_name == "java.util.List" &&
-      template_arg_types.size() == 1u) {
-    result = new GenericListType(this, g->package, g->class_name,
-                                 template_arg_types);
-  } else {
-    LOG(ERROR) << "Don't know how to create a container of type "
-               << g->canonical_name << " with " << template_arg_types.size()
-               << " arguments.";
-    return false;
-  }
-
+  Type* result = new GenericListType(
+      this, "java.util", "List", {contained_type});
   Add(result);
   return true;
+}
+
+bool JavaTypeNamespace::AddMapType(const string& key_type_name,
+                                   const string& value_type_name) {
+  LOG(ERROR) << "Don't know how to create a Map<K,V> container.";
+  return false;
 }
 
 const ValidatableType* JavaTypeNamespace::GetValidatableType(
     const string& name) const {
   return Find(name);
-}
-
-const JavaTypeNamespace::ContainerClass* JavaTypeNamespace::FindContainerClass(
-    const string& name,
-    size_t nargs) const {
-  // first check fully qualified class names (with packages).
-  for (const ContainerClass& container : m_containers) {
-    if (container.canonical_name == name && nargs == container.args) {
-      return &container;
-    }
-  }
-
-  // then match on the class name alone (no package).
-  for (const ContainerClass& container : m_containers) {
-    if (container.class_name == name && nargs == container.args) {
-      return &container;
-    }
-  }
-
-  return nullptr;
-}
-
-bool JavaTypeNamespace::CanonicalizeContainerClass(
-    const string& raw_name,
-    const ContainerClass** container_class,
-    vector<const Type*>* arg_types) const {
-  string name = Trim(raw_name);
-  const size_t opening_brace = name.find('<');
-  if (opening_brace == name.npos) {
-    // Not a template type and not an error.
-    *container_class = nullptr;
-    arg_types->clear();
-    return true;
-  }
-
-  const size_t closing_brace = name.find('>');
-  if (opening_brace != name.rfind('<') ||
-      closing_brace != name.rfind('>') ||
-      closing_brace != name.length() - 1) {
-    LOG(ERROR) << "Invalid template type '" << name << "'";
-    // Nested/invalid templates are forbidden.
-    return false;
-  }
-
-  string container_class_name = Trim(name.substr(0, opening_brace));
-  string remainder = name.substr(opening_brace + 1,
-                                 (closing_brace - opening_brace) - 1);
-  vector<string> template_args = Split(remainder, ",");
-
-  const ContainerClass* g =
-      FindContainerClass(container_class_name, template_args.size());
-  if (g == nullptr) {
-    LOG(ERROR) << "Failed to find templated container '"
-               << container_class_name << "'";
-    return false;
-  }
-
-  vector<const Type*> template_arg_types;
-  for (auto& template_arg : template_args) {
-    // Recursively search for the contained types.
-    const Type* template_arg_type = Find(Trim(template_arg));
-    if (template_arg_type == nullptr) {
-      LOG(ERROR) << "Failed to find formal type of '"
-                 << template_arg << "'";
-      return false;
-    }
-    template_arg_types.push_back(template_arg_type);
-  }
-
-  *arg_types = template_arg_types;
-  *container_class = g;
-  return true;
 }
 
 void JavaTypeNamespace::Dump() const {

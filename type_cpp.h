@@ -46,7 +46,7 @@ class Type : public ValidatableType {
   virtual ~Type() = default;
 
   // overrides of ValidatableType
-  bool CanBeArray() const;
+  bool CanBeArray() const override;
   bool CanBeOutParameter() const override;
   bool CanWriteToParcel() const override;
 
@@ -81,7 +81,10 @@ class TypeNamespace : public ::android::aidl::TypeNamespace {
                          const std::string& filename) override;
   bool AddBinderType(const AidlInterface* b,
                      const std::string& filename) override;
-  bool AddContainerType(const std::string& type_name) override;
+  bool AddListType(const std::string& type_name) override;
+  bool AddMapType(const std::string& key_type_name,
+                  const std::string& value_type_name) override;
+
   bool IsValidPackage(const std::string& package) const override;
   bool IsValidArg(const AidlArgument& a,
                   int arg_index,

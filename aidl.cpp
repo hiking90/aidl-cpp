@@ -194,7 +194,7 @@ int check_types(const string& filename,
   for (const auto& m : c->GetMethods()) {
     bool oneway = m->IsOneway() || c->IsOneway();
 
-    if (!types->AddContainerType(m->GetType().GetName()) ||
+    if (!types->MaybeAddContainerType(m->GetType().GetName()) ||
         !types->IsValidReturnType(m->GetType(), filename)) {
       err = 1;  // return type is invalid
     }
@@ -208,7 +208,7 @@ int check_types(const string& filename,
 
     int index = 1;
     for (const auto& arg : m->GetArguments()) {
-      if (!types->AddContainerType(arg->GetType().GetName()) ||
+      if (!types->MaybeAddContainerType(arg->GetType().GetName()) ||
           !types->IsValidArg(*arg, index, filename)) {
         err = 1;
       }

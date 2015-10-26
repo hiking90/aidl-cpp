@@ -19,15 +19,21 @@
 #include <algorithm>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <base/stringprintf.h>
+#include <base/strings.h>
 
 #include "aidl_language.h"
+#include "logging.h"
 
 using android::base::StringPrintf;
+using android::base::Split;
+using android::base::Trim;
 using std::cerr;
 using std::endl;
 using std::string;
+using std::vector;
 
 namespace android {
 namespace aidl {
@@ -53,6 +59,85 @@ bool is_java_keyword(const char* str) {
 }
 
 } // namespace
+
+bool TypeNamespace::MaybeAddContainerType(const std::string& type_name) {
+  if (!IsContainerType(type_name) || HasType(type_name)) {
+    return true;
+  }
+
+  vector<string> container_class;
+  vector<string> contained_type_names;
+  if (!CanonicalizeContainerType(type_name, &container_class,
+                                 &contained_type_names)) {
+    return false;
+  }
+
+  // We only support two types right now and this type is one of them.
+  switch (contained_type_names.size()) {
+    case 1:
+      return AddListType(contained_type_names[0]);
+    case 2:
+      return AddMapType(contained_type_names[0], contained_type_names[1]);
+    default:
+      break;  // Should never get here, will FATAL below.
+  }
+
+  LOG(FATAL) << "aidl internal error";
+  return false;
+}
+
+
+bool TypeNamespace::IsContainerType(const string& type_name) const {
+  const size_t opening_brace = type_name.find('<');
+  const size_t closing_brace = type_name.find('>');
+  if (opening_brace != string::npos || closing_brace != string::npos) {
+    return true;  // Neither < nor > appear in normal AIDL types.
+  }
+  return false;
+}
+
+bool TypeNamespace::CanonicalizeContainerType(
+    const string& raw_type_name,
+    vector<string>* container_class,
+    vector<string>* contained_type_names) const {
+  string name = Trim(raw_type_name);
+  const size_t opening_brace = name.find('<');
+  const size_t closing_brace = name.find('>');
+  if (opening_brace == string::npos || closing_brace == string::npos) {
+    return false;
+  }
+
+  if (opening_brace != name.rfind('<') ||
+      closing_brace != name.rfind('>') ||
+      closing_brace != name.length() - 1) {
+    // Nested/invalid templates are forbidden.
+    LOG(ERROR) << "Invalid template type '" << name << "'";
+    return false;
+  }
+
+  string container = Trim(name.substr(0, opening_brace));
+  string remainder = name.substr(opening_brace + 1,
+                                 (closing_brace - opening_brace) - 1);
+  vector<string> args = Split(remainder, ",");
+
+  // Map the container name to its canonical form for supported containers.
+  if ((container == "List" || container == "java.util.List") &&
+      args.size() == 1) {
+    *container_class = {"java", "util", "List"};
+    *contained_type_names = args;
+    return true;
+  }
+  if ((container == "Map" || container == "java.util.Map") &&
+      args.size() == 2) {
+    *container_class = {"java", "util", "Map"};
+    *contained_type_names = args;
+    return true;
+  }
+
+  LOG(ERROR) << "Unknown find container with name " << container
+             << " and " << args.size() << "contained types.";
+  return false;
+}
 
 bool TypeNamespace::HasType(const string& type_name) const {
   return GetValidatableType(type_name) != nullptr;

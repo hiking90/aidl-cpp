@@ -405,7 +405,9 @@ class JavaTypeNamespace : public TypeNamespace {
                          const string& filename) override;
   bool AddBinderType(const AidlInterface* b,
                      const string& filename) override;
-  bool AddContainerType(const string& type_name) override;
+  bool AddListType(const std::string& contained_type_name) override;
+  bool AddMapType(const std::string& key_type_name,
+                  const std::string& value_type_name) override;
 
   // Search for a type by exact match with |name|.
   const Type* Find(const string& name) const;
@@ -435,29 +437,9 @@ class JavaTypeNamespace : public TypeNamespace {
   const ValidatableType* GetValidatableType(const string& name) const override;
 
  private:
-  class ContainerClass final {
-   public:
-    ContainerClass(const string& package,
-                   const string& class_name,
-                   size_t nargs);
-    ~ContainerClass() = default;
-    const string package;
-    const string class_name;
-    const string canonical_name;
-    const size_t args;
-  };
-
   bool Add(const Type* type);
 
-  // args is the number of template types (what is this called?)
-  const ContainerClass* FindContainerClass(const string& name,
-                                           size_t nargs) const;
-  bool CanonicalizeContainerClass(const string& raw_name,
-                                  const ContainerClass** container_class,
-                                  vector<const Type*>* arg_types) const;
-
   vector<const Type*> m_types;
-  vector<ContainerClass> m_containers;
 
   const Type* m_bool_type{nullptr};
   const Type* m_int_type{nullptr};
