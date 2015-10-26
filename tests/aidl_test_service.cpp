@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#include <sstream>
+#include <string>
+
 #include <binder/IInterface.h>
 #include <binder/IPCThreadState.h>
 #include <binder/IServiceManager.h>
@@ -96,10 +99,56 @@ class NativeService : public BnTestService {
     return 0;
   }
 
-  // BnTestService:
-  status_t Ping(int32_t token, int32_t* returned_token) override {
-    ALOGI("Got ping with token %d", token);
-    *returned_token = token;
+  void LogRepeatedStringToken(const String16& token) {
+    ALOGI("Repeating '%s' of length=%u", android::String8(token).string(),
+          token.size());
+  }
+
+  template<typename T>
+  void LogRepeatedToken(const T& token) {
+    std::ostringstream token_str;
+    token_str << token;
+    ALOGI("Repeating token %s", token_str.str().c_str());
+  }
+
+  status_t RepeatBoolean(bool token, bool* _aidl_return) override {
+    LogRepeatedToken(token ? 1 : 0);
+    *_aidl_return = token;
+    return OK;
+  }
+  status_t RepeatByte(int8_t token, int8_t* _aidl_return) override {
+    LogRepeatedToken(token);
+    *_aidl_return = token;
+    return OK;
+  }
+  status_t RepeatChar(char16_t token, char16_t* _aidl_return) override {
+    LogRepeatedStringToken(String16(&token, 1));
+    *_aidl_return = token;
+    return OK;
+  }
+  status_t RepeatInt(int32_t token, int32_t* _aidl_return) override {
+    LogRepeatedToken(token);
+    *_aidl_return = token;
+    return OK;
+  }
+  status_t RepeatLong(int64_t token, int64_t* _aidl_return) override {
+    LogRepeatedToken(token);
+    *_aidl_return = token;
+    return OK;
+  }
+  status_t RepeatFloat(float token, float* _aidl_return) override {
+    LogRepeatedToken(token);
+    *_aidl_return = token;
+    return OK;
+  }
+  status_t RepeatDouble(double token, double* _aidl_return) override {
+    LogRepeatedToken(token);
+    *_aidl_return = token;
+    return OK;
+  }
+  status_t RepeatString(String16 token, String16* _aidl_return) override {
+    LogRepeatedStringToken(token);
+    *_aidl_return = token;
     return OK;
   }
 };

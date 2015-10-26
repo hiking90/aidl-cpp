@@ -17,5 +17,15 @@
 package android.aidl.tests;
 
 interface ITestService {
-  int Ping(int token);
+
+  // Test that primitives work as parameters and return types.
+  boolean RepeatBoolean(boolean token);
+  byte RepeatByte(byte token);
+  char RepeatChar(char token);
+  int RepeatInt(int token);
+  long RepeatLong(long token);
+  float RepeatFloat(float token);
+  double RepeatDouble(double token);
+  String RepeatString(String token);
+
 }
