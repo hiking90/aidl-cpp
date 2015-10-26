@@ -360,11 +360,11 @@ class GenericType : public Type {
   string GenericArguments() const;
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                     int flags) const override;
+                     int flags) const override = 0;
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                        Variable** cl) const override;
+                        Variable** cl) const override = 0;
   void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                      Variable** cl) const override;
+                      Variable** cl) const override = 0;
 
  private:
   string m_genericArguments;
