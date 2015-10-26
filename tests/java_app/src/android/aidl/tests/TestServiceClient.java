@@ -27,6 +27,7 @@ import android.util.Log;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.FileOutputStream;
+import java.util.Arrays;
 
 // Generated
 import android.aidl.tests.ITestService;
@@ -102,24 +103,80 @@ public class TestServiceClient extends Activity {
         return ret;
     }
 
-    private void checkBasicPing(ITestService service) throws TestFailException {
-        mLog.log("Checking that basic ping works.");
-        final int INCREMENT = 1 << 20;
-        for (int i = 0; i < 3; ++i) {
-            int query = -INCREMENT + i * INCREMENT;
-            int response = -1;
-            try {
-                response = service.Ping(query);
-            } catch (RemoteException ex) {
-                mLog.log(ex.toString());
-                mLog.logAndThrow("Failed pinging service with " + query);
+    private void checkPrimitiveRepeat(
+                ITestService service) throws TestFailException {
+        mLog.log("Checking that service can repeat primitives back...");
+        try {
+            {
+                boolean query = true;
+                boolean response = service.RepeatBoolean(query);
+                if (query != response) {
+                    mLog.logAndThrow("Repeat with " + query +
+                                     " responded " + response);
+                }
             }
-            if (query != response) {
-                mLog.logAndThrow(
-                        "Ping with " + query + " responded " + response);
+            {
+                char query = 'A';
+                char response = service.RepeatChar(query);
+                if (query != response) {
+                    mLog.logAndThrow("Repeat with " + query +
+                                     " responded " + response);
+                }
             }
+            {
+                byte query = -128;
+                byte response = service.RepeatByte(query);
+                if (query != response) {
+                    mLog.logAndThrow("Repeat with " + query +
+                                     " responded " + response);
+                }
+            }
+            {
+                int query = 1 << 30;
+                int response = service.RepeatInt(query);
+                if (query != response) {
+                    mLog.logAndThrow("Repeat with " + query +
+                                     " responded " + response);
+                }
+            }
+            {
+                long query = 1 << 60;
+                long response = service.RepeatLong(query);
+                if (query != response) {
+                    mLog.logAndThrow("Repeat with " + query +
+                                     " responded " + response);
+                }
+            }
+            {
+                float query = 1.0f/3.0f;
+                float response = service.RepeatFloat(query);
+                if (query != response) {
+                    mLog.logAndThrow("Repeat with " + query +
+                                     " responded " + response);
+                }
+            }
+            {
+                double query = 1.0/3.0;
+                double response = service.RepeatDouble(query);
+                if (query != response) {
+                    mLog.logAndThrow("Repeat with " + query +
+                                     " responded " + response);
+                }
+            }
+            for (String query : Arrays.asList("not empty", "", "\0")) {
+                String response = service.RepeatString(query);
+                if (!query.equals(response)) {
+                    mLog.logAndThrow("Repeat request with '" + query + "'" +
+                                     " of length " + query.length() +
+                                     " responded with '" + response + "'" +
+                                     " of length " + response.length());
+                }
+            }
+        } catch (RemoteException ex) {
+            mLog.log(ex.toString());
+            mLog.logAndThrow("Service failed to repeat a primitive back.");
         }
-        mLog.log("...Basic ping works.");
+        mLog.log("...Basic primitive repeating works.");
     }
 
     @Override
@@ -129,6 +186,7 @@ public class TestServiceClient extends Activity {
         try {
           init();
           ITestService service = getService();
+          checkPrimitiveRepeat(service);
           mLog.log(mSuccessSentinel);
         } catch (TestFailException e) {
             mLog.close();
