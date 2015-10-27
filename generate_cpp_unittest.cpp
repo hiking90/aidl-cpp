@@ -56,7 +56,7 @@ BpPingResponder::BpPingResponder(const android::sp<android::IBinder>& impl)
     : BpInterface<IPingResponder>(impl){
 }
 
-android::status_t BpPingResponder::Ping(android::String16 token, int32_t* _aidl_return) {
+android::status_t BpPingResponder::Ping(const android::String16& token, int32_t* _aidl_return) {
 android::Parcel data;
 android::Parcel reply;
 android::status_t status;
@@ -178,7 +178,7 @@ class BpPingResponder : public android::BpInterface<IPingResponder> {
 public:
 explicit BpPingResponder(const android::sp<android::IBinder>& impl);
 virtual ~BpPingResponder() = default;
-android::status_t Ping(android::String16 token, int32_t* _aidl_return) override;
+android::status_t Ping(const android::String16& token, int32_t* _aidl_return) override;
 };  // class BpPingResponder
 
 }  // namespace os
@@ -203,7 +203,7 @@ namespace os {
 class IPingResponder : public android::IInterface {
 public:
 DECLARE_META_INTERFACE(PingResponder);
-virtual android::status_t Ping(android::String16 token, int32_t* _aidl_return) = 0;
+virtual android::status_t Ping(const android::String16& token, int32_t* _aidl_return) = 0;
 enum Call {
   PING = android::IBinder::FIRST_CALL_TRANSACTION + 0,
 };
