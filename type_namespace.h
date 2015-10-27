@@ -48,9 +48,14 @@ class TypeNamespace {
   virtual bool AddBinderType(const AidlInterface* b,
                              const std::string& filename) = 0;
   // We dynamically create container types as we discover them in the parse
-  // tree.  Returns false iff this is an invalid type.  Silently discards
-  // duplicates and non-container types.
-  virtual bool AddContainerType(const std::string& type_name) = 0;
+  // tree.  Returns false if the contained types cannot be canonicalized.
+  virtual bool AddListType(const std::string& contained_type_name) = 0;
+  virtual bool AddMapType(const std::string& key_type_name,
+                          const std::string& value_type_name) = 0;
+
+  // Add a container type to this namespace.  Returns false only
+  // on error. Silently discards requests to add non-container types.
+  virtual bool MaybeAddContainerType(const std::string& type_name);
 
   // Returns true iff this has a type for |type_name|.
   virtual bool HasType(const std::string& type_name) const;
@@ -66,6 +71,16 @@ class TypeNamespace {
   virtual bool IsValidArg(const AidlArgument& a,
                           int arg_index,
                           const std::string& filename) const;
+
+  // Returns true if this is a container type, rather than a normal type.
+  virtual bool IsContainerType(const std::string& type_name) const;
+
+  // Returns true iff the name can be canonicalized to a container type.
+  virtual bool CanonicalizeContainerType(
+      const std::string& raw_type_name,
+      std::vector<std::string>* container_class,
+      std::vector<std::string>* contained_type_names) const;
+
 
  protected:
   TypeNamespace() = default;

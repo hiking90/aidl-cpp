@@ -50,7 +50,7 @@ TEST_F(JavaTypeNamespaceTest, ContainerTypeCreation) {
   EXPECT_NE(types_.Find("Foo"), nullptr);
   EXPECT_EQ(types_.Find("List<Foo>"), nullptr);
   // But after we add the list explicitly...
-  EXPECT_TRUE(types_.AddContainerType("List<Foo>"));
+  EXPECT_TRUE(types_.MaybeAddContainerType("List<Foo>"));
   // This should work.
   EXPECT_NE(types_.Find("List<Foo>"), nullptr);
 }

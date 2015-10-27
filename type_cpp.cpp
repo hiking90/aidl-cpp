@@ -166,10 +166,17 @@ bool TypeNamespace::AddBinderType(const AidlInterface* /* b */,
   return true;
 }
 
-bool TypeNamespace::AddContainerType(const string& /* type_name */) {
-  // TODO Support container types b/24470786
-  LOG(ERROR) << "Passing container is unimplemented in C++ generation.";
-  return true;
+bool TypeNamespace::AddListType(const std::string& /* type_name */) {
+  // TODO Support list types b/24470786
+  LOG(ERROR) << "Passing lists is unimplemented in C++ generation.";
+  return false;
+}
+
+bool TypeNamespace::AddMapType(const std::string& /* key_type_name */,
+                               const std::string& /* value_type_name */) {
+  // TODO Support list types b/25242025
+  LOG(ERROR) << "aidl does not implement support for typed maps!";
+  return false;
 }
 
 bool TypeNamespace::IsValidPackage(const string& package) const {
