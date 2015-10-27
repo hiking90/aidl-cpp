@@ -233,7 +233,7 @@ IMPLEMENT_META_INTERFACE(PingResponder, "android.os.IPingResponder");
 const string kComplexTypeInterfaceAIDL =
 R"(package android.os;
 interface IComplexTypeInterface {
-  int Send(in int[] token, out boolean[] item);
+  int[] Send(in int[] goes_in, inout double[] goes_in_and_out, out boolean[] goes_out);
   oneway void Piff(int times);
 })";
 
@@ -254,7 +254,7 @@ class BpComplexTypeInterface : public android::BpInterface<IComplexTypeInterface
 public:
 explicit BpComplexTypeInterface(const android::sp<android::IBinder>& impl);
 virtual ~BpComplexTypeInterface() = default;
-android::status_t Send(const std::vector<int32_t>& token, std::vector<bool>* item, int32_t* _aidl_return) override;
+android::status_t Send(const std::vector<int32_t>& goes_in, std::vector<double>* goes_in_and_out, std::vector<bool>* goes_out, std::vector<int32_t>* _aidl_return) override;
 android::status_t Piff(int32_t times) override;
 };  // class BpComplexTypeInterface
 
@@ -276,7 +276,7 @@ BpComplexTypeInterface::BpComplexTypeInterface(const android::sp<android::IBinde
     : BpInterface<IComplexTypeInterface>(impl){
 }
 
-android::status_t BpComplexTypeInterface::Send(const std::vector<int32_t>& token, std::vector<bool>* item, int32_t* _aidl_return) {
+android::status_t BpComplexTypeInterface::Send(const std::vector<int32_t>& goes_in, std::vector<double>* goes_in_and_out, std::vector<bool>* goes_out, std::vector<int32_t>* _aidl_return) {
 android::Parcel data;
 android::Parcel reply;
 android::status_t status;
@@ -284,7 +284,11 @@ status = data.writeInterfaceToken(getInterfaceDescriptor());
 if (((status) != (android::OK))) {
 return status;
 }
-status = data.writeInt32Vector(token);
+status = data.writeInt32Vector(goes_in);
+if (((status) != (android::OK))) {
+return status;
+}
+status = data.writeDoubleVector(*goes_in_and_out);
 if (((status) != (android::OK))) {
 return status;
 }
@@ -296,11 +300,15 @@ if (reply.readExceptionCode()) {
 status = android::FAILED_TRANSACTION;
 return status;
 }
-status = reply.readInt32(_aidl_return);
+status = reply.readInt32Vector(_aidl_return);
 if (((status) != (android::OK))) {
 return status;
 }
-status = reply.readBoolVector(item);
+status = reply.readDoubleVector(goes_in_and_out);
+if (((status) != (android::OK))) {
+return status;
+}
+status = reply.readBoolVector(goes_out);
 if (((status) != (android::OK))) {
 return status;
 }
@@ -366,18 +374,23 @@ android::status_t status;
 switch (code) {
 case Call::SEND:
 {
-std::vector<int32_t> in_token;
-std::vector<bool> out_item;
-int32_t _aidl_return;
+std::vector<int32_t> in_goes_in;
+std::vector<double> in_goes_in_and_out;
+std::vector<bool> out_goes_out;
+std::vector<int32_t> _aidl_return;
 if ((!data.checkInterface(this))) {
 status = android::BAD_TYPE;
 break;
 }
-status = data.readInt32Vector(&in_token);
+status = data.readInt32Vector(&in_goes_in);
 if (((status) != (android::OK))) {
 break;
 }
-status = Send(in_token, &out_item, &_aidl_return);
+status = data.readDoubleVector(&in_goes_in_and_out);
+if (((status) != (android::OK))) {
+break;
+}
+status = Send(in_goes_in, &in_goes_in_and_out, &out_goes_out, &_aidl_return);
 if (((status) != (android::OK))) {
 break;
 }
@@ -385,11 +398,15 @@ status = reply->writeNoException();
 if (((status) != (android::OK))) {
 break;
 }
-status = reply->writeInt32(_aidl_return);
+status = reply->writeInt32Vector(_aidl_return);
 if (((status) != (android::OK))) {
 break;
 }
-status = reply->writeBoolVector(out_item);
+status = reply->writeDoubleVector(in_goes_in_and_out);
+if (((status) != (android::OK))) {
+break;
+}
+status = reply->writeBoolVector(out_goes_out);
 if (((status) != (android::OK))) {
 break;
 }
@@ -446,7 +463,7 @@ namespace os {
 class IComplexTypeInterface : public android::IInterface {
 public:
 DECLARE_META_INTERFACE(ComplexTypeInterface);
-virtual android::status_t Send(const std::vector<int32_t>& token, std::vector<bool>* item, int32_t* _aidl_return) = 0;
+virtual android::status_t Send(const std::vector<int32_t>& goes_in, std::vector<double>* goes_in_and_out, std::vector<bool>* goes_out, std::vector<int32_t>* _aidl_return) = 0;
 virtual android::status_t Piff(int32_t times) = 0;
 enum Call {
   SEND = android::IBinder::FIRST_CALL_TRANSACTION + 0,
