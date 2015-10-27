@@ -201,8 +201,8 @@ int check_types(const string& filename,
 
     if (oneway && m->GetType().GetName() != "void") {
         cerr << filename << ":" << m->GetLine()
-            << "oneway method cannot return a value: "
-            << m->GetName() << endl;
+            << " oneway method '" << m->GetName() << "' cannot return a value"
+            << endl;
         err = 1;
     }
 
@@ -215,8 +215,8 @@ int check_types(const string& filename,
 
       if (oneway && arg->IsOut()) {
         cerr << filename << ":" << m->GetLine()
-            << "oneway method cannot have out parameters: "
-            << m->GetName() << endl;
+            << " oneway method '" << m->GetName()
+            << "' cannot have out parameters" << endl;
         err = 1;
       }
     }
