@@ -100,7 +100,7 @@ class NativeService : public BnTestService {
   }
 
   void LogRepeatedStringToken(const String16& token) {
-    ALOGI("Repeating '%s' of length=%u", android::String8(token).string(),
+    ALOGI("Repeating '%s' of length=%zu", android::String8(token).string(),
           token.size());
   }
 
