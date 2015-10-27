@@ -28,4 +28,13 @@ interface ITestService {
   double RepeatDouble(double token);
   String RepeatString(String token);
 
+  // Test that arrays work as parameters and return types.
+  boolean[] ReverseBoolean(in boolean[] input, out boolean[] repeated);
+  byte[]    ReverseByte   (in byte[]    input, out byte[]    repeated);
+  char[]    ReverseChar   (in char[]    input, out char[]    repeated);
+  int[]     ReverseInt    (in int[]     input, out int[]     repeated);
+  long[]    ReverseLong   (in long[]    input, out long[]    repeated);
+  float[]   ReverseFloat  (in float[]   input, out float[]   repeated);
+  double[]  ReverseDouble (in double[]  input, out double[]  repeated);
+  String[]  ReverseString (in String[]  input, out String[]  repeated);
 }

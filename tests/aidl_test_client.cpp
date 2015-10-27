@@ -71,7 +71,7 @@ bool RepeatPrimitive(const sp<ITestService>& service,
 }
 
 bool ConfirmPrimitiveRepeat(const sp<ITestService>& s) {
-  cout << "Confirming passing and returning primitives." << endl;
+  cout << "Confirming passing and returning primitives works." << endl;
 
   if (!RepeatPrimitive(s, &ITestService::RepeatBoolean, true) ||
       !RepeatPrimitive(s, &ITestService::RepeatByte, int8_t{-128}) ||
@@ -101,6 +101,58 @@ bool ConfirmPrimitiveRepeat(const sp<ITestService>& s) {
   return true;
 }
 
+template <typename T>
+bool ReverseArray(const sp<ITestService>& service,
+                  status_t(ITestService::*func)(const vector<T>&,
+                                                vector<T>*,
+                                                vector<T>*),
+                  vector<T> input) {
+  vector<T> actual_reversed;
+  vector<T> actual_repeated;
+  status_t status = (*service.*func)(input, &actual_repeated, &actual_reversed);
+  if (status != OK) {
+    cerr << "Failed to repeat array. status=" << status << "." << endl;
+    return false;
+  }
+  if (input != actual_repeated) {
+    cerr << "Repeated version of array did not match" << endl;
+    cerr << "input.size()=" << input.size()
+         << " repeated.size()=" << actual_repeated.size() << endl;
+    return false;
+  }
+  std::reverse(input.begin(), input.end());
+  if (input != actual_reversed) {
+    cerr << "Reversed version of array did not match" << endl;
+    return false;
+  }
+  return true;
+}
+
+bool ConfirmReverseArrays(const sp<ITestService>& s) {
+  cout << "Confirming passing and returning arrays works." << endl;
+
+  if (!ReverseArray(s, &ITestService::ReverseBoolean,
+                    {true, false, false}) ||
+      !ReverseArray(s, &ITestService::ReverseByte,
+                    {int8_t{-128}, int8_t{0}, int8_t{127}}) ||
+      !ReverseArray(s, &ITestService::ReverseChar,
+                    {char16_t{'A'}, char16_t{'B'}, char16_t{'C'}}) ||
+      !ReverseArray(s, &ITestService::ReverseInt,
+                    {1, 2, 3}) ||
+      !ReverseArray(s, &ITestService::ReverseLong,
+                    {-1ll, 0ll, int64_t{1ll << 60}}) ||
+      !ReverseArray(s, &ITestService::ReverseFloat,
+                    {-0.3f, -0.7f, 8.0f}) ||
+      !ReverseArray(s, &ITestService::ReverseDouble,
+                    {1.0/3.0, 1.0/7.0, 42.0}) ||
+      !ReverseArray(s, &ITestService::ReverseString,
+                    {String16{"f"}, String16{"a"}, String16{"b"}})) {
+    return false;
+  }
+
+  return true;
+}
+
 }  // namespace
 
 int main(int /* argc */, char * /* argv */ []) {
@@ -109,6 +161,8 @@ int main(int /* argc */, char * /* argv */ []) {
   if (!GetService(&service)) return 1;
 
   if (!ConfirmPrimitiveRepeat(service)) return 1;
+
+  if (!ConfirmReverseArrays(service)) return 1;
 
   return 0;
 }

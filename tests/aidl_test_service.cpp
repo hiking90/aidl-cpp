@@ -16,6 +16,7 @@
 
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <binder/IInterface.h>
 #include <binder/IPCThreadState.h>
@@ -51,6 +52,8 @@ using android::ProcessState;
 
 // Generated code:
 using android::aidl::tests::BnTestService;
+
+using std::vector;
 
 namespace android {
 namespace generated {
@@ -151,6 +154,58 @@ class NativeService : public BnTestService {
     LogRepeatedStringToken(token);
     *_aidl_return = token;
     return OK;
+  }
+
+  template<typename T>
+  status_t ReverseArray(const vector<T>& input,
+                        vector<T>* repeated,
+                        vector<T>* _aidl_return) override {
+    ALOGI("Reversing array of length %zu", input.size());
+    *repeated = input;
+    *_aidl_return = input;
+    std::reverse(_aidl_return->begin(), _aidl_return->end());
+    return OK;
+  }
+
+  status_t ReverseBoolean(const vector<bool>& input,
+                          vector<bool>* repeated,
+                          vector<bool>* _aidl_return) override {
+    return ReverseArray(input, repeated, _aidl_return);
+  }
+  status_t ReverseByte(const vector<int8_t>& input,
+                       vector<int8_t>* repeated,
+                       vector<int8_t>* _aidl_return) override {
+    return ReverseArray(input, repeated, _aidl_return);
+  }
+  status_t ReverseChar(const vector<char16_t>& input,
+                       vector<char16_t>* repeated,
+                       vector<char16_t>* _aidl_return) override {
+    return ReverseArray(input, repeated, _aidl_return);
+  }
+  status_t ReverseInt(const vector<int32_t>& input,
+                      vector<int32_t>* repeated,
+                      vector<int32_t>* _aidl_return) override {
+    return ReverseArray(input, repeated, _aidl_return);
+  }
+  status_t ReverseLong(const vector<int64_t>& input,
+                       vector<int64_t>* repeated,
+                       vector<int64_t>* _aidl_return) override {
+    return ReverseArray(input, repeated, _aidl_return);
+  }
+  status_t ReverseFloat(const vector<float>& input,
+                        vector<float>* repeated,
+                        vector<float>* _aidl_return) override {
+    return ReverseArray(input, repeated, _aidl_return);
+  }
+  status_t ReverseDouble(const vector<double>& input,
+                         vector<double>* repeated,
+                         vector<double>* _aidl_return) override {
+    return ReverseArray(input, repeated, _aidl_return);
+  }
+  status_t ReverseString(const vector<String16>& input,
+                         vector<String16>* repeated,
+                         vector<String16>* _aidl_return) override {
+    return ReverseArray(input, repeated, _aidl_return);
   }
 };
 
