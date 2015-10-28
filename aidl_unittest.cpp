@@ -39,25 +39,41 @@ class AidlTest : public ::testing::Test {
   unique_ptr<AidlInterface> Parse(const string& path,
                                   const string& contents,
                                   TypeNamespace* types) {
-    FakeIoDelegate io_delegate;
-    io_delegate.SetFileContents(path, contents);
+    io_delegate_.SetFileContents(path, contents);
     unique_ptr<AidlInterface> ret;
     std::vector<std::unique_ptr<AidlImport>> imports;
     ::android::aidl::internals::load_and_validate_aidl(
         {},  // no preprocessed files
-        {},  // no import paths
+        import_paths_,
         path,
-        io_delegate,
+        io_delegate_,
         types,
         &ret,
         &imports);
     return ret;
   }
+
+  FakeIoDelegate io_delegate_;
+  vector<string> import_paths_;
 };
 
 TEST_F(AidlTest, JavaAcceptsMissingPackage) {
   java::JavaTypeNamespace types;
   EXPECT_NE(nullptr, Parse("IFoo.aidl", "interface IFoo { }", &types));
+}
+
+TEST_F(AidlTest, RejectsArraysOfBinders) {
+  import_paths_.push_back("");
+  io_delegate_.SetFileContents("bar/IBar.aidl",
+                               "package bar; interface IBar {}");
+  string path = "foo/IFoo.aidl";
+  string contents = "package foo;\n"
+                    "import bar.IBar;\n"
+                    "interface IFoo { void f(in IBar[] input); }";
+  java::JavaTypeNamespace java_types;
+  EXPECT_EQ(nullptr, Parse(path, contents, &java_types));
+  cpp::TypeNamespace cpp_types;
+  EXPECT_EQ(nullptr, Parse(path, contents, &cpp_types));
 }
 
 TEST_F(AidlTest, CppRejectsMissingPackage) {
