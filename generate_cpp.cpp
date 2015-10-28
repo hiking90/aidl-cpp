@@ -95,10 +95,15 @@ ArgList BuildArgList(const TypeNamespace& types,
 
       literal = type->CppType(a->GetType().IsArray());
 
-      if (a->IsOut())
-        literal += "*";
-      else if (a->GetType().IsArray())
-        literal = "const " + literal + "&";
+      if (a->IsOut()) {
+        literal = literal + "*";
+      } else {
+        // We pass in parameters that are not primitives by const reference.
+        // Arrays of primitives are not primitives.
+        if (!type->IsCppPrimitive() || a->GetType().IsArray()) {
+          literal = "const " + literal + "&";
+        }
+      }
 
       literal += " " + a->GetName();
     } else {

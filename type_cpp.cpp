@@ -120,29 +120,29 @@ const string& Type::WriteToParcelMethod(bool is_array) const {
 }
 
 TypeNamespace::TypeNamespace() {
-  types_.emplace_back(
-      new Type("cstdint", "byte", "int8_t", "readByte", "writeByte",
-               "readByteVector", "writeByteVector"));
+  types_.emplace_back(new PrimitiveType(
+      "cstdint", "byte", "int8_t", "readByte", "writeByte",
+      "readByteVector", "writeByteVector"));
+  types_.emplace_back(new PrimitiveType(
+      "cstdint", "int", "int32_t", "readInt32", "writeInt32",
+      "readInt32Vector", "writeInt32Vector"));
+  types_.emplace_back(new PrimitiveType(
+      "cstdint", "long", "int64_t", "readInt64", "writeInt64",
+      "readInt64Vector", "writeInt64Vector"));
+  types_.emplace_back(new PrimitiveType(
+      "", "float", "float", "readFloat", "writeFloat",
+      "readFloatVector", "writeFloatVector"));
+  types_.emplace_back(new PrimitiveType(
+      "", "double", "double", "readDouble", "writeDouble",
+      "readDoubleVector", "writeDoubleVector"));
+  types_.emplace_back(new PrimitiveType(
+      "", "boolean", "bool", "readBool", "writeBool",
+      "readBoolVector", "writeBoolVector"));
+  // C++11 defines the char16_t type as a built in for Unicode characters.
+  types_.emplace_back(new PrimitiveType(
+      "", "char", "char16_t", "readChar", "writeChar",
+      "readCharVector", "writeCharVector"));
 
-  types_.emplace_back(
-      new Type("cstdint", "int", "int32_t", "readInt32", "writeInt32",
-               "readInt32Vector", "writeInt32Vector"));
-  types_.emplace_back(
-      new Type("cstdint", "long", "int64_t", "readInt64", "writeInt64",
-               "readInt64Vector", "writeInt64Vector"));
-  types_.emplace_back(
-      new Type("", "float", "float", "readFloat", "writeFloat",
-               "readFloatVector", "writeFloatVector"));
-  types_.emplace_back(
-      new Type("", "double", "double", "readDouble", "writeDouble",
-               "readDoubleVector", "writeDoubleVector"));
-  types_.emplace_back(
-      new Type("", "boolean", "bool", "readBool", "writeBool",
-               "readBoolVector", "writeBoolVector"));
-  // For whatever reason, char16_t does not need cstdint.
-  types_.emplace_back(
-      new Type("", "char", "char16_t", "readChar", "writeChar",
-               "readCharVector", "writeCharVector"));
   types_.emplace_back(
       new Type("utils/String16.h", "String", "android::String16",
                "readString16", "writeString16", "readString16Vector",

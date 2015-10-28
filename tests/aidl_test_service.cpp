@@ -146,7 +146,8 @@ class NativeService : public BnTestService {
     *_aidl_return = token;
     return OK;
   }
-  status_t RepeatString(String16 token, String16* _aidl_return) override {
+  status_t RepeatString(
+      const String16& token, String16* _aidl_return) override {
     LogRepeatedStringToken(token);
     *_aidl_return = token;
     return OK;

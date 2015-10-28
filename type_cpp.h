@@ -55,6 +55,7 @@ class Type : public ValidatableType {
   const std::string& Header() const;
   const std::string& ReadFromParcelMethod(bool is_array) const;
   const std::string& WriteToParcelMethod(bool is_array) const;
+  virtual bool IsCppPrimitive() const { return false; }
 
  private:
   // |header| is the header we must include to use this type
@@ -70,6 +71,16 @@ class Type : public ValidatableType {
 
   DISALLOW_COPY_AND_ASSIGN(Type);
 };  // class Type
+
+class PrimitiveType : public Type {
+ public:
+  using Type::Type;
+  virtual ~PrimitiveType() = default;
+  bool IsCppPrimitive() const override { return true; }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(PrimitiveType);
+};  // class PrimitiveType
 
 
 class TypeNamespace : public ::android::aidl::TypeNamespace {
