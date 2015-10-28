@@ -148,6 +148,7 @@ def run_test(test_native, test_java, apk_path=None, refresh_binaries=False,
         host.adb('sync')
     host.run('setenforce 0')
     # Kill any previous test context
+    host.run('rm -f %s' % JAVA_LOG_FILE, ignore_status=True)
     host.run('pkill %s' % NATIVE_TEST_SERVICE, ignore_status=True)
     if test_native:
         host.run('pkill %s' % NATIVE_TEST_CLIENT, ignore_status=True)
