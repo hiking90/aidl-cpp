@@ -103,8 +103,8 @@ public class TestServiceClient extends Activity {
         return ret;
     }
 
-    private void checkPrimitiveRepeat(
-                ITestService service) throws TestFailException {
+    private void checkPrimitiveRepeat(ITestService service)
+            throws TestFailException {
         mLog.log("Checking that service can repeat primitives back...");
         try {
             {
@@ -179,6 +179,169 @@ public class TestServiceClient extends Activity {
         mLog.log("...Basic primitive repeating works.");
     }
 
+    private void checkArrayReversal(ITestService service)
+            throws TestFailException {
+        mLog.log("Checking that service can reverse and return arrays...");
+        try {
+            {
+                boolean[] input = {true, false, false, false};
+                boolean echoed[] = new boolean[input.length];
+                boolean[] reversed = service.ReverseBoolean(input, echoed);
+                if (!Arrays.equals(input, echoed)) {
+                    mLog.logAndThrow("Failed to echo input array back.");
+                }
+                if (input.length != reversed.length) {
+                    mLog.logAndThrow("Reversed array is the wrong size.");
+                }
+                for (int i = 0; i < input.length; ++i) {
+                    int j = reversed.length - (1 + i);
+                    if (input[i] != reversed[j]) {
+                        mLog.logAndThrow(
+                                "input[" + i + "] = " + input[i] +
+                                " but reversed value = " + reversed[j]);
+                    }
+                }
+            }/*
+            {
+                byte[] input = {0, 1, 2};
+                byte echoed[] = new byte[input.length];
+                byte[] reversed = service.ReverseByte(input, echoed);
+                if (!Arrays.equals(input, echoed)) {
+                    mLog.logAndThrow("Failed to echo input array back.");
+                }
+                if (input.length != reversed.length) {
+                    mLog.logAndThrow("Reversed array is the wrong size.");
+                }
+                for (int i = 0; i < input.length; ++i) {
+                    int j = reversed.length - (1 + i);
+                    if (input[i] != reversed[j]) {
+                        mLog.logAndThrow(
+                                "input[" + i + "] = " + input[i] +
+                                " but reversed value = " + reversed[j]);
+                    }
+                }
+            } */
+            {
+                char[] input = {'A', 'B', 'C', 'D', 'E'};
+                char echoed[] = new char[input.length];
+                char[] reversed = service.ReverseChar(input, echoed);
+                if (!Arrays.equals(input, echoed)) {
+                    mLog.logAndThrow("Failed to echo input array back.");
+                }
+                if (input.length != reversed.length) {
+                    mLog.logAndThrow("Reversed array is the wrong size.");
+                }
+                for (int i = 0; i < input.length; ++i) {
+                    int j = reversed.length - (1 + i);
+                    if (input[i] != reversed[j]) {
+                        mLog.logAndThrow(
+                                "input[" + i + "] = " + input[i] +
+                                " but reversed value = " + reversed[j]);
+                    }
+                }
+            }
+            {
+                int[] input = {-1, 0, 1, 2, 3, 4, 5, 6};
+                int echoed[] = new int[input.length];
+                int[] reversed = service.ReverseInt(input, echoed);
+                if (!Arrays.equals(input, echoed)) {
+                    mLog.logAndThrow("Failed to echo input array back.");
+                }
+                if (input.length != reversed.length) {
+                    mLog.logAndThrow("Reversed array is the wrong size.");
+                }
+                for (int i = 0; i < input.length; ++i) {
+                    int j = reversed.length - (1 + i);
+                    if (input[i] != reversed[j]) {
+                        mLog.logAndThrow(
+                                "input[" + i + "] = " + input[i] +
+                                " but reversed value = " + reversed[j]);
+                    }
+                }
+            }
+            {
+                long[] input = {-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8};
+                long echoed[] = new long[input.length];
+                long[] reversed = service.ReverseLong(input, echoed);
+                if (!Arrays.equals(input, echoed)) {
+                    mLog.logAndThrow("Failed to echo input array back.");
+                }
+                if (input.length != reversed.length) {
+                    mLog.logAndThrow("Reversed array is the wrong size.");
+                }
+                for (int i = 0; i < input.length; ++i) {
+                    int j = reversed.length - (1 + i);
+                    if (input[i] != reversed[j]) {
+                        mLog.logAndThrow(
+                                "input[" + i + "] = " + input[i] +
+                                " but reversed value = " + reversed[j]);
+                    }
+                }
+            }
+            {
+                float[] input = {0.0f, 1.0f, -0.3f};
+                float echoed[] = new float[input.length];
+                float[] reversed = service.ReverseFloat(input, echoed);
+                if (!Arrays.equals(input, echoed)) {
+                    mLog.logAndThrow("Failed to echo input array back.");
+                }
+                if (input.length != reversed.length) {
+                    mLog.logAndThrow("Reversed array is the wrong size.");
+                }
+                for (int i = 0; i < input.length; ++i) {
+                    int j = reversed.length - (1 + i);
+                    if (input[i] != reversed[j]) {
+                        mLog.logAndThrow(
+                                "input[" + i + "] = " + input[i] +
+                                " but reversed value = " + reversed[j]);
+                    }
+                }
+            }
+            {
+                double[] input = {-1.0, -4.0, -2.0};
+                double echoed[] = new double[input.length];
+                double[] reversed = service.ReverseDouble(input, echoed);
+                if (!Arrays.equals(input, echoed)) {
+                    mLog.logAndThrow("Failed to echo input array back.");
+                }
+                if (input.length != reversed.length) {
+                    mLog.logAndThrow("Reversed array is the wrong size.");
+                }
+                for (int i = 0; i < input.length; ++i) {
+                    int j = reversed.length - (1 + i);
+                    if (input[i] != reversed[j]) {
+                        mLog.logAndThrow(
+                                "input[" + i + "] = " + input[i] +
+                                " but reversed value = " + reversed[j]);
+                    }
+                }
+            }
+            {
+                String[] input = {"For", "relaxing", "times"};
+                String echoed[] = new String[input.length];
+                String[] reversed = service.ReverseString(input, echoed);
+                if (!Arrays.equals(input, echoed)) {
+                    mLog.logAndThrow("Failed to echo input array back.");
+                }
+                if (input.length != reversed.length) {
+                    mLog.logAndThrow("Reversed array is the wrong size.");
+                }
+                for (int i = 0; i < input.length; ++i) {
+                    int j = reversed.length - (1 + i);
+                    if (!input[i].equals(reversed[j])) {
+                        mLog.logAndThrow(
+                                "input[" + i + "] = " + input[i] +
+                                " but reversed value = " + reversed[j]);
+                    }
+                }
+            }
+        } catch (RemoteException ex) {
+            mLog.log(ex.toString());
+            mLog.logAndThrow("Service failed to reverse an array.");
+        }
+        mLog.log("...service can reverse and return arrays.");
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -187,6 +350,7 @@ public class TestServiceClient extends Activity {
           init();
           ITestService service = getService();
           checkPrimitiveRepeat(service);
+          checkArrayReversal(service);
           mLog.log(mSuccessSentinel);
         } catch (TestFailException e) {
             mLog.close();
