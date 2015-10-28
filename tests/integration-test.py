@@ -150,16 +150,13 @@ def run_test(test_native, test_java, apk_path=None, refresh_binaries=False,
     # Kill any previous test context
     host.run('rm -f %s' % JAVA_LOG_FILE, ignore_status=True)
     host.run('pkill %s' % NATIVE_TEST_SERVICE, ignore_status=True)
-    if test_native:
-        host.run('pkill %s' % NATIVE_TEST_CLIENT, ignore_status=True)
-    if test_java:
-        host.run('am force-stop android.aidl.tests', ignore_status=True)
 
     # Start up a native server
     host.run(NATIVE_TEST_SERVICE, background=True)
 
     # Start up clients
     if test_native:
+        host.run('pkill %s' % NATIVE_TEST_CLIENT, ignore_status=True)
         result = host.run(NATIVE_TEST_CLIENT, ignore_status=True)
         if result.exit_status:
             print(result.printable_string())
