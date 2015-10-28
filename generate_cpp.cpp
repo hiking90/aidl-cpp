@@ -119,7 +119,7 @@ ArgList BuildArgList(const TypeNamespace& types,
     string literal;
     if (for_declaration) {
       literal = StringPrintf(
-          "%s* %s", return_type->CppType(false /* not array */).c_str(),
+          "%s* %s", return_type->CppType(method.GetType().IsArray()).c_str(),
           kReturnVarName);
     } else {
       literal = string{"&"} + kReturnVarName;
@@ -322,10 +322,11 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
   // If the method is expected to return something, read it first by convention.
   const Type* return_type = types.Find(method.GetType().GetName());
   if (return_type != types.VoidType()) {
-    string method = return_type->ReadFromParcelMethod(false);
+    string method_call = return_type->ReadFromParcelMethod(
+        method.GetType().IsArray());
     b->AddStatement(new Assignment(
         "status",
-        new MethodCall("reply." + method, ArgList(kReturnVarName))));
+        new MethodCall("reply." + method_call, ArgList(kReturnVarName))));
     b->AddStatement(ReturnOnStatusNotOk());
   }
 
@@ -393,7 +394,7 @@ bool HandleServerTransaction(const TypeNamespace& types,
   const Type* return_type = types.Find(method.GetType().GetName());
   if (return_type != types.VoidType()) {
     b->AddLiteral(StringPrintf(
-        "%s %s", return_type->CppType(false /* not array */).c_str(),
+        "%s %s", return_type->CppType(method.GetType().IsArray()).c_str(),
         kReturnVarName));
   }
 
