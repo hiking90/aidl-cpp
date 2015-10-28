@@ -159,7 +159,7 @@ class NativeService : public BnTestService {
   template<typename T>
   status_t ReverseArray(const vector<T>& input,
                         vector<T>* repeated,
-                        vector<T>* _aidl_return) override {
+                        vector<T>* _aidl_return) {
     ALOGI("Reversing array of length %zu", input.size());
     *repeated = input;
     *_aidl_return = input;
