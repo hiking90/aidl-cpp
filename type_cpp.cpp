@@ -27,6 +27,7 @@
 
 using std::cerr;
 using std::endl;
+using std::set;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -128,7 +129,14 @@ bool Type::CanBeArray() const { return ! parcel_read_array_method_.empty(); }
 bool Type::CanBeOutParameter() const { return false; }
 bool Type::CanWriteToParcel() const { return true; }
 const string& Type::AidlType() const { return aidl_type_; }
-const string& Type::Header() const { return header_; }
+void Type::GetHeaders(bool is_array, set<string>* headers) const {
+  if (!header_.empty()) {
+    headers->insert(header_);
+  }
+  if (is_array) {
+    headers->insert("vector");
+  }
+}
 
 string Type::CppType(bool is_array) const {
   if (is_array) {

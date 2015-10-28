@@ -611,17 +611,11 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
   for (const auto& method : interface.GetMethods()) {
     for (const auto& argument : method->GetArguments()) {
       const Type* type = types.Find(argument->GetType().GetName());
-      const std::string& header = type->Header();
-      if (! header.empty())
-        includes.insert(header);
-      if (argument->GetType().IsArray())
-        includes.insert("vector");
+      type->GetHeaders(argument->GetType().IsArray(), &includes);
     }
 
-    const Type* type = types.Find(method->GetType().GetName());
-    const std::string& header = type->Header();
-    if (! header.empty())
-      includes.insert(header);
+    const Type* return_type = types.Find(method->GetType().GetName());
+    return_type->GetHeaders(method->GetType().IsArray(), &includes);
   }
 
   unique_ptr<ClassDecl> if_class{
