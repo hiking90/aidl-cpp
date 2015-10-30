@@ -28,6 +28,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.FileOutputStream;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Collections;
+import java.util.ArrayList;
 
 // Generated
 import android.aidl.tests.ITestService;
@@ -364,6 +367,29 @@ public class TestServiceClient extends Activity {
           mLog.logAndThrow("Service failed to exchange binders.");
       }
       mLog.log("...Exchange of binders works");
+    }
+
+    private void checkListReversal(ITestService service)
+            throws TestFailException {
+        mLog.log("Checking that service can reverse and return lists...");
+        try {
+            {
+                List<String> input = Arrays.asList("Walk", "into", "Córdoba");
+                List<String> echoed = new ArrayList<String>();
+                List<String> reversed = service.ReverseStringList(input, echoed);
+                if (!input.equals(echoed)) {
+                    mLog.logAndThrow("Failed to echo input List<String> back.");
+                }
+                Collections.reverse(input);
+                if (!input.equals(reversed)) {
+                    mLog.logAndThrow("Reversed list is not correct.");
+                }
+            }
+        } catch (RemoteException ex) {
+            mLog.log(ex.toString());
+            mLog.logAndThrow("Service failed to reverse an List<String>.");
+        }
+        mLog.log("...service can reverse and return lists.");
     }
 
     @Override

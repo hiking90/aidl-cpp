@@ -153,6 +153,16 @@ bool ConfirmReverseArrays(const sp<ITestService>& s) {
   return true;
 }
 
+bool ConfirmReverseLists(const sp<ITestService>& s) {
+  cout << "Confirming passing and returning List<T> works." << endl;
+
+  if (!ReverseArray(s, &ITestService::ReverseStringList,
+                    {String16{"f"}, String16{"a"}, String16{"b"}})) {
+    return false;
+  }
+
+  return true;
+}
 }  // namespace
 
 int main(int /* argc */, char * /* argv */ []) {
@@ -163,6 +173,8 @@ int main(int /* argc */, char * /* argv */ []) {
   if (!ConfirmPrimitiveRepeat(service)) return 1;
 
   if (!ConfirmReverseArrays(service)) return 1;
+
+  if (!ConfirmReverseLists(service)) return 1;
 
   return 0;
 }

@@ -47,7 +47,7 @@ class Type : public ValidatableType {
 
   // overrides of ValidatableType
   bool CanBeArray() const override;
-  bool CanBeOutParameter() const override;
+  bool CanBeOutParameter() const override { return false; }
   bool CanWriteToParcel() const override;
 
   std::string CppType(bool is_array) const;
@@ -84,7 +84,6 @@ class PrimitiveType : public Type {
   DISALLOW_COPY_AND_ASSIGN(PrimitiveType);
 };  // class PrimitiveType
 
-
 class TypeNamespace : public ::android::aidl::LanguageTypeNamespace<Type> {
  public:
   TypeNamespace() = default;
@@ -105,9 +104,11 @@ class TypeNamespace : public ::android::aidl::LanguageTypeNamespace<Type> {
                   const std::string& filename) const override;
 
   const Type* VoidType() const { return void_type_; }
+  const Type* StringType() const { return string_type_; }
 
  private:
   Type* void_type_ = nullptr;
+  Type* string_type_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(TypeNamespace);
 };  // class TypeNamespace
