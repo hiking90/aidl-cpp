@@ -32,18 +32,17 @@ namespace cpp {
 
 class Type : public ValidatableType {
  public:
-  Type(const std::string& header,
+  Type(int kind,  // from ValidatableType
+       const std::string& package,
        const std::string& aidl_type,
-       const std::string& cpp_type,
-       const std::string& read_method,
-       const std::string& write_method);
-  Type(const std::string& header,
-       const std::string& aidl_type,
+       const std::string& header,
        const std::string& cpp_type,
        const std::string& read_method,
        const std::string& write_method,
-       const std::string& read_array_method,
-       const std::string& write_array_method);
+       const std::string& read_array_method = "",
+       const std::string& write_array_method = "",
+       const std::string& src_file_name = "",
+       int line = -1);
   virtual ~Type() = default;
 
   // overrides of ValidatableType
@@ -51,7 +50,6 @@ class Type : public ValidatableType {
   bool CanBeOutParameter() const override;
   bool CanWriteToParcel() const override;
 
-  const std::string& AidlType() const;
   std::string CppType(bool is_array) const;
   void GetHeaders(bool is_array, std::set<std::string>* headers) const;
   const std::string& ReadFromParcelMethod(bool is_array) const;
@@ -87,7 +85,7 @@ class PrimitiveType : public Type {
 };  // class PrimitiveType
 
 
-class TypeNamespace : public ::android::aidl::TypeNamespace {
+class TypeNamespace : public ::android::aidl::LanguageTypeNamespace<Type> {
  public:
   TypeNamespace();
   virtual ~TypeNamespace() = default;
@@ -105,17 +103,9 @@ class TypeNamespace : public ::android::aidl::TypeNamespace {
                   int arg_index,
                   const std::string& filename) const override;
 
-  const Type* Find(const std::string& type_name) const;
-
   const Type* VoidType() const { return void_type_; }
 
- protected:
-  const ValidatableType* GetValidatableType(
-      const std::string& type_name) const override;
-
  private:
-  std::vector<std::unique_ptr<Type>> types_;
-
   Type* void_type_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(TypeNamespace);

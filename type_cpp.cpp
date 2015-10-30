@@ -41,6 +41,10 @@ namespace aidl {
 namespace cpp {
 namespace {
 
+const char kNoPackage[] = "";
+const char kNoHeader[] = "";
+const char kNoValidMethod[] = "";
+
 bool is_cpp_keyword(const std::string& str) {
   static const std::vector<std::string> kCppKeywords{
     "alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", "bitor",
@@ -63,7 +67,8 @@ bool is_cpp_keyword(const std::string& str) {
 
 class VoidType : public Type {
  public:
-  VoidType() : Type("", "void", "void", "XXX", "XXX") {}
+  VoidType() : Type(ValidatableType::KIND_BUILT_IN, kNoPackage, "void",
+                    kNoHeader, "void", kNoValidMethod, kNoValidMethod) {}
   virtual ~VoidType() = default;
   bool CanBeOutParameter() const override { return false; }
   bool CanWriteToParcel() const override { return false; }
@@ -71,13 +76,17 @@ class VoidType : public Type {
 
 class BinderType : public Type {
  public:
-  BinderType(const AidlInterface& interface)
-    : Type(GetCppHeader(interface), interface.GetName(), GetCppName(interface),
-           "readStrongBinder", "writeStrongBinder") {}
+  BinderType(const AidlInterface& interface, const std::string& src_file_name)
+      : Type(ValidatableType::KIND_GENERATED,
+             interface.GetPackage(), interface.GetName(),
+             GetCppHeader(interface), GetCppName(interface),
+             "readStrongBinder", "writeStrongBinder",
+             kNoValidMethod, kNoValidMethod,
+             src_file_name, interface.GetLine()) {}
   virtual ~BinderType() = default;
 
   string WriteCast(const string& val) const override {
-    return AidlType() + "::asBinder(" + val + ")";
+    return Name() + "::asBinder(" + val + ")";
   }
 
  private:
@@ -103,21 +112,19 @@ class BinderType : public Type {
 
 }  // namespace
 
-Type::Type(const string& header,
-           const string& aidl_type,
-           const string& cpp_type,
-           const string& read_method,
-           const string& write_method)
-    : Type(header, aidl_type, cpp_type, read_method, write_method, "", "") {}
-
-Type::Type(const string& header,
-           const string& aidl_type,
+Type::Type(int kind,
+           const std::string& package,
+           const std::string& aidl_type,
+           const string& header,
            const string& cpp_type,
            const string& read_method,
            const string& write_method,
            const string& read_array_method,
-           const string& write_array_method)
-    : header_(header),
+           const string& write_array_method,
+           const string& src_file_name,
+           int line)
+    : ValidatableType(kind, package, aidl_type, src_file_name, line),
+      header_(header),
       aidl_type_(aidl_type),
       cpp_type_(cpp_type),
       parcel_read_method_(read_method),
@@ -128,7 +135,6 @@ Type::Type(const string& header,
 bool Type::CanBeArray() const { return ! parcel_read_array_method_.empty(); }
 bool Type::CanBeOutParameter() const { return false; }
 bool Type::CanWriteToParcel() const { return true; }
-const string& Type::AidlType() const { return aidl_type_; }
 void Type::GetHeaders(bool is_array, set<string>* headers) const {
   if (!header_.empty()) {
     headers->insert(header_);
@@ -163,36 +169,43 @@ const string& Type::WriteToParcelMethod(bool is_array) const {
 }
 
 TypeNamespace::TypeNamespace() {
-  types_.emplace_back(new PrimitiveType(
-      "cstdint", "byte", "int8_t", "readByte", "writeByte",
+  Add(new PrimitiveType(
+      ValidatableType::KIND_BUILT_IN, kNoPackage, "byte",
+      "cstdint", "int8_t", "readByte", "writeByte",
       "readByteVector", "writeByteVector"));
-  types_.emplace_back(new PrimitiveType(
-      "cstdint", "int", "int32_t", "readInt32", "writeInt32",
+  Add(new PrimitiveType(
+      ValidatableType::KIND_BUILT_IN, kNoPackage, "int",
+      "cstdint", "int32_t", "readInt32", "writeInt32",
       "readInt32Vector", "writeInt32Vector"));
-  types_.emplace_back(new PrimitiveType(
-      "cstdint", "long", "int64_t", "readInt64", "writeInt64",
+  Add(new PrimitiveType(
+      ValidatableType::KIND_BUILT_IN, kNoPackage, "long",
+      "cstdint", "int64_t", "readInt64", "writeInt64",
       "readInt64Vector", "writeInt64Vector"));
-  types_.emplace_back(new PrimitiveType(
-      "", "float", "float", "readFloat", "writeFloat",
+  Add(new PrimitiveType(
+      ValidatableType::KIND_BUILT_IN, kNoPackage, "float",
+      kNoHeader, "float", "readFloat", "writeFloat",
       "readFloatVector", "writeFloatVector"));
-  types_.emplace_back(new PrimitiveType(
-      "", "double", "double", "readDouble", "writeDouble",
+  Add(new PrimitiveType(
+      ValidatableType::KIND_BUILT_IN, kNoPackage, "double",
+      kNoHeader, "double", "readDouble", "writeDouble",
       "readDoubleVector", "writeDoubleVector"));
-  types_.emplace_back(new PrimitiveType(
-      "", "boolean", "bool", "readBool", "writeBool",
+  Add(new PrimitiveType(
+      ValidatableType::KIND_BUILT_IN, kNoPackage, "boolean",
+      kNoHeader, "bool", "readBool", "writeBool",
       "readBoolVector", "writeBoolVector"));
   // C++11 defines the char16_t type as a built in for Unicode characters.
-  types_.emplace_back(new PrimitiveType(
-      "", "char", "char16_t", "readChar", "writeChar",
+  Add(new PrimitiveType(
+      ValidatableType::KIND_BUILT_IN, kNoPackage, "char",
+      kNoHeader, "char16_t", "readChar", "writeChar",
       "readCharVector", "writeCharVector"));
 
-  types_.emplace_back(
-      new Type("utils/String16.h", "String", "android::String16",
+  Add(new Type(ValidatableType::KIND_BUILT_IN, kNoPackage, "String",
+               "utils/String16.h", "android::String16",
                "readString16", "writeString16", "readString16Vector",
                "writeString16Vector"));
 
   void_type_ = new class VoidType();
-  types_.emplace_back(void_type_);
+  Add(void_type_);
 }
 
 bool TypeNamespace::AddParcelableType(const AidlParcelable* /* p */,
@@ -203,8 +216,8 @@ bool TypeNamespace::AddParcelableType(const AidlParcelable* /* p */,
 }
 
 bool TypeNamespace::AddBinderType(const AidlInterface* b,
-                                  const string& /* filename */) {
-  types_.emplace_back(new BinderType(*b));
+                                  const string& file_name) {
+  Add(new BinderType(*b, file_name));
   return true;
 }
 
@@ -254,23 +267,6 @@ bool TypeNamespace::IsValidArg(const AidlArgument& a,
   }
 
   return true;
-}
-
-const Type* TypeNamespace::Find(const string& type_name) const {
-  Type* ret = nullptr;
-  for (const unique_ptr<Type>& type : types_) {
-    if (type->AidlType() == type_name) {
-      ret = type.get();
-      break;
-    }
-  }
-
-  return ret;
-}
-
-const ValidatableType* TypeNamespace::GetValidatableType(
-    const string& type_name) const {
-  return Find(type_name);
 }
 
 }  // namespace cpp
