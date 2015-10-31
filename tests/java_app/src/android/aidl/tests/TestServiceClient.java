@@ -205,7 +205,7 @@ public class TestServiceClient extends Activity {
                                 " but reversed value = " + reversed[j]);
                     }
                 }
-            }/*
+            }
             {
                 byte[] input = {0, 1, 2};
                 byte echoed[] = new byte[input.length];
@@ -224,7 +224,7 @@ public class TestServiceClient extends Activity {
                                 " but reversed value = " + reversed[j]);
                     }
                 }
-            } */
+            }
             {
                 char[] input = {'A', 'B', 'C', 'D', 'E'};
                 char echoed[] = new char[input.length];
