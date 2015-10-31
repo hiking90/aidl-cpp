@@ -26,6 +26,9 @@ namespace cpp {
 
 class CppTypeNamespaceTest : public ::testing::Test {
  protected:
+  void SetUp() override {
+    types_.Init();
+  }
   TypeNamespace types_;
 };
 

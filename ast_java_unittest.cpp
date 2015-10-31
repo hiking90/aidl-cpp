@@ -38,6 +38,7 @@ final class TestClass extends SuperClass
 
 TEST(AstJavaTests, GeneratesClass) {
   JavaTypeNamespace types;
+  types.Init();
   Type class_type(&types, "TestClass", ValidatableType::KIND_GENERATED,
                   false, false);
   Type extend_type(&types, "SuperClass", ValidatableType::KIND_BUILT_IN,

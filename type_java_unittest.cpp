@@ -29,6 +29,9 @@ namespace java {
 
 class JavaTypeNamespaceTest : public ::testing::Test {
  protected:
+  void SetUp() override {
+    types_.Init();
+  }
   JavaTypeNamespace types_;
 };
 

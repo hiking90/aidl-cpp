@@ -561,6 +561,7 @@ int compile_aidl_to_cpp(const CppOptions& options,
   unique_ptr<AidlInterface> interface;
   std::vector<std::unique_ptr<AidlImport>> imports;
   unique_ptr<cpp::TypeNamespace> types(new cpp::TypeNamespace());
+  types->Init();
   int err = internals::load_and_validate_aidl(
       std::vector<std::string>{},  // no preprocessed files
       options.ImportPaths(),
@@ -583,6 +584,7 @@ int compile_aidl_to_java(const JavaOptions& options,
   unique_ptr<AidlInterface> interface;
   std::vector<std::unique_ptr<AidlImport>> imports;
   unique_ptr<java::JavaTypeNamespace> types(new java::JavaTypeNamespace());
+  types->Init();
   int err = internals::load_and_validate_aidl(
       options.preprocessed_files_,
       options.import_paths_,

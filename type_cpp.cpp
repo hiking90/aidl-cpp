@@ -168,7 +168,7 @@ const string& Type::WriteToParcelMethod(bool is_array) const {
   }
 }
 
-TypeNamespace::TypeNamespace() {
+void TypeNamespace::Init() {
   Add(new PrimitiveType(
       ValidatableType::KIND_BUILT_IN, kNoPackage, "byte",
       "cstdint", "int8_t", "readByte", "writeByte",
