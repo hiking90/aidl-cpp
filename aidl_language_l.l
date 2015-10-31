@@ -35,9 +35,12 @@ idvalue     (0|[1-9][0-9]*)
 
 \/\*                  { extra_text += yytext; BEGIN(LONG_COMMENT); }
 <LONG_COMMENT>\n+     { extra_text += yytext; yylloc->lines(yyleng); }
-<LONG_COMMENT>[^*]*   { extra_text += yytext; }
+<LONG_COMMENT>[^*\n]* { extra_text += yytext; }
 <LONG_COMMENT>\*+[^/] { extra_text += yytext; }
 <LONG_COMMENT>\*+\/   { extra_text += yytext; yylloc->step(); BEGIN(INITIAL);  }
+
+\"[^\"]*\"            { yylval->token = new AidlToken(yytext, extra_text);
+                        return yy::parser::token::C_STR; }
 
 \/\/.*\n              { extra_text += yytext; yylloc->lines(1); yylloc->step(); }
 
@@ -66,6 +69,8 @@ package               { return yy::parser::token::PACKAGE; }
 in                    { return yy::parser::token::IN; }
 out                   { return yy::parser::token::OUT; }
 inout                 { return yy::parser::token::INOUT; }
+is                    { return yy::parser::token::IS; }
+from                  { return yy::parser::token::FROM; }
 
 interface             { yylval->token = new AidlToken("interface", extra_text);
                         return yy::parser::token::INTERFACE;

@@ -32,11 +32,11 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
     AidlParcelable* user_data;
 }
 
-%token<token> IDENTIFIER INTERFACE ONEWAY
+%token<token> IDENTIFIER INTERFACE ONEWAY C_STR
 %token<integer> IDVALUE
 
 %token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' ';'
-%token IN OUT INOUT PACKAGE IMPORT PARCELABLE
+%token IN OUT INOUT PACKAGE IMPORT PARCELABLE IS FROM
 
 %type<user_data> parcelable_decl parcelable_decls
 %type<methods> methods
@@ -49,13 +49,26 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
 %type<str> generic_list
 %type<qname> qualified_name
 
-%type<token> error
+%type<token> identifier error
 %%
 document
  : package imports parcelable_decls
   { ps->SetDocument($3); }
  | package imports interface_decl
   { ps->SetDocument($3); };
+
+/* A couple of tokens that are keywords elsewhere are identifiers when
+ * occurring in the identifier position. Therefore identifier is a
+ * non-terminal, which is either an IDENTIFIER token, or one of the
+ * aforementioned keyword tokens.
+ */
+identifier
+ : IDENTIFIER
+  { $$ = $1; }
+ | IS
+  { $$ = new AidlToken("is", ""); }
+ | FROM
+  { $$ = new AidlToken("from", ""); };
 
 package
  : {}
@@ -71,11 +84,11 @@ import
   { ps->AddImport($2, @1.begin.line); };
 
 qualified_name
- : IDENTIFIER {
+ : identifier {
     $$ = new AidlQualifiedName($1->GetText(), $1->GetComments());
     delete $1;
   }
- | qualified_name '.' IDENTIFIER
+ | qualified_name '.' identifier
   { $$ = $1;
     $$->AddTerm($3->GetText());
   };
@@ -102,6 +115,12 @@ parcelable_decl
  : PARCELABLE qualified_name ';' {
     $$ = new AidlParcelable($2, @2.begin.line, ps->Package());
   }
+ | PARCELABLE qualified_name FROM C_STR ';' {
+    $$ = new AidlParcelable($2, @2.begin.line, ps->Package());
+  }
+ | PARCELABLE qualified_name IS identifier FROM C_STR ';' {
+    $$ = new AidlParcelable($2, @2.begin.line, ps->Package());
+  }
  | PARCELABLE ';' {
     fprintf(stderr, "%s:%d syntax error in parcelable declaration. Expected type name.\n",
             ps->FileName().c_str(), @1.begin.line);
@@ -114,13 +133,13 @@ parcelable_decl
   };
 
 interface_decl
- : INTERFACE IDENTIFIER '{' methods '}' {
+ : INTERFACE identifier '{' methods '}' {
     $$ = new AidlInterface($2->GetText(), @2.begin.line, $1->GetComments(),
                            false, $4, ps->Package());
     delete $1;
     delete $2;
   }
- | ONEWAY INTERFACE IDENTIFIER '{' methods '}' {
+ | ONEWAY INTERFACE identifier '{' methods '}' {
     $$ = new AidlInterface($3->GetText(), @3.begin.line, $1->GetComments(),
                            true, $5, ps->Package());
     delete $1;
@@ -155,23 +174,23 @@ methods
   };
 
 method_decl
- : type IDENTIFIER '(' arg_list ')' ';' {
+ : type identifier '(' arg_list ')' ';' {
     $$ = new AidlMethod(false, $1, $2->GetText(), $4, @2.begin.line,
                         $1->GetComments());
     delete $2;
   }
- | ONEWAY type IDENTIFIER '(' arg_list ')' ';' {
+ | ONEWAY type identifier '(' arg_list ')' ';' {
     $$ = new AidlMethod(true, $2, $3->GetText(), $5, @3.begin.line,
                         $1->GetComments());
     delete $1;
     delete $3;
   }
- | type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';' {
+ | type identifier '(' arg_list ')' '=' IDVALUE ';' {
     $$ = new AidlMethod(false, $1, $2->GetText(), $4, @2.begin.line,
                         $1->GetComments(), $7);
     delete $2;
   }
- | ONEWAY type IDENTIFIER '(' arg_list ')' '=' IDVALUE ';' {
+ | ONEWAY type identifier '(' arg_list ')' '=' IDVALUE ';' {
     $$ = new AidlMethod(true, $2, $3->GetText(), $5, @3.begin.line,
                         $1->GetComments(), $8);
     delete $1;
@@ -196,11 +215,11 @@ arg_list
   };
 
 arg
- : direction type IDENTIFIER {
+ : direction type identifier {
     $$ = new AidlArgument($1, $2, $3->GetText(), @3.begin.line);
     delete $3;
   };
- | type IDENTIFIER {
+ | type identifier {
     $$ = new AidlArgument($1, $2->GetText(), @2.begin.line);
     delete $2;
   };
