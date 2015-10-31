@@ -45,6 +45,8 @@ class IoDelegate {
       const std::string& base_dir,
       const std::vector<std::string>& nested_subdirs) const;
 
+  bool CreatePathForFile(const std::string& path) const;
+
   virtual std::unique_ptr<CodeWriter> GetCodeWriter(
       const std::string& file_path) const;
 

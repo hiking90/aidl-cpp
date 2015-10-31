@@ -26,12 +26,16 @@
 #include <sys/stat.h>
 #endif
 
+#include <base/strings.h>
+
 #include "logging.h"
 #include "os.h"
 
 using std::string;
 using std::unique_ptr;
 using std::vector;
+
+using android::base::Split;
 
 namespace android {
 namespace aidl {
@@ -93,6 +97,22 @@ bool IoDelegate::CreatedNestedDirs(
     }
   }
   return true;
+}
+
+bool IoDelegate::CreatePathForFile(const string& path) const {
+  if (path.empty()) {
+    return true;
+  }
+
+  string base = ".";
+  if (path[0] == OS_PATH_SEPARATOR) {
+    base = "/";
+  }
+
+  auto split = Split(path, string{1u, OS_PATH_SEPARATOR});
+  split.pop_back();
+
+  return CreatedNestedDirs(base, split);
 }
 
 unique_ptr<CodeWriter> IoDelegate::GetCodeWriter(
