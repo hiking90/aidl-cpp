@@ -31,6 +31,7 @@ import java.util.Arrays;
 
 // Generated
 import android.aidl.tests.ITestService;
+import android.aidl.tests.INamedCallback;
 
 public class TestServiceClient extends Activity {
     private static final String TAG = "TestServiceClient";
@@ -342,6 +343,29 @@ public class TestServiceClient extends Activity {
         mLog.log("...service can reverse and return arrays.");
     }
 
+    private void checkBinderExchange(
+                ITestService service) throws TestFailException {
+      mLog.log("Checking exchange of binders...");
+      try {
+          INamedCallback got = service.GetOtherTestService("Smythe");
+          mLog.log("Received test service");
+          String name = got.GetName();
+
+          if (!name.equals("Smythe")) {
+              mLog.logAndThrow("Tried to get service with name 'Smythe'" +
+                               " and found service with name '" + name + "'");
+          }
+
+          if (!service.VerifyName(got, "Smythe")) {
+              mLog.logAndThrow("Test service could not verify name of 'Smythe'");
+          }
+      } catch (RemoteException ex) {
+          mLog.log(ex.toString());
+          mLog.logAndThrow("Service failed to exchange binders.");
+      }
+      mLog.log("...Exchange of binders works");
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -351,6 +375,7 @@ public class TestServiceClient extends Activity {
           ITestService service = getService();
           checkPrimitiveRepeat(service);
           checkArrayReversal(service);
+          checkBinderExchange(service);
           mLog.log(mSuccessSentinel);
         } catch (TestFailException e) {
             mLog.close();

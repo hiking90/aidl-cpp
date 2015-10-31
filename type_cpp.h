@@ -56,6 +56,9 @@ class Type : public ValidatableType {
   const std::string& ReadFromParcelMethod(bool is_array) const;
   const std::string& WriteToParcelMethod(bool is_array) const;
   virtual bool IsCppPrimitive() const { return false; }
+  virtual std::string WriteCast(const std::string& value) const {
+    return value;
+  }
 
  private:
   // |header| is the header we must include to use this type

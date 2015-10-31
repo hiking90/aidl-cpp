@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <vector>
 
 #include <base/stringprintf.h>
 #include <base/strings.h>
@@ -28,8 +29,10 @@ using std::cerr;
 using std::endl;
 using std::string;
 using std::unique_ptr;
+using std::vector;
 
 using android::base::Split;
+using android::base::Join;
 using android::base::StringPrintf;
 
 namespace android {
@@ -64,6 +67,38 @@ class VoidType : public Type {
   bool CanBeOutParameter() const override { return false; }
   bool CanWriteToParcel() const override { return false; }
 };  // class VoidType
+
+class BinderType : public Type {
+ public:
+  BinderType(const AidlInterface& interface)
+    : Type(GetCppHeader(interface), interface.GetName(), GetCppName(interface),
+           "readStrongBinder", "writeStrongBinder") {}
+  virtual ~BinderType() = default;
+
+  string WriteCast(const string& val) const override {
+    return AidlType() + "::asBinder(" + val + ")";
+  }
+
+ private:
+  static string GetCppName(const AidlInterface& interface) {
+    vector<string> name = interface.GetSplitPackage();
+    string ret = "android::sp<";
+
+    name.push_back(interface.GetName());
+
+    for (const auto& term : name) {
+      ret += "::" + term;
+    }
+
+    return ret + ">";
+  }
+
+  static string GetCppHeader(const AidlInterface& interface) {
+    vector<string> name = interface.GetSplitPackage();
+    name.push_back(interface.GetName());
+    return Join(name, '/') + ".h";
+  }
+};
 
 }  // namespace
 
@@ -159,10 +194,9 @@ bool TypeNamespace::AddParcelableType(const AidlParcelable* /* p */,
   return true;
 }
 
-bool TypeNamespace::AddBinderType(const AidlInterface* /* b */,
+bool TypeNamespace::AddBinderType(const AidlInterface* b,
                                   const string& /* filename */) {
-  // TODO Support passing binders b/24470875
-  LOG(ERROR) << "Passing binders is unimplemented in C++ generation.";
+  types_.emplace_back(new BinderType(*b));
   return true;
 }
 

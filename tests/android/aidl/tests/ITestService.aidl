@@ -16,8 +16,9 @@
 
 package android.aidl.tests;
 
-interface ITestService {
+import android.aidl.tests.INamedCallback;
 
+interface ITestService {
   // Test that primitives work as parameters and return types.
   boolean RepeatBoolean(boolean token);
   byte RepeatByte(byte token);
@@ -37,4 +38,7 @@ interface ITestService {
   float[]   ReverseFloat  (in float[]   input, out float[]   repeated);
   double[]  ReverseDouble (in double[]  input, out double[]  repeated);
   String[]  ReverseString (in String[]  input, out String[]  repeated);
+
+  INamedCallback GetOtherTestService(String name);
+  boolean VerifyName(INamedCallback service, String name);
 }

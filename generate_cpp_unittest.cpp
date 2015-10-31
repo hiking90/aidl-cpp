@@ -195,6 +195,7 @@ R"(#ifndef AIDL_GENERATED_ANDROID_OS_I_PING_RESPONDER_H_
 #include <binder/IInterface.h>
 #include <cstdint>
 #include <utils/String16.h>
+#include <utils/StrongPointer.h>
 
 namespace android {
 
@@ -232,9 +233,11 @@ IMPLEMENT_META_INTERFACE(PingResponder, "android.os.IPingResponder");
 
 const string kComplexTypeInterfaceAIDL =
 R"(package android.os;
+import foo.IFooType;
 interface IComplexTypeInterface {
   int[] Send(in int[] goes_in, inout double[] goes_in_and_out, out boolean[] goes_out);
   oneway void Piff(int times);
+  IFooType TakesABinder(IFooType f);
 })";
 
 const char kExpectedComplexTypeClientHeaderOutput[] =
@@ -256,6 +259,7 @@ explicit BpComplexTypeInterface(const android::sp<android::IBinder>& impl);
 virtual ~BpComplexTypeInterface() = default;
 android::status_t Send(const std::vector<int32_t>& goes_in, std::vector<double>* goes_in_and_out, std::vector<bool>* goes_out, std::vector<int32_t>* _aidl_return) override;
 android::status_t Piff(int32_t times) override;
+android::status_t TakesABinder(const android::sp<::foo::IFooType>& f, android::sp<::foo::IFooType>* _aidl_return) override;
 };  // class BpComplexTypeInterface
 
 }  // namespace os
@@ -328,6 +332,33 @@ if (((status) != (android::OK))) {
 return status;
 }
 status = remote()->transact(IComplexTypeInterface::PIFF, data, &reply, android::IBinder::FLAG_ONEWAY);
+if (((status) != (android::OK))) {
+return status;
+}
+return status;
+}
+
+android::status_t BpComplexTypeInterface::TakesABinder(const android::sp<::foo::IFooType>& f, android::sp<::foo::IFooType>* _aidl_return) {
+android::Parcel data;
+android::Parcel reply;
+android::status_t status;
+status = data.writeInterfaceToken(getInterfaceDescriptor());
+if (((status) != (android::OK))) {
+return status;
+}
+status = data.writeStrongBinder(IFooType::asBinder(f));
+if (((status) != (android::OK))) {
+return status;
+}
+status = remote()->transact(IComplexTypeInterface::TAKESABINDER, data, &reply);
+if (((status) != (android::OK))) {
+return status;
+}
+if (reply.readExceptionCode()) {
+status = android::FAILED_TRANSACTION;
+return status;
+}
+status = reply.readStrongBinder(_aidl_return);
 if (((status) != (android::OK))) {
 return status;
 }
@@ -433,6 +464,32 @@ break;
 }
 }
 break;
+case Call::TAKESABINDER:
+{
+android::sp<::foo::IFooType> in_f;
+android::sp<::foo::IFooType> _aidl_return;
+if ((!data.checkInterface(this))) {
+status = android::BAD_TYPE;
+break;
+}
+status = data.readStrongBinder(&in_f);
+if (((status) != (android::OK))) {
+break;
+}
+status = TakesABinder(in_f, &_aidl_return);
+if (((status) != (android::OK))) {
+break;
+}
+status = reply->writeNoException();
+if (((status) != (android::OK))) {
+break;
+}
+status = reply->writeStrongBinder(IFooType::asBinder(_aidl_return));
+if (((status) != (android::OK))) {
+break;
+}
+}
+break;
 default:
 {
 status = android::BBinder::onTransact(code, data, reply, flags);
@@ -454,6 +511,8 @@ R"(#ifndef AIDL_GENERATED_ANDROID_OS_I_COMPLEX_TYPE_INTERFACE_H_
 #include <binder/IBinder.h>
 #include <binder/IInterface.h>
 #include <cstdint>
+#include <foo/IFooType.h>
+#include <utils/StrongPointer.h>
 #include <vector>
 
 namespace android {
@@ -465,9 +524,11 @@ public:
 DECLARE_META_INTERFACE(ComplexTypeInterface);
 virtual android::status_t Send(const std::vector<int32_t>& goes_in, std::vector<double>* goes_in_and_out, std::vector<bool>* goes_out, std::vector<int32_t>* _aidl_return) = 0;
 virtual android::status_t Piff(int32_t times) = 0;
+virtual android::status_t TakesABinder(const android::sp<::foo::IFooType>& f, android::sp<::foo::IFooType>* _aidl_return) = 0;
 enum Call {
   SEND = android::IBinder::FIRST_CALL_TRANSACTION + 0,
   PIFF = android::IBinder::FIRST_CALL_TRANSACTION + 1,
+  TAKESABINDER = android::IBinder::FIRST_CALL_TRANSACTION + 2,
 };
 };  // class IComplexTypeInterface
 
@@ -496,22 +557,21 @@ IMPLEMENT_META_INTERFACE(ComplexTypeInterface, "android.os.IComplexTypeInterface
 
 class ASTTest : public ::testing::Test {
  protected:
-  virtual const string& FilePath() = 0;
-  virtual const string& FileContents() = 0;
+  ASTTest(string file_path, string file_contents)
+      : file_path_(file_path),
+        file_contents_(file_contents) {}
 
   unique_ptr<AidlInterface> Parse() {
-    FakeIoDelegate io_delegate;
-    io_delegate.SetFileContents(FilePath(), FileContents());
+    io_delegate_.SetFileContents(file_path_, file_contents_);
 
-    cpp::TypeNamespace types;
     unique_ptr<AidlInterface> ret;
     std::vector<std::unique_ptr<AidlImport>> imports;
     int err = ::android::aidl::internals::load_and_validate_aidl(
         {},  // no preprocessed files
-        {},  // no import paths
-        FilePath(),
-        io_delegate,
-        &types,
+        {"."},
+        file_path_,
+        io_delegate_,
+        &types_,
         &ret,
         &imports);
 
@@ -534,115 +594,111 @@ class ASTTest : public ::testing::Test {
     test::PrintDiff(expected, output);
     FAIL() << "Document contents did not match expected contents";
   }
+
+  const string file_path_;
+  const string file_contents_;
+  FakeIoDelegate io_delegate_;
+  TypeNamespace types_;
 };
 
 class PrimitiveInterfaceASTTest : public ASTTest {
- protected:
-  const string fp_ = "android/os/IPingResponder.aidl";
-  const string& FilePath() override { return fp_; }
-  const string& FileContents() override { return kPrimitiveInterfaceAIDL; }
+ public:
+  PrimitiveInterfaceASTTest()
+      : ASTTest("android/os/IPingResponder.aidl",
+                kPrimitiveInterfaceAIDL) {}
 };
 
 TEST_F(PrimitiveInterfaceASTTest, GeneratesClientHeader) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
-  TypeNamespace types;
-  unique_ptr<Document> doc = internals::BuildClientHeader(types, *interface);
+  unique_ptr<Document> doc = internals::BuildClientHeader(types_, *interface);
   Compare(doc.get(), kExpectedPrimitiveClientHeaderOutput);
 }
 
 TEST_F(PrimitiveInterfaceASTTest, GeneratesClientSource) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
-  TypeNamespace types;
-  unique_ptr<Document> doc = internals::BuildClientSource(types, *interface);
+  unique_ptr<Document> doc = internals::BuildClientSource(types_, *interface);
   Compare(doc.get(), kExpectedPrimitiveClientSourceOutput);
 }
 
 TEST_F(PrimitiveInterfaceASTTest, GeneratesServerHeader) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
-  TypeNamespace types;
-  unique_ptr<Document> doc = internals::BuildServerHeader(types, *interface);
+  unique_ptr<Document> doc = internals::BuildServerHeader(types_, *interface);
   Compare(doc.get(), kExpectedPrimitiveServerHeaderOutput);
 }
 
 TEST_F(PrimitiveInterfaceASTTest, GeneratesServerSource) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
-  TypeNamespace types;
-  unique_ptr<Document> doc = internals::BuildServerSource(types, *interface);
+  unique_ptr<Document> doc = internals::BuildServerSource(types_, *interface);
   Compare(doc.get(), kExpectedPrimitiveServerSourceOutput);
 }
 
 TEST_F(PrimitiveInterfaceASTTest, GeneratesInterfaceHeader) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
-  TypeNamespace types;
-  unique_ptr<Document> doc = internals::BuildInterfaceHeader(types, *interface);
+  unique_ptr<Document> doc = internals::BuildInterfaceHeader(types_, *interface);
   Compare(doc.get(), kExpectedPrimitiveInterfaceHeaderOutput);
 }
 
 TEST_F(PrimitiveInterfaceASTTest, GeneratesInterfaceSource) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
-  TypeNamespace types;
-  unique_ptr<Document> doc = internals::BuildInterfaceSource(types, *interface);
+  unique_ptr<Document> doc = internals::BuildInterfaceSource(types_, *interface);
   Compare(doc.get(), kExpectedPrimitiveInterfaceSourceOutput);
 }
 
 class ComplexTypeInterfaceASTTest : public ASTTest {
- protected:
-  const string fp_ = "android/os/IComplexTypeInterface.aidl";
-  const string& FilePath() override { return fp_; }
-  const string& FileContents() override { return kComplexTypeInterfaceAIDL; }
+ public:
+  ComplexTypeInterfaceASTTest()
+      : ASTTest("android/os/IComplexTypeInterface.aidl",
+                kComplexTypeInterfaceAIDL) {
+    io_delegate_.SetFileContents("foo/IFooType.aidl",
+                                 "package foo; interface IFooType {}");
+  }
 };
 
 TEST_F(ComplexTypeInterfaceASTTest, GeneratesClientHeader) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
-  TypeNamespace types;
-  unique_ptr<Document> doc = internals::BuildClientHeader(types, *interface);
+  unique_ptr<Document> doc = internals::BuildClientHeader(types_, *interface);
   Compare(doc.get(), kExpectedComplexTypeClientHeaderOutput);
 }
 
 TEST_F(ComplexTypeInterfaceASTTest, GeneratesClientSource) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
-  TypeNamespace types;
-  unique_ptr<Document> doc = internals::BuildClientSource(types, *interface);
+  unique_ptr<Document> doc = internals::BuildClientSource(types_, *interface);
   Compare(doc.get(), kExpectedComplexTypeClientSourceOutput);
 }
 
 TEST_F(ComplexTypeInterfaceASTTest, GeneratesServerHeader) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
-  TypeNamespace types;
-  unique_ptr<Document> doc = internals::BuildServerHeader(types, *interface);
+  unique_ptr<Document> doc = internals::BuildServerHeader(types_, *interface);
   Compare(doc.get(), kExpectedComplexTypeServerHeaderOutput);
 }
 
 TEST_F(ComplexTypeInterfaceASTTest, GeneratesServerSource) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
-  TypeNamespace types;
-  unique_ptr<Document> doc = internals::BuildServerSource(types, *interface);
+  unique_ptr<Document> doc = internals::BuildServerSource(types_, *interface);
   Compare(doc.get(), kExpectedComplexTypeServerSourceOutput);
 }
 
 TEST_F(ComplexTypeInterfaceASTTest, GeneratesInterfaceHeader) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
-  TypeNamespace types;
-  unique_ptr<Document> doc = internals::BuildInterfaceHeader(types, *interface);
+  unique_ptr<Document> doc = internals::BuildInterfaceHeader(types_, *interface);
   Compare(doc.get(), kExpectedComplexTypeInterfaceHeaderOutput);
 }
 
 TEST_F(ComplexTypeInterfaceASTTest, GeneratesInterfaceSource) {
   unique_ptr<AidlInterface> interface = Parse();
   ASSERT_NE(interface, nullptr);
-  TypeNamespace types;
-  unique_ptr<Document> doc = internals::BuildInterfaceSource(types, *interface);
+  unique_ptr<Document> doc = internals::BuildInterfaceSource(types_, *interface);
   Compare(doc.get(), kExpectedComplexTypeInterfaceSourceOutput);
 }
 
