@@ -159,6 +159,37 @@ void BasicType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
+FileDescriptorType::FileDescriptorType(const JavaTypeNamespace* types)
+    : Type(types, "java.io", "FileDescriptor", ValidatableType::KIND_BUILT_IN,
+           true, false) {}
+
+void FileDescriptorType::WriteToParcel(StatementBlock* addTo, Variable* v,
+                                       Variable* parcel, int flags) const {
+  addTo->Add(new MethodCall(parcel, "writeRawFileDescriptor", 1, v));
+}
+
+void FileDescriptorType::CreateFromParcel(StatementBlock* addTo, Variable* v,
+                                          Variable* parcel, Variable**) const {
+  addTo->Add(new Assignment(v, new MethodCall(parcel, "readRawFileDescriptor")));
+}
+
+void FileDescriptorType::WriteArrayToParcel(StatementBlock* addTo, Variable* v,
+                                            Variable* parcel, int flags) const {
+  addTo->Add(new MethodCall(parcel, "writeRawFileDescriptorArray", 1, v));
+}
+
+void FileDescriptorType::CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
+                                               Variable* parcel, Variable**) const {
+  addTo->Add(new Assignment(v, new MethodCall(parcel, "createRawFileDescriptorArray")));
+}
+
+void FileDescriptorType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
+                                             Variable* parcel, Variable**) const {
+  addTo->Add(new MethodCall(parcel, "readRawFileDescriptorArray", 1, v));
+}
+
+// ================================================================
+
 BooleanType::BooleanType(const JavaTypeNamespace* types)
     : Type(types, "boolean", ValidatableType::KIND_BUILT_IN, true, false) {}
 
@@ -735,6 +766,8 @@ void JavaTypeNamespace::Init() {
 
   Add(new Type(this, "java.lang", "Object", ValidatableType::KIND_BUILT_IN,
                false, false));
+
+  Add(new FileDescriptorType(this));
 
   Add(new CharSequenceType(this));
 

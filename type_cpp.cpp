@@ -278,6 +278,12 @@ void TypeNamespace::Init() {
   Add(new BinderListType());
   Add(new StringListType());
 
+  Add(new Type(
+      ValidatableType::KIND_BUILT_IN, kNoPackage, "FileDescriptor",
+      "nativehelper/ScopedFd.h", "::ScopedFd",
+      "readUniqueFileDescriptor", "writeUniqueFileDescriptor",
+      "readUniqueFileDescriptorVector", "writeUniqueFileDescriptorVector"));
+
   void_type_ = new class VoidType();
   Add(void_type_);
 }

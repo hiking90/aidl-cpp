@@ -55,4 +55,8 @@ interface ITestService {
                                  out List<String> repeated);
   List<IBinder> ReverseNamedCallbackList(in List<IBinder> input,
                                          out List<IBinder> repeated);
+
+  FileDescriptor RepeatFileDescriptor(in FileDescriptor read);
+  FileDescriptor[] ReverseFileDescriptorArray(in FileDescriptor[] input,
+                                              out FileDescriptor[] repeated);
 }

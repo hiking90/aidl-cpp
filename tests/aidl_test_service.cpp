@@ -19,10 +19,13 @@
 #include <string>
 #include <vector>
 
+#include <unistd.h>
+
 #include <binder/IInterface.h>
 #include <binder/IPCThreadState.h>
 #include <binder/IServiceManager.h>
 #include <binder/ProcessState.h>
+#include <nativehelper/ScopedFd.h>
 #include <utils/Errors.h>
 #include <utils/Log.h>
 #include <utils/Looper.h>
@@ -179,8 +182,8 @@ class NativeService : public BnTestService {
   }
 
   Status RepeatParcelable(const SimpleParcelable& input,
-                            SimpleParcelable* repeat,
-                            SimpleParcelable* _aidl_return) override {
+                          SimpleParcelable* repeat,
+                          SimpleParcelable* _aidl_return) override {
     ALOGI("Repeated a SimpleParcelable %s", input.toString().c_str());
     *repeat = input;
     *_aidl_return = input;
@@ -189,8 +192,8 @@ class NativeService : public BnTestService {
 
   template<typename T>
   Status ReverseArray(const vector<T>& input,
-                        vector<T>* repeated,
-                        vector<T>* _aidl_return) {
+                      vector<T>* repeated,
+                      vector<T>* _aidl_return) {
     ALOGI("Reversing array of length %zu", input.size());
     *repeated = input;
     *_aidl_return = input;
@@ -199,53 +202,53 @@ class NativeService : public BnTestService {
   }
 
   Status ReverseBoolean(const vector<bool>& input,
-                          vector<bool>* repeated,
-                          vector<bool>* _aidl_return) override {
+                        vector<bool>* repeated,
+                        vector<bool>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
   Status ReverseByte(const vector<int8_t>& input,
-                       vector<int8_t>* repeated,
-                       vector<int8_t>* _aidl_return) override {
+                     vector<int8_t>* repeated,
+                     vector<int8_t>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
   Status ReverseChar(const vector<char16_t>& input,
-                       vector<char16_t>* repeated,
-                       vector<char16_t>* _aidl_return) override {
+                     vector<char16_t>* repeated,
+                     vector<char16_t>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
   Status ReverseInt(const vector<int32_t>& input,
-                      vector<int32_t>* repeated,
-                      vector<int32_t>* _aidl_return) override {
+                    vector<int32_t>* repeated,
+                    vector<int32_t>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
   Status ReverseLong(const vector<int64_t>& input,
-                       vector<int64_t>* repeated,
-                       vector<int64_t>* _aidl_return) override {
+                     vector<int64_t>* repeated,
+                     vector<int64_t>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
   Status ReverseFloat(const vector<float>& input,
-                        vector<float>* repeated,
-                        vector<float>* _aidl_return) override {
+                      vector<float>* repeated,
+                      vector<float>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
   Status ReverseDouble(const vector<double>& input,
-                         vector<double>* repeated,
-                         vector<double>* _aidl_return) override {
+                       vector<double>* repeated,
+                       vector<double>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
   Status ReverseString(const vector<String16>& input,
-                         vector<String16>* repeated,
-                         vector<String16>* _aidl_return) override {
+                       vector<String16>* repeated,
+                       vector<String16>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
   Status ReverseParcelables(const vector<SimpleParcelable>& input,
-                              vector<SimpleParcelable>* repeated,
-                              vector<SimpleParcelable>* _aidl_return) override {
+                            vector<SimpleParcelable>* repeated,
+                            vector<SimpleParcelable>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
 
   Status GetOtherTestService(const String16& name,
-                               sp<INamedCallback>* returned_service) override {
+                             sp<INamedCallback>* returned_service) override {
     if (service_map_.find(name) == service_map_.end()) {
       sp<INamedCallback> new_item(new NamedCallback(name));
       service_map_[name] = new_item;
@@ -256,7 +259,7 @@ class NativeService : public BnTestService {
   }
 
   Status VerifyName(const sp<INamedCallback>& service, const String16& name,
-                      bool* returned_value) override {
+                    bool* returned_value) override {
     String16 foundName;
     Status status = service->GetName(&foundName);
 
@@ -268,15 +271,34 @@ class NativeService : public BnTestService {
   }
 
   Status ReverseStringList(const vector<String16>& input,
-                             vector<String16>* repeated,
-                             vector<String16>* _aidl_return) override {
+                           vector<String16>* repeated,
+                           vector<String16>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
 
   Status ReverseNamedCallbackList(const vector<sp<IBinder>>& input,
-                                    vector<sp<IBinder>>* repeated,
-                                    vector<sp<IBinder>>* _aidl_return) override {
+                                  vector<sp<IBinder>>* repeated,
+                                  vector<sp<IBinder>>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
+  }
+
+  Status RepeatFileDescriptor(const ScopedFd& read,
+                              ScopedFd* _aidl_return) override {
+    ALOGE("Repeating file descriptor");
+    *_aidl_return = ScopedFd(dup(read.get()));
+    return Status::ok();
+  }
+
+  Status ReverseFileDescriptorArray(const vector<ScopedFd>& input,
+                                    vector<ScopedFd>* repeated,
+                                    vector<ScopedFd>* _aidl_return) override {
+    ALOGI("Reversing descriptor array of length %zu", input.size());
+    for (const auto& item : input) {
+      repeated->push_back(ScopedFd(dup(item.get())));
+      _aidl_return->push_back(ScopedFd(dup(item.get())));
+    }
+    std::reverse(_aidl_return->begin(), _aidl_return->end());
+    return Status::ok();
   }
 
  private:
