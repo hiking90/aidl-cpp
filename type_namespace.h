@@ -67,6 +67,10 @@ class ValidatableType {
 
 class TypeNamespace {
  public:
+  // Load the TypeNamespace with built in types.  Don't do work in the
+  // constructor because many of the useful methods are virtual.
+  virtual void Init() = 0;
+
   // Load this TypeNamespace with user defined types.
   virtual bool AddParcelableType(const AidlParcelable* p,
                                  const std::string& filename) = 0;

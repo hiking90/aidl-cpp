@@ -36,6 +36,11 @@ namespace aidl {
 
 class AidlTest : public ::testing::Test {
  protected:
+  void SetUp() override {
+    java_types_.Init();
+    cpp_types_.Init();
+  }
+
   unique_ptr<AidlInterface> Parse(const string& path,
                                   const string& contents,
                                   TypeNamespace* types) {
@@ -55,11 +60,12 @@ class AidlTest : public ::testing::Test {
 
   FakeIoDelegate io_delegate_;
   vector<string> import_paths_;
+  java::JavaTypeNamespace java_types_;
+  cpp::TypeNamespace cpp_types_;
 };
 
 TEST_F(AidlTest, JavaAcceptsMissingPackage) {
-  java::JavaTypeNamespace types;
-  EXPECT_NE(nullptr, Parse("IFoo.aidl", "interface IFoo { }", &types));
+  EXPECT_NE(nullptr, Parse("IFoo.aidl", "interface IFoo { }", &java_types_));
 }
 
 TEST_F(AidlTest, RejectsArraysOfBinders) {
@@ -70,50 +76,41 @@ TEST_F(AidlTest, RejectsArraysOfBinders) {
   string contents = "package foo;\n"
                     "import bar.IBar;\n"
                     "interface IFoo { void f(in IBar[] input); }";
-  java::JavaTypeNamespace java_types;
-  EXPECT_EQ(nullptr, Parse(path, contents, &java_types));
-  cpp::TypeNamespace cpp_types;
-  EXPECT_EQ(nullptr, Parse(path, contents, &cpp_types));
+  EXPECT_EQ(nullptr, Parse(path, contents, &java_types_));
+  EXPECT_EQ(nullptr, Parse(path, contents, &cpp_types_));
 }
 
 TEST_F(AidlTest, CppRejectsMissingPackage) {
-  cpp::TypeNamespace types;
-  EXPECT_EQ(nullptr, Parse("IFoo.aidl", "interface IFoo { }", &types));
+  EXPECT_EQ(nullptr, Parse("IFoo.aidl", "interface IFoo { }", &cpp_types_));
   EXPECT_NE(nullptr,
-            Parse("a/IFoo.aidl", "package a; interface IFoo { }", &types));
+            Parse("a/IFoo.aidl", "package a; interface IFoo { }", &cpp_types_));
 }
 
 TEST_F(AidlTest, RejectsOnewayOutParameters) {
-  cpp::TypeNamespace cpp_types;
-  java::JavaTypeNamespace java_types;
   string oneway_interface =
       "package a; oneway interface IFoo { void f(out int bar); }";
   string oneway_method =
       "package a; interface IBar { oneway void f(out int bar); }";
-  EXPECT_EQ(nullptr, Parse("a/IFoo.aidl", oneway_interface, &cpp_types));
-  EXPECT_EQ(nullptr, Parse("a/IFoo.aidl", oneway_interface, &java_types));
-  EXPECT_EQ(nullptr, Parse("a/IBar.aidl", oneway_method, &cpp_types));
-  EXPECT_EQ(nullptr, Parse("a/IBar.aidl", oneway_method, &java_types));
+  EXPECT_EQ(nullptr, Parse("a/IFoo.aidl", oneway_interface, &cpp_types_));
+  EXPECT_EQ(nullptr, Parse("a/IFoo.aidl", oneway_interface, &java_types_));
+  EXPECT_EQ(nullptr, Parse("a/IBar.aidl", oneway_method, &cpp_types_));
+  EXPECT_EQ(nullptr, Parse("a/IBar.aidl", oneway_method, &java_types_));
 }
 
 TEST_F(AidlTest, RejectsOnewayNonVoidReturn) {
-  cpp::TypeNamespace cpp_types;
-  java::JavaTypeNamespace java_types;
   string oneway_method = "package a; interface IFoo { oneway int f(); }";
-  EXPECT_EQ(nullptr, Parse("a/IFoo.aidl", oneway_method, &cpp_types));
-  EXPECT_EQ(nullptr, Parse("a/IFoo.aidl", oneway_method, &java_types));
+  EXPECT_EQ(nullptr, Parse("a/IFoo.aidl", oneway_method, &cpp_types_));
+  EXPECT_EQ(nullptr, Parse("a/IFoo.aidl", oneway_method, &java_types_));
 }
 
 TEST_F(AidlTest, AcceptsOneway) {
-  cpp::TypeNamespace cpp_types;
-  java::JavaTypeNamespace java_types;
   string oneway_method = "package a; interface IFoo { oneway void f(int a); }";
   string oneway_interface =
       "package a; oneway interface IBar { void f(int a); }";
-  EXPECT_NE(nullptr, Parse("a/IFoo.aidl", oneway_method, &cpp_types));
-  EXPECT_NE(nullptr, Parse("a/IFoo.aidl", oneway_method, &java_types));
-  EXPECT_NE(nullptr, Parse("a/IBar.aidl", oneway_interface, &cpp_types));
-  EXPECT_NE(nullptr, Parse("a/IBar.aidl", oneway_interface, &java_types));
+  EXPECT_NE(nullptr, Parse("a/IFoo.aidl", oneway_method, &cpp_types_));
+  EXPECT_NE(nullptr, Parse("a/IFoo.aidl", oneway_method, &java_types_));
+  EXPECT_NE(nullptr, Parse("a/IBar.aidl", oneway_interface, &cpp_types_));
+  EXPECT_NE(nullptr, Parse("a/IBar.aidl", oneway_interface, &java_types_));
 }
 }  // namespace aidl
 }  // namespace android

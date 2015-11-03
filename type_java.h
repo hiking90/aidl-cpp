@@ -365,9 +365,10 @@ class GenericListType : public Type {
 
 class JavaTypeNamespace : public LanguageTypeNamespace<Type> {
  public:
-  JavaTypeNamespace();
+  JavaTypeNamespace() = default;
   virtual ~JavaTypeNamespace() = default;
 
+  void Init() override;
   bool AddParcelableType(const AidlParcelable* p,
                          const string& filename) override;
   bool AddBinderType(const AidlInterface* b,

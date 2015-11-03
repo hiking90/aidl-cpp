@@ -705,7 +705,7 @@ ClassLoaderType::ClassLoaderType(const JavaTypeNamespace* types)
 
 // ================================================================
 
-JavaTypeNamespace::JavaTypeNamespace() {
+void JavaTypeNamespace::Init() {
   Add(new BasicType(this, "void", "XXX", "XXX", "XXX", "XXX", "XXX"));
 
   m_bool_type = new BooleanType(this);

@@ -87,9 +87,10 @@ class PrimitiveType : public Type {
 
 class TypeNamespace : public ::android::aidl::LanguageTypeNamespace<Type> {
  public:
-  TypeNamespace();
+  TypeNamespace() = default;
   virtual ~TypeNamespace() = default;
 
+  void Init() override;
   bool AddParcelableType(const AidlParcelable* p,
                          const std::string& filename) override;
   bool AddBinderType(const AidlInterface* b,

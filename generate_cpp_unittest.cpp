@@ -364,7 +364,9 @@ class ASTTest : public ::testing::Test {
  protected:
   ASTTest(string file_path, string file_contents)
       : file_path_(file_path),
-        file_contents_(file_contents) {}
+        file_contents_(file_contents) {
+    types_.Init();
+  }
 
   unique_ptr<AidlInterface> Parse() {
     io_delegate_.SetFileContents(file_path_, file_contents_);
