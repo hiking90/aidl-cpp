@@ -50,6 +50,16 @@ unique_ptr<string> FakeIoDelegate::GetFileContents(
   return contents;
 }
 
+unique_ptr<LineReader> FakeIoDelegate::GetLineReader(
+    const string& file_path) const {
+  unique_ptr<LineReader> ret;
+  const auto& it = file_contents_.find(CleanPath(file_path));
+  if (it != file_contents_.cend()) {
+    ret = LineReader::ReadFromMemory(it->second);
+  }
+  return ret;
+}
+
 bool FakeIoDelegate::FileIsReadable(const string& path) const {
   return file_contents_.find(CleanPath(path)) != file_contents_.end();
 }
