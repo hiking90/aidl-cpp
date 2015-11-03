@@ -23,6 +23,7 @@
 #include <utils/StrongPointer.h>
 
 #include "android/aidl/tests/ITestService.h"
+#include "android/aidl/tests/INamedCallback.h"
 
 // libutils:
 using android::OK;
@@ -33,9 +34,11 @@ using android::String8;
 
 // libbinder:
 using android::getService;
+using android::IBinder;
 
 // generated
 using android::aidl::tests::ITestService;
+using android::aidl::tests::INamedCallback;
 
 using std::cerr;
 using std::cout;
@@ -163,6 +166,82 @@ bool ConfirmReverseLists(const sp<ITestService>& s) {
 
   return true;
 }
+
+bool ConfirmReverseBinderLists(const sp<ITestService>& s) {
+  status_t status;
+  cout << "Confirming passing and returning List<T> works with binders." << endl;
+
+  vector<String16> names = {
+    String16{"Larry"},
+    String16{"Curly"},
+    String16{"Moe"}
+  };
+
+  vector<sp<IBinder>> input;
+
+  for (int i = 0; i < 3; i++) {
+    sp<INamedCallback> got;
+
+    status = s->GetOtherTestService(names[i], &got);
+    if (status != OK) {
+      cerr << "Could not retrieve service for test." << endl;
+      return false;
+    }
+
+    input.push_back(INamedCallback::asBinder(got));
+  }
+
+  vector<sp<IBinder>> output;
+  vector<sp<IBinder>> reversed;
+
+  status = s->ReverseNamedCallbackList(input, &output, &reversed);
+
+  if (output.size() != 3) {
+    cerr << "ReverseNamedCallbackList gave repetition with wrong length." << endl;
+    return false;
+  }
+
+  if (reversed.size() != 3) {
+    cerr << "ReverseNamedCallbackList gave reversal with wrong length." << endl;
+    return false;
+  }
+
+  for (int i = 0; i < 3; i++) {
+    String16 ret;
+    sp<INamedCallback> named_callback =
+        android::interface_cast<INamedCallback>(output[i]);
+    status = named_callback->GetName(&ret);
+
+    if (status != OK) {
+      cerr << "Could not query INamedCallback from output" << endl;
+      return false;
+    }
+
+    if (ret != names[i]) {
+      cerr << "Output had wrong INamedCallback" << endl;
+      return false;
+    }
+  }
+
+  for (int i = 0; i < 3; i++) {
+    String16 ret;
+    sp<INamedCallback> named_callback =
+        android::interface_cast<INamedCallback>(reversed[i]);
+    status = named_callback->GetName(&ret);
+
+    if (status != OK) {
+      cerr << "Could not query INamedCallback from reversed output" << endl;
+      return false;
+    }
+
+    if (ret != names[2 - i]) {
+      cerr << "Reversed output had wrong INamedCallback" << endl;
+      return false;
+    }
+  }
+
+  return true;
+}
 }  // namespace
 
 int main(int /* argc */, char * /* argv */ []) {
@@ -175,6 +254,8 @@ int main(int /* argc */, char * /* argv */ []) {
   if (!ConfirmReverseArrays(service)) return 1;
 
   if (!ConfirmReverseLists(service)) return 1;
+
+  if (!ConfirmReverseBinderLists(service)) return 1;
 
   return 0;
 }

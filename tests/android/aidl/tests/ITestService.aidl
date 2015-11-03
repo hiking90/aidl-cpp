@@ -46,4 +46,6 @@ interface ITestService {
   // Test that List<T> types work correctly.
   List<String> ReverseStringList(in List<String> input,
                                  out List<String> repeated);
+  List<IBinder> ReverseNamedCallbackList(in List<IBinder> input,
+                                         out List<IBinder> repeated);
 }

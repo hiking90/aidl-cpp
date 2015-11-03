@@ -132,6 +132,29 @@ class StringListType : public Type {
   DISALLOW_COPY_AND_ASSIGN(StringListType);
 };  // class StringListType
 
+class BinderListType : public Type {
+ public:
+  BinderListType()
+      : Type(ValidatableType::KIND_BUILT_IN, "java.util",
+             "List<android.os.IBinder>", "binder/IBinder.h",
+             "std::vector<android::sp<::android::IBinder>>",
+             "readStrongBinderVector", "writeStrongBinderVector") {}
+  virtual ~BinderListType() = default;
+  bool CanBeOutParameter() const override { return true; }
+
+  void GetHeaders(bool is_array, set<string>* headers) const {
+    if (is_array) {
+      LOG(FATAL) << "Type checking did not catch that List<Binder> "
+                    "was marked as array";
+    }
+    Type::GetHeaders(is_array, headers);
+    headers->insert("vector");
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(BinderListType);
+};  // class BinderListType
+
 }  // namespace
 
 Type::Type(int kind,
@@ -226,6 +249,15 @@ void TypeNamespace::Init() {
                           "readString16Vector", "writeString16Vector");
   Add(string_type_);
 
+  ibinder_type_ = new Type(ValidatableType::KIND_BUILT_IN, "android.os",
+                           "IBinder", "binder/IBinder.h",
+                           "sp<android::IBinder>", "readStrongBinder",
+                           "writeStrongBinder");
+  Add(ibinder_type_);
+
+  Add(new BinderListType());
+  Add(new StringListType());
+
   void_type_ = new class VoidType();
   Add(void_type_);
 }
@@ -257,12 +289,11 @@ bool TypeNamespace::AddListType(const std::string& type_name) {
     return false;
   }
 
-  if (contained_type == StringType()) {
-    Add(new StringListType());
+  if (contained_type == StringType() || contained_type == IBinderType()) {
     return true;
   }
+
   // TODO Support lists of parcelables b/23600712
-  // TODO Support lists of binders b/24470875
 
   LOG(ERROR) << "aidl-cpp does not yet support List<" << type_name << ">";
   return false;

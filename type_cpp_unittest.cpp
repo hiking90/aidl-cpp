@@ -44,8 +44,6 @@ TEST_F(CppTypeNamespaceTest, HasSomeBasicTypes) {
 }
 
 TEST_F(CppTypeNamespaceTest, SupportsListString) {
-  EXPECT_EQ(types_.Find("List<String>"), nullptr);
-  EXPECT_TRUE(types_.AddListType("String"));
   EXPECT_NE(types_.Find("List<String>"), nullptr);
 }
 
