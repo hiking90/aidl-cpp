@@ -110,6 +110,28 @@ class BinderType : public Type {
   }
 };
 
+class StringListType : public Type {
+ public:
+  StringListType()
+      : Type(ValidatableType::KIND_BUILT_IN, "java.util", "List<String>",
+            "utils/String16.h", "std::vector<android::String16>",
+             "readString16Vector", "writeString16Vector") {}
+  virtual ~StringListType() = default;
+  bool CanBeOutParameter() const override { return true; }
+
+  void GetHeaders(bool is_array, set<string>* headers) const {
+    if (is_array) {
+      LOG(FATAL) << "Type checking did not catch that List<String> "
+                    "was marked as array";
+    }
+    Type::GetHeaders(is_array, headers);
+    headers->insert("vector");
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(StringListType);
+};  // class StringListType
+
 }  // namespace
 
 Type::Type(int kind,
@@ -133,7 +155,6 @@ Type::Type(int kind,
       parcel_write_array_method_(write_array_method) {}
 
 bool Type::CanBeArray() const { return ! parcel_read_array_method_.empty(); }
-bool Type::CanBeOutParameter() const { return false; }
 bool Type::CanWriteToParcel() const { return true; }
 void Type::GetHeaders(bool is_array, set<string>* headers) const {
   if (!header_.empty()) {
@@ -199,10 +220,11 @@ void TypeNamespace::Init() {
       kNoHeader, "char16_t", "readChar", "writeChar",
       "readCharVector", "writeCharVector"));
 
-  Add(new Type(ValidatableType::KIND_BUILT_IN, kNoPackage, "String",
-               "utils/String16.h", "android::String16",
-               "readString16", "writeString16", "readString16Vector",
-               "writeString16Vector"));
+  string_type_ = new Type(ValidatableType::KIND_BUILT_IN, kNoPackage, "String",
+                          "utils/String16.h", "android::String16",
+                          "readString16", "writeString16",
+                          "readString16Vector", "writeString16Vector");
+  Add(string_type_);
 
   void_type_ = new class VoidType();
   Add(void_type_);
@@ -221,9 +243,28 @@ bool TypeNamespace::AddBinderType(const AidlInterface* b,
   return true;
 }
 
-bool TypeNamespace::AddListType(const std::string& /* type_name */) {
-  // TODO Support list types b/24470786
-  LOG(ERROR) << "Passing lists is unimplemented in C++ generation.";
+bool TypeNamespace::AddListType(const std::string& type_name) {
+  const Type* contained_type = Find(type_name);
+  if (!contained_type) {
+    LOG(ERROR) << "Cannot create List<" << type_name << "> because contained "
+                  "type cannot be found or is invalid.";
+    return false;
+  }
+  if (contained_type->IsCppPrimitive()) {
+    LOG(ERROR) << "Cannot create List<" << type_name << "> because contained "
+                  "type is a primitive in Java and Java List cannot hold "
+                  "primitives.";
+    return false;
+  }
+
+  if (contained_type == StringType()) {
+    Add(new StringListType());
+    return true;
+  }
+  // TODO Support lists of parcelables b/23600712
+  // TODO Support lists of binders b/24470875
+
+  LOG(ERROR) << "aidl-cpp does not yet support List<" << type_name << ">";
   return false;
 }
 

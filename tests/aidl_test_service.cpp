@@ -252,6 +252,12 @@ class NativeService : public BnTestService {
     return err;
   }
 
+  status_t ReverseStringList(const vector<String16>& input,
+                             vector<String16>* repeated,
+                             vector<String16>* _aidl_return) override {
+    return ReverseArray(input, repeated, _aidl_return);
+  }
+
  private:
   map<String16, sp<INamedCallback>> service_map_;
 };

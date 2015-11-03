@@ -39,6 +39,11 @@ interface ITestService {
   double[]  ReverseDouble (in double[]  input, out double[]  repeated);
   String[]  ReverseString (in String[]  input, out String[]  repeated);
 
+  // Test that clients can send and receive Binders.
   INamedCallback GetOtherTestService(String name);
   boolean VerifyName(INamedCallback service, String name);
+
+  // Test that List<T> types work correctly.
+  List<String> ReverseStringList(in List<String> input,
+                                 out List<String> repeated);
 }

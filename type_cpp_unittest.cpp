@@ -43,6 +43,12 @@ TEST_F(CppTypeNamespaceTest, HasSomeBasicTypes) {
   EXPECT_NE(types_.Find("String"), nullptr);
 }
 
+TEST_F(CppTypeNamespaceTest, SupportsListString) {
+  EXPECT_EQ(types_.Find("List<String>"), nullptr);
+  EXPECT_TRUE(types_.AddListType("String"));
+  EXPECT_NE(types_.Find("List<String>"), nullptr);
+}
+
 }  // namespace cpp
 }  // namespace android
 }  // namespace aidl

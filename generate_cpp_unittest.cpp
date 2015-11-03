@@ -43,6 +43,7 @@ interface IComplexTypeInterface {
   int[] Send(in int[] goes_in, inout double[] goes_in_and_out, out boolean[] goes_out);
   oneway void Piff(int times);
   IFooType TakesABinder(IFooType f);
+  List<String> StringListMethod(in java.util.List<String> input, out List<String> output);
 })";
 
 const char kExpectedComplexTypeClientHeaderOutput[] =
@@ -65,6 +66,7 @@ virtual ~BpComplexTypeInterface() = default;
 android::status_t Send(const std::vector<int32_t>& goes_in, std::vector<double>* goes_in_and_out, std::vector<bool>* goes_out, std::vector<int32_t>* _aidl_return) override;
 android::status_t Piff(int32_t times) override;
 android::status_t TakesABinder(const android::sp<::foo::IFooType>& f, android::sp<::foo::IFooType>* _aidl_return) override;
+android::status_t StringListMethod(const std::vector<android::String16>& input, std::vector<android::String16>* output, std::vector<android::String16>* _aidl_return) override;
 };  // class BpComplexTypeInterface
 
 }  // namespace os
@@ -164,6 +166,37 @@ status = android::FAILED_TRANSACTION;
 return status;
 }
 status = reply.readStrongBinder(_aidl_return);
+if (((status) != (android::OK))) {
+return status;
+}
+return status;
+}
+
+android::status_t BpComplexTypeInterface::StringListMethod(const std::vector<android::String16>& input, std::vector<android::String16>* output, std::vector<android::String16>* _aidl_return) {
+android::Parcel data;
+android::Parcel reply;
+android::status_t status;
+status = data.writeInterfaceToken(getInterfaceDescriptor());
+if (((status) != (android::OK))) {
+return status;
+}
+status = data.writeString16Vector(input);
+if (((status) != (android::OK))) {
+return status;
+}
+status = remote()->transact(IComplexTypeInterface::STRINGLISTMETHOD, data, &reply);
+if (((status) != (android::OK))) {
+return status;
+}
+if (reply.readExceptionCode()) {
+status = android::FAILED_TRANSACTION;
+return status;
+}
+status = reply.readString16Vector(_aidl_return);
+if (((status) != (android::OK))) {
+return status;
+}
+status = reply.readString16Vector(output);
 if (((status) != (android::OK))) {
 return status;
 }
@@ -295,6 +328,37 @@ break;
 }
 }
 break;
+case Call::STRINGLISTMETHOD:
+{
+std::vector<android::String16> in_input;
+std::vector<android::String16> out_output;
+std::vector<android::String16> _aidl_return;
+if ((!data.checkInterface(this))) {
+status = android::BAD_TYPE;
+break;
+}
+status = data.readString16Vector(&in_input);
+if (((status) != (android::OK))) {
+break;
+}
+status = StringListMethod(in_input, &out_output, &_aidl_return);
+if (((status) != (android::OK))) {
+break;
+}
+status = reply->writeNoException();
+if (((status) != (android::OK))) {
+break;
+}
+status = reply->writeString16Vector(_aidl_return);
+if (((status) != (android::OK))) {
+break;
+}
+status = reply->writeString16Vector(out_output);
+if (((status) != (android::OK))) {
+break;
+}
+}
+break;
 default:
 {
 status = android::BBinder::onTransact(code, data, reply, flags);
@@ -317,6 +381,7 @@ R"(#ifndef AIDL_GENERATED_ANDROID_OS_I_COMPLEX_TYPE_INTERFACE_H_
 #include <binder/IInterface.h>
 #include <cstdint>
 #include <foo/IFooType.h>
+#include <utils/String16.h>
 #include <utils/StrongPointer.h>
 #include <vector>
 
@@ -330,10 +395,12 @@ DECLARE_META_INTERFACE(ComplexTypeInterface);
 virtual android::status_t Send(const std::vector<int32_t>& goes_in, std::vector<double>* goes_in_and_out, std::vector<bool>* goes_out, std::vector<int32_t>* _aidl_return) = 0;
 virtual android::status_t Piff(int32_t times) = 0;
 virtual android::status_t TakesABinder(const android::sp<::foo::IFooType>& f, android::sp<::foo::IFooType>* _aidl_return) = 0;
+virtual android::status_t StringListMethod(const std::vector<android::String16>& input, std::vector<android::String16>* output, std::vector<android::String16>* _aidl_return) = 0;
 enum Call {
   SEND = android::IBinder::FIRST_CALL_TRANSACTION + 0,
   PIFF = android::IBinder::FIRST_CALL_TRANSACTION + 1,
   TAKESABINDER = android::IBinder::FIRST_CALL_TRANSACTION + 2,
+  STRINGLISTMETHOD = android::IBinder::FIRST_CALL_TRANSACTION + 3,
 };
 };  // class IComplexTypeInterface
 
