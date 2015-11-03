@@ -23,20 +23,45 @@
 #include <base/macros.h>
 
 #include "aidl_language.h"
+#include "logging.h"
 
 namespace android {
 namespace aidl {
 
 class ValidatableType {
  public:
-  ValidatableType() = default;
+  enum {
+    KIND_BUILT_IN,
+    KIND_PARCELABLE,
+    KIND_INTERFACE,
+    KIND_GENERATED,
+  };
+
+  ValidatableType(int kind,
+                  const std::string& package, const std::string& type_name,
+                  const std::string& decl_file, int decl_line);
   virtual ~ValidatableType() = default;
 
   virtual bool CanBeArray() const = 0;
   virtual bool CanBeOutParameter() const = 0;
   virtual bool CanWriteToParcel() const = 0;
 
+  // Name() returns the short name of an object (without package qualifiers).
+  virtual std::string Name() const { return type_name_; }
+  // QualifiedName() returns the canonical AIDL type, with packages.
+  virtual std::string QualifiedName() const { return canonical_name_; }
+  int Kind() const { return kind_; }
+  std::string HumanReadableKind() const;
+  std::string DeclFile() const { return origin_file_; }
+  int DeclLine() const { return origin_line_; }
+
  private:
+  const int kind_;
+  const std::string type_name_;
+  const std::string canonical_name_;
+  const std::string origin_file_;
+  const int origin_line_;
+
   DISALLOW_COPY_AND_ASSIGN(ValidatableType);
 };
 
@@ -81,17 +106,109 @@ class TypeNamespace {
       std::vector<std::string>* container_class,
       std::vector<std::string>* contained_type_names) const;
 
-
  protected:
   TypeNamespace() = default;
   virtual ~TypeNamespace() = default;
 
+  // Get a pointer to an existing type.
   virtual const ValidatableType* GetValidatableType(
       const std::string& name) const = 0;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(TypeNamespace);
 };
+
+template<typename T>
+class LanguageTypeNamespace : public TypeNamespace {
+ public:
+  LanguageTypeNamespace() = default;
+  virtual ~LanguageTypeNamespace() = default;
+
+  // Get a pointer to an existing type.  Searches first by fully-qualified
+  // name, and then class name (dropping package qualifiers).
+  const T* Find(const std::string& name) const;
+
+ protected:
+  bool Add(const T* type);
+  const ValidatableType* GetValidatableType(
+      const std::string& name) const override { return Find(name); }
+
+ private:
+  std::vector<std::unique_ptr<const T>> types_;
+
+  DISALLOW_COPY_AND_ASSIGN(LanguageTypeNamespace);
+};  // class LanguageTypeNamespace
+
+template<typename T>
+bool LanguageTypeNamespace<T>::Add(const T* type) {
+  const T* existing = Find(type->QualifiedName());
+  if (!existing) {
+    types_.emplace_back(type);
+    return true;
+  }
+
+  if (existing->Kind() == ValidatableType::KIND_BUILT_IN) {
+    LOG(ERROR) << type->DeclFile() << ":" << type->DeclLine()
+               << " attempt to redefine built in class "
+               << type->QualifiedName();
+    return false;
+  }
+
+  if (type->Kind() != existing->Kind()) {
+    LOG(ERROR) << type->DeclFile() << ":" << type->DeclLine()
+               << " attempt to redefine " << type->QualifiedName()
+               << " as " << type->HumanReadableKind();
+    LOG(ERROR) << existing->DeclFile() << ":" << existing->DeclLine()
+               << " previously defined here as "
+               << existing->HumanReadableKind();
+    return false;
+  }
+
+  return true;
+}
+
+template<typename T>
+const T* LanguageTypeNamespace<T>::Find(const std::string& raw_name) const {
+  using std::string;
+  using std::vector;
+  using android::base::Join;
+  using android::base::Trim;
+
+  string name = Trim(raw_name);
+  if (IsContainerType(name)) {
+    vector<string> container_class;
+    vector<string> contained_type_names;
+    if (!CanonicalizeContainerType(name, &container_class,
+                                   &contained_type_names)) {
+      return nullptr;
+    }
+    for (string& contained_type_name : contained_type_names) {
+      const T* contained_type = Find(contained_type_name);
+      if (!contained_type) {
+        return nullptr;
+      }
+      contained_type_name = contained_type->QualifiedName();
+    }
+    name = Join(container_class, '.') +
+           "<" + Join(contained_type_names, ',') + ">";
+  }
+
+  const T* ret = nullptr;
+  for (const auto& type : types_) {
+    // Always prefer a exact match if possible.
+    // This works for primitives and class names qualified with a package.
+    if (type->QualifiedName() == name) {
+      ret = type.get();
+      break;
+    }
+    // We allow authors to drop packages when refering to a class name.
+    if (type->Name() == name) {
+      ret = type.get();
+    }
+  }
+
+  return ret;
+}
 
 }  // namespace aidl
 }  // namespace android

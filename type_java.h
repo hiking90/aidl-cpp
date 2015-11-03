@@ -34,9 +34,6 @@ using std::vector;
 
 class Type : public ValidatableType {
  public:
-  // kinds
-  enum { BUILT_IN, USERDATA, INTERFACE, GENERATED };
-
   // WriteToParcel flags
   enum { PARCELABLE_WRITE_RETURN_VALUE = 0x0001 };
 
@@ -45,18 +42,13 @@ class Type : public ValidatableType {
   Type(const JavaTypeNamespace* types, const string& package,
        const string& name, int kind, bool canWriteToParcel, bool canBeOut,
        const string& declFile = "", int declLine = -1);
-  virtual ~Type();
+  virtual ~Type() = default;
+
+  bool CanBeArray() const override { return false; }
+  bool CanBeOutParameter() const override { return m_canBeOut; }
+  bool CanWriteToParcel() const override { return m_canWriteToParcel; }
 
   inline string Package() const { return m_package; }
-  inline string Name() const { return m_name; }
-  inline string QualifiedName() const { return m_qualifiedName; }
-  inline int Kind() const { return m_kind; }
-  string HumanReadableKind() const;
-  inline string DeclFile() const { return m_declFile; }
-  inline int DeclLine() const { return m_declLine; }
-  inline bool CanWriteToParcel() const { return m_canWriteToParcel; }
-  inline bool CanBeOutParameter() const { return m_canBeOut; }
-
   virtual string CreatorName() const;
   virtual string InstantiableName() const;
 
@@ -67,7 +59,6 @@ class Type : public ValidatableType {
   virtual void ReadFromParcel(StatementBlock* addTo, Variable* v,
                               Variable* parcel, Variable** cl) const;
 
-  virtual bool CanBeArray() const;
 
   virtual void WriteArrayToParcel(StatementBlock* addTo, Variable* v,
                                   Variable* parcel, int flags) const;
@@ -77,7 +68,6 @@ class Type : public ValidatableType {
                                    Variable* parcel, Variable** cl) const;
 
  protected:
-  void SetQualifiedName(const string& qualified);
   Expression* BuildWriteToParcelFlags(int flags) const;
 
   const JavaTypeNamespace* m_types;
@@ -90,8 +80,6 @@ class Type : public ValidatableType {
   string m_name;
   string m_qualifiedName;
   string m_declFile;
-  int m_declLine;
-  int m_kind;
   bool m_canWriteToParcel;
   bool m_canBeOut;
 };
@@ -108,7 +96,7 @@ class BasicType : public Type {
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                         Variable** cl) const override;
 
-  bool CanBeArray() const override;
+  bool CanBeArray() const override { return true; }
 
   void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                           int flags) const override;
@@ -134,7 +122,7 @@ class BooleanType : public Type {
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                         Variable** cl) const override;
 
-  bool CanBeArray() const override;
+  bool CanBeArray() const override { return true; }
 
   void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                           int flags) const override;
@@ -153,7 +141,7 @@ class CharType : public Type {
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                         Variable** cl) const override;
 
-  bool CanBeArray() const override;
+  bool CanBeArray() const override { return true; }
 
   void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                           int flags) const override;
@@ -174,7 +162,7 @@ class StringType : public Type {
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                         Variable** cl) const override;
 
-  bool CanBeArray() const override;
+  bool CanBeArray() const override { return true; }
 
   void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                           int flags) const override;
@@ -324,7 +312,7 @@ class UserDataType : public Type {
   void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                       Variable** cl) const override;
 
-  bool CanBeArray() const override;
+  bool CanBeArray() const override { return true; }
 
   void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                           int flags) const override;
@@ -351,36 +339,14 @@ class InterfaceType : public Type {
   bool m_oneway;
 };
 
-class GenericType : public Type {
- public:
-  GenericType(const JavaTypeNamespace* types, const string& package,
-              const string& name, const vector<const Type*>& args);
-
-  const vector<const Type*>& GenericArgumentTypes() const;
-  string GenericArguments() const;
-
-  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                     int flags) const override = 0;
-  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                        Variable** cl) const override = 0;
-  void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                      Variable** cl) const override = 0;
-
- private:
-  string m_genericArguments;
-  string m_importName;
-  vector<const Type*> m_args;
-};
-
 class ClassLoaderType : public Type {
  public:
   ClassLoaderType(const JavaTypeNamespace* types);
 };
 
-class GenericListType : public GenericType {
+class GenericListType : public Type {
  public:
-  GenericListType(const JavaTypeNamespace* types, const string& package,
-                  const string& name, const vector<const Type*>& args);
+  GenericListType(const JavaTypeNamespace* types, const Type* arg);
 
   string CreatorName() const override;
   string InstantiableName() const override;
@@ -393,13 +359,14 @@ class GenericListType : public GenericType {
                       Variable** cl) const override;
 
  private:
-  string m_creator;
+  const Type* m_contained_type;
+  const std::string m_creator;
 };
 
-class JavaTypeNamespace : public TypeNamespace {
+class JavaTypeNamespace : public LanguageTypeNamespace<Type> {
  public:
   JavaTypeNamespace();
-  virtual ~JavaTypeNamespace();
+  virtual ~JavaTypeNamespace() = default;
 
   bool AddParcelableType(const AidlParcelable* p,
                          const string& filename) override;
@@ -409,12 +376,9 @@ class JavaTypeNamespace : public TypeNamespace {
   bool AddMapType(const std::string& key_type_name,
                   const std::string& value_type_name) override;
 
-  // Search for a type by exact match with |name|.
-  const Type* Find(const string& name) const;
+  using LanguageTypeNamespace<Type>::Find;
   // helper alias for Find(name);
   const Type* Find(const char* package, const char* name) const;
-
-  void Dump() const;
 
   const Type* BoolType() const { return m_bool_type; }
   const Type* IntType() const { return m_int_type; }
@@ -433,14 +397,7 @@ class JavaTypeNamespace : public TypeNamespace {
   const Type* ContextType() const { return m_context_type; }
   const Type* ClassLoaderType() const { return m_classloader_type; }
 
- protected:
-  const ValidatableType* GetValidatableType(const string& name) const override;
-
  private:
-  bool Add(const Type* type);
-
-  vector<const Type*> m_types;
-
   const Type* m_bool_type{nullptr};
   const Type* m_int_type{nullptr};
   const Type* m_string_type{nullptr};

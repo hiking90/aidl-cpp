@@ -60,6 +60,30 @@ bool is_java_keyword(const char* str) {
 
 } // namespace
 
+ValidatableType::ValidatableType(
+    int kind, const string& package, const string& type_name,
+    const string& decl_file, int decl_line)
+    : kind_(kind),
+      type_name_(type_name),
+      canonical_name_((package.empty()) ? type_name
+                                        : package + "." + type_name),
+      origin_file_(decl_file),
+      origin_line_(decl_line) {}
+
+string ValidatableType::HumanReadableKind() const {
+  switch (Kind()) {
+    case ValidatableType::KIND_BUILT_IN:
+      return "a built in";
+    case ValidatableType::KIND_PARCELABLE:
+      return "a parcelable";
+    case ValidatableType::KIND_INTERFACE:
+      return "an interface";
+    case ValidatableType::KIND_GENERATED:
+      return "a generated";
+  }
+  return "unknown";
+}
+
 bool TypeNamespace::MaybeAddContainerType(const std::string& type_name) {
   if (!IsContainerType(type_name) || HasType(type_name)) {
     return true;
