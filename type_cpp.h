@@ -19,6 +19,7 @@
 
 #include <memory>
 #include <string>
+#include <set>
 #include <vector>
 
 #include <base/macros.h>
@@ -52,7 +53,7 @@ class Type : public ValidatableType {
 
   const std::string& AidlType() const;
   std::string CppType(bool is_array) const;
-  const std::string& Header() const;
+  void GetHeaders(bool is_array, std::set<std::string>* headers) const;
   const std::string& ReadFromParcelMethod(bool is_array) const;
   const std::string& WriteToParcelMethod(bool is_array) const;
   virtual bool IsCppPrimitive() const { return false; }
