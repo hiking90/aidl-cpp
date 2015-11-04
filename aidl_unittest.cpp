@@ -154,5 +154,30 @@ TEST_F(AidlTest, PreferImportToPreprocessed) {
   EXPECT_EQ("one.IBar", type->QualifiedName());
 }
 
+TEST_F(AidlTest, RequireOuterClass) {
+  io_delegate_.SetFileContents("p/Outer.aidl",
+                               "package p; parcelable Outer.Inner;");
+  import_paths_.push_back("");
+  auto parse_result = Parse(
+      "p/IFoo.aidl",
+      "package p; import p.Outer; interface IFoo { void f(in Inner c); }",
+      &java_types_);
+  EXPECT_EQ(nullptr, parse_result);
+}
+
+TEST_F(AidlTest, ParseCompoundParcelableFromPreprocess) {
+  io_delegate_.SetFileContents("preprocessed",
+                               "parcelable p.Outer.Inner;");
+  preprocessed_files_.push_back("preprocessed");
+  auto parse_result = Parse(
+      "p/IFoo.aidl",
+      "package p; interface IFoo { void f(in Inner c); }",
+      &java_types_);
+  // TODO(wiley): This should actually return nullptr because we require
+  //              the outer class name.  However, for legacy reasons,
+  //              this behavior must be maintained.  b/17415692
+  EXPECT_NE(nullptr, parse_result);
+}
+
 }  // namespace aidl
 }  // namespace android
