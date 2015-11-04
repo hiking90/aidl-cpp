@@ -49,7 +49,7 @@ class AidlTest : public ::testing::Test {
     unique_ptr<AidlInterface> ret;
     std::vector<std::unique_ptr<AidlImport>> imports;
     ::android::aidl::internals::load_and_validate_aidl(
-        {},  // no preprocessed files
+        preprocessed_files_,
         import_paths_,
         path,
         io_delegate_,
@@ -60,6 +60,7 @@ class AidlTest : public ::testing::Test {
   }
 
   FakeIoDelegate io_delegate_;
+  vector<string> preprocessed_files_;
   vector<string> import_paths_;
   java::JavaTypeNamespace java_types_;
   cpp::TypeNamespace cpp_types_;
@@ -132,6 +133,25 @@ TEST_F(AidlTest, ParsesPreprocessedFileWithWhitespace) {
   EXPECT_TRUE(java_types_.HasType("Foo"));
   EXPECT_TRUE(java_types_.HasType("a.Foo"));
   EXPECT_TRUE(java_types_.HasType("b.IBar"));
+}
+
+TEST_F(AidlTest, PreferImportToPreprocessed) {
+  io_delegate_.SetFileContents("preprocessed", "interface another.IBar;");
+  io_delegate_.SetFileContents("one/IBar.aidl", "package one; "
+                                                "interface IBar {}");
+  preprocessed_files_.push_back("preprocessed");
+  import_paths_.push_back("");
+  auto parse_result = Parse(
+      "p/IFoo.aidl", "package p; import one.IBar; interface IFoo {}",
+      &java_types_);
+  EXPECT_NE(nullptr, parse_result);
+  // We expect to know about both kinds of IBar
+  EXPECT_TRUE(java_types_.HasType("one.IBar"));
+  EXPECT_TRUE(java_types_.HasType("another.IBar"));
+  // But if we request just "IBar" we should get our imported one.
+  const java::Type* type = java_types_.Find("IBar");
+  ASSERT_TRUE(type);
+  EXPECT_EQ("one.IBar", type->QualifiedName());
 }
 
 }  // namespace aidl
