@@ -53,6 +53,7 @@ LOCAL_SRC_FILES := \
     generate_java.cpp \
     generate_java_binder.cpp \
     import_resolver.cpp \
+    line_reader.cpp \
     io_delegate.cpp \
     options.cpp \
     type_cpp.cpp \

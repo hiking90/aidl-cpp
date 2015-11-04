@@ -39,6 +39,8 @@ class FakeIoDelegate : public IoDelegate {
   std::unique_ptr<std::string> GetFileContents(
       const std::string& filename,
       const std::string& append_content_suffix = "") const override;
+  std::unique_ptr<LineReader> GetLineReader(
+      const std::string& file_path) const override;
   bool FileIsReadable(const std::string& path) const override;
   bool CreatedNestedDirs(
       const std::string& base_dir,

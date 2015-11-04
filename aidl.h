@@ -46,6 +46,9 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
                            std::unique_ptr<AidlInterface>* returned_interface,
                            std::vector<std::unique_ptr<AidlImport>>* returned_imports);
 
+bool parse_preprocessed_file(const IoDelegate& io_delegate,
+                             const std::string& filename, TypeNamespace* types);
+
 } // namespace internals
 
 }  // namespace android

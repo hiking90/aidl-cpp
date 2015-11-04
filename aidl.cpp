@@ -312,73 +312,6 @@ string generate_outputFileName(const JavaOptions& options,
     return result;
 }
 
-
-int parse_preprocessed_file(const string& filename, TypeNamespace* types) {
-    FILE* f = fopen(filename.c_str(), "rb");
-    if (f == NULL) {
-        fprintf(stderr, "aidl: can't open preprocessed file: %s\n",
-                filename.c_str());
-        return 1;
-    }
-
-    int lineno = 1;
-    char line[1024];
-    char type[1024];
-    char fullname[1024];
-    while (fgets(line, sizeof(line), f)) {
-        // skip comments and empty lines
-        if (!line[0] || strncmp(line, "//", 2) == 0) {
-          continue;
-        }
-
-        sscanf(line, "%s %[^; \r\n\t];", type, fullname);
-
-        char* classname = strrchr(fullname, '.');
-        vector<string> package;
-        if (classname != NULL) {
-            *classname = '\0';
-            classname++;
-            package = Split(fullname, ".");
-        } else {
-            classname = fullname;
-        }
-
-        //printf("%s:%d:...%s...%s...%s...\n", filename.c_str(), lineno,
-        //        type, packagename, classname);
-        AidlDocumentItem* doc;
-
-        if (0 == strcmp("parcelable", type)) {
-            doc = new AidlParcelable(classname, lineno, package);
-        }
-        else if (0 == strcmp("interface", type)) {
-            auto temp = new std::vector<std::unique_ptr<AidlMethod>>();
-            doc = new AidlInterface(classname, lineno, "", false, temp,
-                                    package);
-        }
-        else {
-            fprintf(stderr, "%s:%d: bad type in line: %s\n",
-                    filename.c_str(), lineno, line);
-            fclose(f);
-            return 1;
-        }
-        if (!gather_types(filename.c_str(), doc, types)) {
-            fprintf(stderr, "Failed to gather types for preprocessed aidl.\n");
-            fclose(f);
-            return 1;
-        }
-        lineno++;
-    }
-
-    if (!feof(f)) {
-        fprintf(stderr, "%s:%d: error reading file, line to long.\n",
-                filename.c_str(), lineno);
-        return 1;
-    }
-
-    fclose(f);
-    return 0;
-}
-
 int check_and_assign_method_ids(const char * filename,
                                 const std::vector<std::unique_ptr<AidlMethod>>& items) {
     // Check whether there are any methods with manually assigned id's and any that are not.
@@ -433,9 +366,100 @@ int check_and_assign_method_ids(const char * filename,
     return 0;
 }
 
+// TODO: Remove this in favor of using the YACC parser b/25479378
+bool ParsePreprocessedLine(const string& line, string* decl,
+                           vector<string>* package, string* class_name) {
+  // erase all trailing whitespace and semicolons
+  const size_t end = line.find_last_not_of(" ;\t");
+  if (end == string::npos) {
+    return false;
+  }
+  if (line.rfind(';', end) != string::npos) {
+    return false;
+  }
+
+  decl->clear();
+  string type;
+  vector<string> pieces = Split(line.substr(0, end + 1), " \t");
+  for (const string& piece : pieces) {
+    if (piece.empty()) {
+      continue;
+    }
+    if (decl->empty()) {
+      *decl = std::move(piece);
+    } else if (type.empty()) {
+      type = std::move(piece);
+    } else {
+      return false;
+    }
+  }
+
+  // Note that this logic is absolutely wrong.  Given a parcelable
+  // org.some.Foo.Bar, the class name is Foo.Bar, but this code will claim that
+  // the class is just Bar.  However, this was the way it was done in the past.
+  //
+  // See b/17415692
+  size_t dot_pos = type.rfind('.');
+  if (dot_pos != string::npos) {
+    *class_name = type.substr(dot_pos + 1);
+    *package = Split(type.substr(0, dot_pos), ".");
+  } else {
+    *class_name = type;
+    package->clear();
+  }
+
+  return true;
+}
+
 }  // namespace
 
 namespace internals {
+
+bool parse_preprocessed_file(const IoDelegate& io_delegate,
+                             const string& filename, TypeNamespace* types) {
+  bool success = true;
+  unique_ptr<LineReader> line_reader = io_delegate.GetLineReader(filename);
+  if (!line_reader) {
+    LOG(ERROR) << "cannot open preprocessed file: " << filename;
+    success = false;
+    return success;
+  }
+
+  string line;
+  unsigned lineno = 1;
+  for ( ; line_reader->ReadLine(&line); ++lineno) {
+    if (line.empty() || line.compare(0, 2, "//") == 0) {
+      // skip comments and empty lines
+      continue;
+    }
+
+    string decl;
+    vector<string> package;
+    string class_name;
+    if (!ParsePreprocessedLine(line, &decl, &package, &class_name)) {
+      success = false;
+      break;
+    }
+
+    if (decl == "parcelable") {
+      AidlParcelable doc(class_name, lineno, package);
+      types->AddParcelableType(&doc, filename);
+    } else if (decl == "interface") {
+      auto temp = new std::vector<std::unique_ptr<AidlMethod>>();
+      AidlInterface doc(class_name, lineno, "", false, temp, package);
+      types->AddBinderType(&doc, filename);
+    } else {
+      success = false;
+      break;
+    }
+  }
+  if (!success) {
+    LOG(ERROR) << filename << ':' << lineno
+               << " malformed preprocessed file line: '" << line << "'";
+  }
+
+  return success;
+}
 
 int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
                            const std::vector<std::string> import_paths,
@@ -450,7 +474,9 @@ int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
 
   // import the preprocessed file
   for (const string& s : preprocessed_files) {
-    err |= parse_preprocessed_file(s, types);
+    if (!parse_preprocessed_file(io_delegate, s, types)) {
+      err |= 1;
+    }
   }
   if (err != 0) {
     return err;

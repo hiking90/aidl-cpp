@@ -62,6 +62,11 @@ unique_ptr<string> IoDelegate::GetFileContents(
   return contents;
 }
 
+unique_ptr<LineReader> IoDelegate::GetLineReader(
+    const string& file_path) const {
+  return LineReader::ReadFromFile(file_path);
+}
+
 bool IoDelegate::FileIsReadable(const string& path) const {
 #ifdef _WIN32
   // check that the file exists and is not write-only

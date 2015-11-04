@@ -30,6 +30,7 @@
 using android::aidl::test::FakeIoDelegate;
 using std::string;
 using std::unique_ptr;
+using android::aidl::internals::parse_preprocessed_file;
 
 namespace android {
 namespace aidl {
@@ -112,5 +113,26 @@ TEST_F(AidlTest, AcceptsOneway) {
   EXPECT_NE(nullptr, Parse("a/IBar.aidl", oneway_interface, &cpp_types_));
   EXPECT_NE(nullptr, Parse("a/IBar.aidl", oneway_interface, &java_types_));
 }
+
+TEST_F(AidlTest, ParsesPreprocessedFile) {
+  string simple_content = "parcelable a.Foo;\ninterface b.IBar;";
+  io_delegate_.SetFileContents("path", simple_content);
+  EXPECT_FALSE(java_types_.HasType("a.Foo"));
+  EXPECT_TRUE(parse_preprocessed_file(io_delegate_, "path", &java_types_));
+  EXPECT_TRUE(java_types_.HasType("Foo"));
+  EXPECT_TRUE(java_types_.HasType("a.Foo"));
+  EXPECT_TRUE(java_types_.HasType("b.IBar"));
+}
+
+TEST_F(AidlTest, ParsesPreprocessedFileWithWhitespace) {
+  string simple_content = "parcelable    a.Foo;\n  interface b.IBar  ;\t";
+  io_delegate_.SetFileContents("path", simple_content);
+  EXPECT_FALSE(java_types_.HasType("a.Foo"));
+  EXPECT_TRUE(parse_preprocessed_file(io_delegate_, "path", &java_types_));
+  EXPECT_TRUE(java_types_.HasType("Foo"));
+  EXPECT_TRUE(java_types_.HasType("a.Foo"));
+  EXPECT_TRUE(java_types_.HasType("b.IBar"));
+}
+
 }  // namespace aidl
 }  // namespace android
