@@ -179,5 +179,16 @@ TEST_F(AidlTest, ParseCompoundParcelableFromPreprocess) {
   EXPECT_NE(nullptr, parse_result);
 }
 
+TEST_F(AidlTest, FailOnParcelable) {
+  JavaOptions options;
+  options.input_file_name_ = "p/IFoo.aidl";
+  io_delegate_.SetFileContents(options.input_file_name_,
+                               "package p; parcelable IFoo;");
+  // By default, we shouldn't fail on parcelable.
+  EXPECT_EQ(0, ::android::aidl::compile_aidl_to_java(options, io_delegate_));
+  options.fail_on_parcelable_ = true;
+  EXPECT_NE(0, ::android::aidl::compile_aidl_to_java(options, io_delegate_));
+}
+
 }  // namespace aidl
 }  // namespace android
