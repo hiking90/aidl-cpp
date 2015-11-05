@@ -258,6 +258,12 @@ class NativeService : public BnTestService {
     return ReverseArray(input, repeated, _aidl_return);
   }
 
+  status_t ReverseNamedCallbackList(const vector<sp<IBinder>>& input,
+                                    vector<sp<IBinder>>* repeated,
+                                    vector<sp<IBinder>>* _aidl_return) override {
+    return ReverseArray(input, repeated, _aidl_return);
+  }
+
  private:
   map<String16, sp<INamedCallback>> service_map_;
 };

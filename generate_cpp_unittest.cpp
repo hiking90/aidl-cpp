@@ -44,6 +44,7 @@ interface IComplexTypeInterface {
   oneway void Piff(int times);
   IFooType TakesABinder(IFooType f);
   List<String> StringListMethod(in java.util.List<String> input, out List<String> output);
+  List<IBinder> BinderListMethod(in java.util.List<IBinder> input, out List<IBinder> output);
 })";
 
 const char kExpectedComplexTypeClientHeaderOutput[] =
@@ -67,6 +68,7 @@ android::status_t Send(const std::vector<int32_t>& goes_in, std::vector<double>*
 android::status_t Piff(int32_t times) override;
 android::status_t TakesABinder(const android::sp<::foo::IFooType>& f, android::sp<::foo::IFooType>* _aidl_return) override;
 android::status_t StringListMethod(const std::vector<android::String16>& input, std::vector<android::String16>* output, std::vector<android::String16>* _aidl_return) override;
+android::status_t BinderListMethod(const std::vector<android::sp<::android::IBinder>>& input, std::vector<android::sp<::android::IBinder>>* output, std::vector<android::sp<::android::IBinder>>* _aidl_return) override;
 };  // class BpComplexTypeInterface
 
 }  // namespace os
@@ -197,6 +199,37 @@ if (((status) != (android::OK))) {
 return status;
 }
 status = reply.readString16Vector(output);
+if (((status) != (android::OK))) {
+return status;
+}
+return status;
+}
+
+android::status_t BpComplexTypeInterface::BinderListMethod(const std::vector<android::sp<::android::IBinder>>& input, std::vector<android::sp<::android::IBinder>>* output, std::vector<android::sp<::android::IBinder>>* _aidl_return) {
+android::Parcel data;
+android::Parcel reply;
+android::status_t status;
+status = data.writeInterfaceToken(getInterfaceDescriptor());
+if (((status) != (android::OK))) {
+return status;
+}
+status = data.writeStrongBinderVector(input);
+if (((status) != (android::OK))) {
+return status;
+}
+status = remote()->transact(IComplexTypeInterface::BINDERLISTMETHOD, data, &reply);
+if (((status) != (android::OK))) {
+return status;
+}
+if (reply.readExceptionCode()) {
+status = android::FAILED_TRANSACTION;
+return status;
+}
+status = reply.readStrongBinderVector(_aidl_return);
+if (((status) != (android::OK))) {
+return status;
+}
+status = reply.readStrongBinderVector(output);
 if (((status) != (android::OK))) {
 return status;
 }
@@ -359,6 +392,37 @@ break;
 }
 }
 break;
+case Call::BINDERLISTMETHOD:
+{
+std::vector<android::sp<::android::IBinder>> in_input;
+std::vector<android::sp<::android::IBinder>> out_output;
+std::vector<android::sp<::android::IBinder>> _aidl_return;
+if ((!data.checkInterface(this))) {
+status = android::BAD_TYPE;
+break;
+}
+status = data.readStrongBinderVector(&in_input);
+if (((status) != (android::OK))) {
+break;
+}
+status = BinderListMethod(in_input, &out_output, &_aidl_return);
+if (((status) != (android::OK))) {
+break;
+}
+status = reply->writeNoException();
+if (((status) != (android::OK))) {
+break;
+}
+status = reply->writeStrongBinderVector(_aidl_return);
+if (((status) != (android::OK))) {
+break;
+}
+status = reply->writeStrongBinderVector(out_output);
+if (((status) != (android::OK))) {
+break;
+}
+}
+break;
 default:
 {
 status = android::BBinder::onTransact(code, data, reply, flags);
@@ -396,11 +460,13 @@ virtual android::status_t Send(const std::vector<int32_t>& goes_in, std::vector<
 virtual android::status_t Piff(int32_t times) = 0;
 virtual android::status_t TakesABinder(const android::sp<::foo::IFooType>& f, android::sp<::foo::IFooType>* _aidl_return) = 0;
 virtual android::status_t StringListMethod(const std::vector<android::String16>& input, std::vector<android::String16>* output, std::vector<android::String16>* _aidl_return) = 0;
+virtual android::status_t BinderListMethod(const std::vector<android::sp<::android::IBinder>>& input, std::vector<android::sp<::android::IBinder>>* output, std::vector<android::sp<::android::IBinder>>* _aidl_return) = 0;
 enum Call {
   SEND = android::IBinder::FIRST_CALL_TRANSACTION + 0,
   PIFF = android::IBinder::FIRST_CALL_TRANSACTION + 1,
   TAKESABINDER = android::IBinder::FIRST_CALL_TRANSACTION + 2,
   STRINGLISTMETHOD = android::IBinder::FIRST_CALL_TRANSACTION + 3,
+  BINDERLISTMETHOD = android::IBinder::FIRST_CALL_TRANSACTION + 4,
 };
 };  // class IComplexTypeInterface
 

@@ -105,10 +105,12 @@ class TypeNamespace : public ::android::aidl::LanguageTypeNamespace<Type> {
 
   const Type* VoidType() const { return void_type_; }
   const Type* StringType() const { return string_type_; }
+  const Type* IBinderType() const { return ibinder_type_; }
 
  private:
   Type* void_type_ = nullptr;
   Type* string_type_ = nullptr;
+  Type* ibinder_type_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(TypeNamespace);
 };  // class TypeNamespace
