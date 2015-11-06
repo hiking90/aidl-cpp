@@ -51,7 +51,7 @@ class Type : public ValidatableType {
   bool CanWriteToParcel() const override;
 
   std::string CppType(bool is_array) const;
-  void GetHeaders(bool is_array, std::set<std::string>* headers) const;
+  virtual void GetHeaders(bool is_array, std::set<std::string>* headers) const;
   const std::string& ReadFromParcelMethod(bool is_array) const;
   const std::string& WriteToParcelMethod(bool is_array) const;
   virtual bool IsCppPrimitive() const { return false; }

@@ -119,7 +119,7 @@ class StringListType : public Type {
   virtual ~StringListType() = default;
   bool CanBeOutParameter() const override { return true; }
 
-  void GetHeaders(bool is_array, set<string>* headers) const {
+  void GetHeaders(bool is_array, set<string>* headers) const override {
     if (is_array) {
       LOG(FATAL) << "Type checking did not catch that List<String> "
                     "was marked as array";
@@ -142,7 +142,7 @@ class BinderListType : public Type {
   virtual ~BinderListType() = default;
   bool CanBeOutParameter() const override { return true; }
 
-  void GetHeaders(bool is_array, set<string>* headers) const {
+  void GetHeaders(bool is_array, set<string>* headers) const override {
     if (is_array) {
       LOG(FATAL) << "Type checking did not catch that List<Binder> "
                     "was marked as array";
