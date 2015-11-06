@@ -490,7 +490,8 @@ AidlError load_and_validate_aidl(
     return AidlError::PARSE_ERROR;
   }
   if (parsed_doc->item_type != INTERFACE_TYPE_BINDER) {
-    cerr << "refusing to generate code from aidl file defining parcelable";
+    LOG(ERROR) << "refusing to generate code from aidl file defining "
+                  "parcelable";
     return AidlError::FOUND_PARCELABLE;
   }
 
