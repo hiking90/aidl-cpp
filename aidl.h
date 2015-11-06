@@ -17,6 +17,7 @@
 #ifndef AIDL_AIDL_H_
 #define AIDL_AIDL_H_
 
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -29,6 +30,20 @@
 namespace android {
 namespace aidl {
 
+enum class AidlError {
+  UNKOWN = std::numeric_limits<int32_t>::min(),
+  BAD_PRE_PROCESSED_FILE,
+  PARSE_ERROR,
+  FOUND_PARCELABLE,
+  BAD_PACKAGE,
+  BAD_IMPORT,
+  BAD_TYPE,
+  BAD_METHOD_ID,
+  GENERATION_ERROR,
+
+  OK = 0,
+};
+
 int compile_aidl_to_cpp(const CppOptions& options,
                         const IoDelegate& io_delegate);
 int compile_aidl_to_java(const JavaOptions& options,
@@ -38,13 +53,14 @@ int preprocess_aidl(const JavaOptions& options,
 
 namespace internals {
 
-int load_and_validate_aidl(const std::vector<std::string> preprocessed_files,
-                           const std::vector<std::string> import_paths,
-                           const std::string& input_file_name,
-                           const IoDelegate& io_delegate,
-                           TypeNamespace* types,
-                           std::unique_ptr<AidlInterface>* returned_interface,
-                           std::vector<std::unique_ptr<AidlImport>>* returned_imports);
+AidlError load_and_validate_aidl(
+    const std::vector<std::string> preprocessed_files,
+    const std::vector<std::string> import_paths,
+    const std::string& input_file_name,
+    const IoDelegate& io_delegate,
+    TypeNamespace* types,
+    std::unique_ptr<AidlInterface>* returned_interface,
+    std::vector<std::unique_ptr<AidlImport>>* returned_imports);
 
 bool parse_preprocessed_file(const IoDelegate& io_delegate,
                              const std::string& filename, TypeNamespace* types);

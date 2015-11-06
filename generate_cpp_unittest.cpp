@@ -506,7 +506,7 @@ class ASTTest : public ::testing::Test {
 
     unique_ptr<AidlInterface> ret;
     std::vector<std::unique_ptr<AidlImport>> imports;
-    int err = ::android::aidl::internals::load_and_validate_aidl(
+    AidlError err = ::android::aidl::internals::load_and_validate_aidl(
         {},  // no preprocessed files
         {"."},
         file_path_,
@@ -515,7 +515,7 @@ class ASTTest : public ::testing::Test {
         &ret,
         &imports);
 
-    if (err)
+    if (err != AidlError::OK)
       return nullptr;
 
     return ret;

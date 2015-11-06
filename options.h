@@ -62,6 +62,7 @@ class JavaOptions final {
   JavaOptions() = default;
 
   FRIEND_TEST(EndToEndTest, IExampleInterface);
+  FRIEND_TEST(AidlTest, FailOnParcelable);
   DISALLOW_COPY_AND_ASSIGN(JavaOptions);
 };
 
