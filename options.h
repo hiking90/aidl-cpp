@@ -42,6 +42,8 @@ class JavaOptions final {
   // Prints the usage statement on failure.
   static std::unique_ptr<JavaOptions> Parse(int argc, const char* const* argv);
 
+  std::string DependencyFilePath() const;
+
   int task{COMPILE_AIDL_TO_JAVA};
   bool fail_on_parcelable_{false};
   std::vector<std::string> import_paths_;

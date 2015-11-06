@@ -171,6 +171,13 @@ unique_ptr<JavaOptions> JavaOptions::Parse(int argc, const char* const* argv) {
   return options;
 }
 
+string JavaOptions::DependencyFilePath() const {
+  if (auto_dep_file_) {
+    return output_file_name_ + ".d";
+  }
+  return dep_file_name_;
+}
+
 namespace {
 
 unique_ptr<CppOptions> cpp_usage() {

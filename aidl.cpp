@@ -236,24 +236,20 @@ int check_types(const string& filename,
   return err;
 }
 
-void generate_dep_file(const JavaOptions& options,
+void generate_dep_file(const std::string& dep_file_name,
+                       const std::string& input_file_name,
+                       const std::string& output_file_name,
                        const std::vector<std::unique_ptr<AidlImport>>& imports,
                        const IoDelegate& io_delegate) {
-  string fileName;
-  if (options.auto_dep_file_) {
-    fileName = options.output_file_name_ + ".d";
-  } else {
-    fileName = options.dep_file_name_;
-  }
-  CodeWriterPtr writer = io_delegate.GetCodeWriter(fileName);
+  CodeWriterPtr writer = io_delegate.GetCodeWriter(dep_file_name);
   if (!writer) {
-    cerr << "Could not open " << fileName << endl;
+    cerr << "Could not open " << dep_file_name << endl;
     return;
   }
 
 
-  writer->Write("%s: \\\n", options.output_file_name_.c_str());
-  writer->Write("  %s %s\n", options.input_file_name_.c_str(),
+  writer->Write("%s: \\\n", output_file_name.c_str());
+  writer->Write("  %s %s\n", input_file_name.c_str(),
                 imports.empty() ? "" : "\\");
 
   bool first = true;
@@ -272,7 +268,7 @@ void generate_dep_file(const JavaOptions& options,
 
   // Output "<input_aidl_file>: " so make won't fail if the input .aidl file
   // has been deleted, moved or renamed in incremental build.
-  writer->Write("%s :\n", options.input_file_name_.c_str());
+  writer->Write("%s :\n", input_file_name.c_str());
 
   // Output "<imported_file>: " so make won't fail if the imported file has
   // been deleted, moved or renamed in incremental build.
@@ -636,9 +632,10 @@ int compile_aidl_to_java(const JavaOptions& options,
   }
 
   // if we were asked to, generate a make dependency file
-  // unless it's a parcelable *and* it's supposed to fail on parcelable
-  if (options.auto_dep_file_ || options.dep_file_name_ != "") {
-    generate_dep_file(options, imports, io_delegate);
+  string dep_file_name = options.DependencyFilePath();
+  if (!dep_file_name.empty()) {
+    generate_dep_file(dep_file_name, options.input_file_name_,
+                      options.output_file_name_, imports, io_delegate);
   }
 
   err = generate_java(output_file_name, options.input_file_name_.c_str(),
