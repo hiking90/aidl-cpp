@@ -80,7 +80,7 @@ class CppOptions final {
   std::string OutputCppFilePath() const { return output_file_name_; }
 
   std::vector<std::string> ImportPaths() const { return import_paths_; }
-  std::string DependencyFilepath() const { return dep_file_name_; }
+  std::string DependencyFilePath() const { return dep_file_name_; }
 
  private:
   CppOptions() = default;

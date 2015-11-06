@@ -88,7 +88,7 @@ TEST_F(EndToEndTest, IExampleInterface) {
   // Check that we parse correctly.
   EXPECT_EQ(android::aidl::compile_aidl_to_java(options, io_delegate_), 0);
   CheckFileContents(kJavaOutputPath, kExpectedJavaOutput);
-  CheckFileContents(options.dep_file_name_, kExpectedJavaDepsOutput);
+  CheckFileContents(options.DependencyFilePath(), kExpectedJavaDepsOutput);
 }
 
 TEST_F(EndToEndTest, IPingResponderCpp) {
@@ -96,16 +96,17 @@ TEST_F(EndToEndTest, IPingResponderCpp) {
 
   const string input_path =
       CanonicalNameToPath(kCanonicalName, ".aidl").value();
-  const string output_file = "path/to/output_file.cpp";
-  const size_t argc = 5;
+  const string output_file = kCppOutputPath;
+  const size_t argc = 6;
   const char* cmdline[argc + 1] = {
-      "aidl-cpp", "-I.", input_path.c_str(), kGenHeaderDir,
+      "aidl-cpp", "-ddeps.P", "-I.", input_path.c_str(), kGenHeaderDir,
       output_file.c_str(), nullptr
   };
   auto options = CppOptions::Parse(argc, cmdline);
 
   // Set up input paths.
   io_delegate_.SetFileContents(input_path, kInterfaceDefinition);
+  AddStubAidls(kImportedParcelables, kImportedInterfaces);
 
   // Check that we parse and generate code correctly.
   EXPECT_EQ(android::aidl::compile_aidl_to_cpp(*options, io_delegate_), 0);
@@ -113,6 +114,7 @@ TEST_F(EndToEndTest, IPingResponderCpp) {
   CheckFileContents(kGenInterfaceHeaderPath, kExpectedIHeaderOutput);
   CheckFileContents(kGenClientHeaderPath, kExpectedBpHeaderOutput);
   CheckFileContents(kGenServerHeaderPath, kExpectedBnHeaderOutput);
+  CheckFileContents(options->DependencyFilePath(), kExpectedCppDepsOutput);
 }
 
 }  // namespace android

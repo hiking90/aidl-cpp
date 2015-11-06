@@ -39,10 +39,16 @@ namespace ping_responder {
 extern const char kCanonicalName[];
 extern const char kInterfaceDefinition[];
 
+extern const char kCppOutputPath[];
+extern const char* kImportedParcelables[];
+extern const char* kImportedInterfaces[];
+
 extern const char kGenHeaderDir[];
 extern const char kGenInterfaceHeaderPath[];
 extern const char kGenClientHeaderPath[];
 extern const char kGenServerHeaderPath[];
+
+extern const char kExpectedCppDepsOutput[];
 
 extern const char kExpectedCppOutput[];
 extern const char kExpectedIHeaderOutput[];

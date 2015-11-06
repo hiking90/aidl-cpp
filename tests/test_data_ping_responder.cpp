@@ -25,15 +25,37 @@ const char kCanonicalName[] = "android.os.IPingResponder";
 const char kInterfaceDefinition[] = R"(
 package android.os;
 
+import bar.Unused;
+
 interface IPingResponder {
   int Ping(int token);
 }
 )";
 
+const char kCppOutputPath[] = "some/path/to/output.cpp";
+
+const char* kImportedParcelables[] = {
+  "bar.Unused",
+  nullptr,
+};
+
+const char* kImportedInterfaces[] = {
+  nullptr,
+};
+
 const char kGenHeaderDir[] = "some/path";
 const char kGenInterfaceHeaderPath[] = "some/path/android/os/IPingResponder.h";
 const char kGenClientHeaderPath[] = "some/path/android/os/BpPingResponder.h";
 const char kGenServerHeaderPath[] = "some/path/android/os/BnPingResponder.h";
+
+const char kExpectedCppDepsOutput[] =
+R"(some/path/to/output.cpp: \
+  android/os/IPingResponder.aidl \
+  ./bar/Unused.aidl
+
+android/os/IPingResponder.aidl :
+./bar/Unused.aidl :
+)";
 
 const char kExpectedCppOutput[] =
 R"(#include <android/os/IPingResponder.h>
