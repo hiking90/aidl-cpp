@@ -596,7 +596,11 @@ int compile_aidl_to_cpp(const CppOptions& options,
     return err;
   }
 
-  // TODO(wiley) b/23600457 generate a dependency file if requested with -b
+  string dep_file_name = options.DependencyFilePath();
+  if (!dep_file_name.empty()) {
+    generate_dep_file(dep_file_name, options.InputFileName(),
+                      options.OutputCppFilePath(), imports, io_delegate);
+  }
 
   return (cpp::GenerateCpp(options, *types, *interface, io_delegate)) ? 0 : 1;
 }
