@@ -195,8 +195,8 @@ def main():
             choices=[TEST_FILTER_ALL, TEST_FILTER_JAVA, TEST_FILTER_NATIVE])
     parser.add_argument('--verbose', '-v', action='store_true', default=False)
     args = parser.parse_args()
-    run_test(args.test_filter in (TEST_FILTER_ALL, TEST_FILTER_JAVA),
-             args.test_filter in (TEST_FILTER_ALL, TEST_FILTER_NATIVE),
+    run_test(args.test_filter in (TEST_FILTER_ALL, TEST_FILTER_NATIVE),
+             args.test_filter in (TEST_FILTER_ALL, TEST_FILTER_JAVA),
              apk_path=args.apk_path, refresh_binaries=args.refresh_bins,
              device_serial=args.serial, verbose=args.verbose)
 
