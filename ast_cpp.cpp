@@ -321,7 +321,7 @@ IfStatement::IfStatement(AstNode* expression, bool invert_expression)
       invert_expression_(invert_expression) {}
 
 void IfStatement::Write(CodeWriter* to) const {
-  to->Write("if (%s", (invert_expression_) ? "(!" : "");
+  to->Write("if (%s", (invert_expression_) ? "!(" : "");
   expression_->Write(to);
   to->Write(")%s ", (invert_expression_) ? ")" : "");
   on_true_.Write(to);
