@@ -125,7 +125,7 @@ case Call::PING:
 {
 int32_t in_token;
 int32_t _aidl_return;
-if ((!data.checkInterface(this))) {
+if (!(data.checkInterface(this))) {
 status = android::BAD_TYPE;
 break;
 }

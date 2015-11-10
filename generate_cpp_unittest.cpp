@@ -280,7 +280,7 @@ std::vector<int32_t> in_goes_in;
 std::vector<double> in_goes_in_and_out;
 std::vector<bool> out_goes_out;
 std::vector<int32_t> _aidl_return;
-if ((!data.checkInterface(this))) {
+if (!(data.checkInterface(this))) {
 status = android::BAD_TYPE;
 break;
 }
@@ -317,7 +317,7 @@ break;
 case Call::PIFF:
 {
 int32_t in_times;
-if ((!data.checkInterface(this))) {
+if (!(data.checkInterface(this))) {
 status = android::BAD_TYPE;
 break;
 }
@@ -339,7 +339,7 @@ case Call::TAKESABINDER:
 {
 android::sp<::foo::IFooType> in_f;
 android::sp<::foo::IFooType> _aidl_return;
-if ((!data.checkInterface(this))) {
+if (!(data.checkInterface(this))) {
 status = android::BAD_TYPE;
 break;
 }
@@ -366,7 +366,7 @@ case Call::STRINGLISTMETHOD:
 std::vector<android::String16> in_input;
 std::vector<android::String16> out_output;
 std::vector<android::String16> _aidl_return;
-if ((!data.checkInterface(this))) {
+if (!(data.checkInterface(this))) {
 status = android::BAD_TYPE;
 break;
 }
@@ -397,7 +397,7 @@ case Call::BINDERLISTMETHOD:
 std::vector<android::sp<::android::IBinder>> in_input;
 std::vector<android::sp<::android::IBinder>> out_output;
 std::vector<android::sp<::android::IBinder>> _aidl_return;
-if ((!data.checkInterface(this))) {
+if (!(data.checkInterface(this))) {
 status = android::BAD_TYPE;
 break;
 }
