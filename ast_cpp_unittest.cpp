@@ -156,6 +156,10 @@ TEST_F(AstCppTests, GeneratesArgList) {
   CompareGeneratedCode(simple, "(foo)");
   ArgList compound({"foo", "bar", "baz"});
   CompareGeneratedCode(compound, "(foo, bar, baz)");
+  std::vector<unique_ptr<AstNode>> args;
+  args.emplace_back(new LiteralExpression("foo()"));
+  ArgList nested(std::move(args));
+  CompareGeneratedCode(nested, "(foo())");
 }
 
 TEST_F(AstCppTests, GeneratesStatement) {

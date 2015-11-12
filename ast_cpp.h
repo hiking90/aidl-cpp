@@ -100,13 +100,14 @@ class ArgList : public AstNode {
   ArgList() = default;
   explicit ArgList(const std::string& single_argument);
   explicit ArgList(const std::vector<std::string>& arg_list);
+  explicit ArgList(std::vector<std::unique_ptr<AstNode>> arg_list);
   ArgList(ArgList&& arg_list);
   virtual ~ArgList() = default;
 
   void Write(CodeWriter* to) const override;
 
  private:
-  std::vector<std::string> arguments_;
+  std::vector<std::unique_ptr<AstNode>> arguments_;
 
   DISALLOW_COPY_AND_ASSIGN(ArgList);
 };  // class ArgList
