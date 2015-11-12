@@ -43,12 +43,15 @@ namespace cpp {
 namespace internals {
 namespace {
 
+const char kStatusVarName[] = "_aidl_status";
 const char kReturnVarName[] = "_aidl_return";
 const char kAndroidStatusLiteral[] = "android::status_t";
 const char kAndroidParcelLiteral[] = "android::Parcel";
+const char kBinderStatusLiteral[] = "android::binder::Status";
 const char kIBinderHeader[] = "binder/IBinder.h";
 const char kIInterfaceHeader[] = "binder/IInterface.h";
 const char kParcelHeader[] = "binder/Parcel.h";
+const char kStatusHeader[] = "binder/Status.h";
 const char kStrongPointerHeader[] = "utils/StrongPointer.h";
 
 unique_ptr<AstNode> BreakOnStatusNotOk() {
@@ -58,6 +61,15 @@ unique_ptr<AstNode> BreakOnStatusNotOk() {
   ret->OnTrue()->AddLiteral("break");
   return unique_ptr<AstNode>(ret);
 }
+
+unique_ptr<AstNode> GotoErrorOnBadStatus() {
+  IfStatement* ret = new IfStatement(new Comparison(
+      new LiteralExpression("status"), "!=",
+      new LiteralExpression("android::OK")));
+  ret->OnTrue()->AddLiteral("goto error");
+  return unique_ptr<AstNode>(ret);
+}
+
 
 unique_ptr<AstNode> ReturnOnStatusNotOk() {
   IfStatement* ret = new IfStatement(new Comparison(
@@ -143,7 +155,7 @@ unique_ptr<Declaration> BuildMethodDecl(const AidlMethod& method,
   }
 
   return unique_ptr<Declaration>{
-      new MethodDecl{kAndroidStatusLiteral,
+      new MethodDecl{kBinderStatusLiteral,
                      method.GetName(),
                      BuildArgList(types, method, true /* for method decl */),
                      modifiers}};
@@ -254,7 +266,7 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
   const string i_name = ClassName(interface, ClassNames::INTERFACE);
   const string bp_name = ClassName(interface, ClassNames::CLIENT);
   unique_ptr<MethodImpl> ret{new MethodImpl{
-      kAndroidStatusLiteral, bp_name, method.GetName(),
+      kBinderStatusLiteral, bp_name, method.GetName(),
       ArgList{BuildArgList(types, method, true /* for method decl */)}}};
   StatementBlock* b = ret->GetStatementBlock();
 
@@ -263,18 +275,20 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
   // Even if we're oneway, the transact method still takes a parcel.
   b->AddLiteral(StringPrintf("%s reply", kAndroidParcelLiteral));
 
-  // And declare the status variable we need for error handling.
+  // Declare the status_t variable we need for error handling.
   b->AddLiteral(StringPrintf("%s status", kAndroidStatusLiteral));
+  // We unconditionally return a Status object.
+  b->AddLiteral(StringPrintf("%s %s", kBinderStatusLiteral, kStatusVarName));
 
   // Add the name of the interface we're hoping to call.
   b->AddStatement(new Assignment(
       "status",
       new MethodCall("data.writeInterfaceToken", "getInterfaceDescriptor()")));
-  b->AddStatement(ReturnOnStatusNotOk());
+  b->AddStatement(GotoErrorOnBadStatus());
 
   // Serialization looks roughly like:
   //     status = data.WriteInt32(in_param_name);
-  //     if (status != android::OK) { return status; }
+  //     if (status != android::OK) { goto error; }
   for (const AidlArgument* a : method.GetInArguments()) {
     const Type* type = types.Find(a->GetType().GetName());
     string method =
@@ -285,7 +299,7 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
     b->AddStatement(new Assignment(
         "status",
         new MethodCall("data." + method, ArgList(var_name))));
-    b->AddStatement(ReturnOnStatusNotOk());
+    b->AddStatement(GotoErrorOnBadStatus());
   }
 
   // Invoke the transaction on the remote binder and confirm status.
@@ -302,20 +316,21 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
       "status",
       new MethodCall("remote()->transact",
                      ArgList(args))));
-  b->AddStatement(ReturnOnStatusNotOk());
+  b->AddStatement(GotoErrorOnBadStatus());
 
   if (!interface.IsOneway() && !method.IsOneway()) {
     // Strip off the exception header and fail if we see a remote exception.
-    // if (reply.readExceptionCode()) {
-    //   status = android::FAILED_TRANSACTION;
-    //   return status;
-    // }
+    // status = _aidl_status.readFromParcel(reply);
+    // if (status != android::OK) { goto error; }
+    // if (!_aidl_status.isOk()) { return _aidl_status; }
+    b->AddStatement(new Assignment(
+        "status", StringPrintf("%s.readFromParcel(reply)", kStatusVarName)));
+    b->AddStatement(GotoErrorOnBadStatus());
     IfStatement* exception_check = new IfStatement(
-        new LiteralExpression("reply.readExceptionCode()"));
+        new LiteralExpression(StringPrintf("!%s.isOk()", kStatusVarName)));
     b->AddStatement(exception_check);
-    exception_check->OnTrue()->AddStatement(
-        new Assignment("status", "android::FAILED_TRANSACTION"));
-    exception_check->OnTrue()->AddLiteral("return status");
+    exception_check->OnTrue()->AddLiteral(
+        StringPrintf("return %s", kStatusVarName));
   }
 
   // Type checking should guarantee that nothing below emits code until "return
@@ -329,13 +344,13 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
     b->AddStatement(new Assignment(
         "status",
         new MethodCall("reply." + method_call, ArgList(kReturnVarName))));
-    b->AddStatement(ReturnOnStatusNotOk());
+    b->AddStatement(GotoErrorOnBadStatus());
   }
 
   for (const AidlArgument* a : method.GetOutArguments()) {
     // Deserialization looks roughly like:
     //     status = reply.ReadInt32(out_param_name);
-    //     if (status != android::OK) { return status; }
+    //     if (status != android::OK) { goto error; }
     string method =
       types.Find(a->GetType().GetName())
         ->ReadFromParcelMethod(a->GetType().IsArray());
@@ -343,10 +358,18 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
     b->AddStatement(new Assignment(
         "status",
         new MethodCall("reply." + method, ArgList(a->GetName()))));
-    b->AddStatement(ReturnOnStatusNotOk());
+    b->AddStatement(GotoErrorOnBadStatus());
   }
 
-  b->AddLiteral("return status");
+  // If we've gotten to here, one of two things is true:
+  //   1) We've read some bad status_t
+  //   2) We've only read status_t == OK and there was no exception in the
+  //      response.
+  // In both cases, we're free to set Status from the status_t and return.
+  b->AddLiteral("error:\n", false /* no semicolon */);
+  b->AddLiteral(
+      StringPrintf("%s.setFromStatusT(status)", kStatusVarName));
+  b->AddLiteral(StringPrintf("return %s", kStatusVarName));
 
   return unique_ptr<Declaration>(ret.release());
 }
@@ -425,15 +448,24 @@ bool HandleServerTransaction(const TypeNamespace& types,
   }
 
   // Call the actual method.  This is implemented by the subclass.
-  b->AddStatement(new Assignment{
-      "status", new MethodCall{
+  vector<unique_ptr<AstNode>> status_args;
+  status_args.emplace_back(new MethodCall(
           method.GetName(),
-          BuildArgList(types, method, false /* not for method decl */)}});
-  b->AddStatement(BreakOnStatusNotOk());
+          BuildArgList(types, method, false /* not for method decl */)));
+  b->AddStatement(new Statement(new MethodCall(
+      StringPrintf("%s %s", kBinderStatusLiteral, kStatusVarName),
+      ArgList(std::move(status_args)))));
 
-  // Write that we encountered no exceptions during transaction handling.
-  b->AddStatement(new Assignment("status", "reply->writeNoException()"));
-  b->AddStatement(BreakOnStatusNotOk());
+  // Write exceptions during transaction handling to parcel.
+  if (!method.IsOneway()) {
+    b->AddStatement(new Assignment(
+        "status", StringPrintf("%s.writeToParcel(reply)", kStatusVarName)));
+    b->AddStatement(BreakOnStatusNotOk());
+    IfStatement* exception_check = new IfStatement(
+        new LiteralExpression(StringPrintf("!%s.isOk()", kStatusVarName)));
+    b->AddStatement(exception_check);
+    exception_check->OnTrue()->AddLiteral("break");
+  }
 
   // If we have a return value, write it first.
   if (return_type != types.VoidType()) {
@@ -481,7 +513,7 @@ unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
                "uint32_t flags"}}
       }};
 
-  // Declare the status variable
+  // Declare the status_t variable
   on_transact->GetStatementBlock()->AddLiteral(
       StringPrintf("%s status", kAndroidStatusLiteral));
 
@@ -502,6 +534,16 @@ unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
   StatementBlock* b = s->AddCase("");
   b->AddLiteral(
       "status = android::BBinder::onTransact(code, data, reply, flags)");
+
+  // If we saw a null reference, we can map that to an appropriate exception.
+  IfStatement* null_check = new IfStatement(
+      new LiteralExpression("status == android::UNEXPECTED_NULL"));
+  on_transact->GetStatementBlock()->AddStatement(null_check);
+  null_check->OnTrue()->AddStatement(new Assignment(
+      "status",
+      StringPrintf("%s::fromExceptionCode(%s::EX_NULL_POINTER)"
+                   ".writeToParcel(reply)",
+                   kBinderStatusLiteral, kBinderStatusLiteral)));
 
   // Finally, the server's onTransact method just returns a status code.
   on_transact->GetStatementBlock()->AddLiteral("return status");
@@ -606,7 +648,7 @@ unique_ptr<Document> BuildServerHeader(const TypeNamespace& /* types */,
 unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
                                           const AidlInterface& interface) {
   set<string> includes = { kIBinderHeader, kIInterfaceHeader,
-                           kStrongPointerHeader };
+                           kStatusHeader, kStrongPointerHeader };
 
   for (const auto& method : interface.GetMethods()) {
     for (const auto& argument : method->GetArguments()) {
