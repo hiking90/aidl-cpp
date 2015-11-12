@@ -43,7 +43,6 @@ using android::Looper;
 using android::LooperCallback;
 using android::OK;
 using android::sp;
-using android::status_t;
 using android::String16;
 
 // libbinder:
@@ -53,6 +52,7 @@ using android::IInterface;
 using android::IPCThreadState;
 using android::Parcel;
 using android::ProcessState;
+using android::binder::Status;
 
 // Generated code:
 using android::aidl::tests::BnTestService;
@@ -82,9 +82,9 @@ class NamedCallback : public BnNamedCallback {
  public:
   NamedCallback(String16 name) : name_(name) {}
 
-  status_t GetName(String16* ret) {
+  Status GetName(String16* ret) {
     *ret = name_;
-    return OK;
+    return Status::ok();
   }
 
  private:
@@ -135,101 +135,101 @@ class NativeService : public BnTestService {
     ALOGI("Repeating token %s", token_str.str().c_str());
   }
 
-  status_t RepeatBoolean(bool token, bool* _aidl_return) override {
+  Status RepeatBoolean(bool token, bool* _aidl_return) override {
     LogRepeatedToken(token ? 1 : 0);
     *_aidl_return = token;
-    return OK;
+    return Status::ok();
   }
-  status_t RepeatByte(int8_t token, int8_t* _aidl_return) override {
+  Status RepeatByte(int8_t token, int8_t* _aidl_return) override {
     LogRepeatedToken(token);
     *_aidl_return = token;
-    return OK;
+    return Status::ok();
   }
-  status_t RepeatChar(char16_t token, char16_t* _aidl_return) override {
+  Status RepeatChar(char16_t token, char16_t* _aidl_return) override {
     LogRepeatedStringToken(String16(&token, 1));
     *_aidl_return = token;
-    return OK;
+    return Status::ok();
   }
-  status_t RepeatInt(int32_t token, int32_t* _aidl_return) override {
+  Status RepeatInt(int32_t token, int32_t* _aidl_return) override {
     LogRepeatedToken(token);
     *_aidl_return = token;
-    return OK;
+    return Status::ok();
   }
-  status_t RepeatLong(int64_t token, int64_t* _aidl_return) override {
+  Status RepeatLong(int64_t token, int64_t* _aidl_return) override {
     LogRepeatedToken(token);
     *_aidl_return = token;
-    return OK;
+    return Status::ok();
   }
-  status_t RepeatFloat(float token, float* _aidl_return) override {
+  Status RepeatFloat(float token, float* _aidl_return) override {
     LogRepeatedToken(token);
     *_aidl_return = token;
-    return OK;
+    return Status::ok();
   }
-  status_t RepeatDouble(double token, double* _aidl_return) override {
+  Status RepeatDouble(double token, double* _aidl_return) override {
     LogRepeatedToken(token);
     *_aidl_return = token;
-    return OK;
+    return Status::ok();
   }
-  status_t RepeatString(
+  Status RepeatString(
       const String16& token, String16* _aidl_return) override {
     LogRepeatedStringToken(token);
     *_aidl_return = token;
-    return OK;
+    return Status::ok();
   }
 
   template<typename T>
-  status_t ReverseArray(const vector<T>& input,
+  Status ReverseArray(const vector<T>& input,
                         vector<T>* repeated,
                         vector<T>* _aidl_return) {
     ALOGI("Reversing array of length %zu", input.size());
     *repeated = input;
     *_aidl_return = input;
     std::reverse(_aidl_return->begin(), _aidl_return->end());
-    return OK;
+    return Status::ok();
   }
 
-  status_t ReverseBoolean(const vector<bool>& input,
+  Status ReverseBoolean(const vector<bool>& input,
                           vector<bool>* repeated,
                           vector<bool>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
-  status_t ReverseByte(const vector<int8_t>& input,
+  Status ReverseByte(const vector<int8_t>& input,
                        vector<int8_t>* repeated,
                        vector<int8_t>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
-  status_t ReverseChar(const vector<char16_t>& input,
+  Status ReverseChar(const vector<char16_t>& input,
                        vector<char16_t>* repeated,
                        vector<char16_t>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
-  status_t ReverseInt(const vector<int32_t>& input,
+  Status ReverseInt(const vector<int32_t>& input,
                       vector<int32_t>* repeated,
                       vector<int32_t>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
-  status_t ReverseLong(const vector<int64_t>& input,
+  Status ReverseLong(const vector<int64_t>& input,
                        vector<int64_t>* repeated,
                        vector<int64_t>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
-  status_t ReverseFloat(const vector<float>& input,
+  Status ReverseFloat(const vector<float>& input,
                         vector<float>* repeated,
                         vector<float>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
-  status_t ReverseDouble(const vector<double>& input,
+  Status ReverseDouble(const vector<double>& input,
                          vector<double>* repeated,
                          vector<double>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
-  status_t ReverseString(const vector<String16>& input,
+  Status ReverseString(const vector<String16>& input,
                          vector<String16>* repeated,
                          vector<String16>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
 
-  status_t GetOtherTestService(const String16& name,
+  Status GetOtherTestService(const String16& name,
                                sp<INamedCallback>* returned_service) override {
     if (service_map_.find(name) == service_map_.end()) {
       sp<INamedCallback> new_item(new NamedCallback(name));
@@ -237,28 +237,28 @@ class NativeService : public BnTestService {
     }
 
     *returned_service = service_map_[name];
-    return OK;
+    return Status::ok();
   }
 
-  status_t VerifyName(const sp<INamedCallback>& service, const String16& name,
+  Status VerifyName(const sp<INamedCallback>& service, const String16& name,
                       bool* returned_value) override {
     String16 foundName;
-    status_t err = service->GetName(&foundName);
+    Status status = service->GetName(&foundName);
 
-    if (err == OK) {
+    if (status.isOk()) {
       *returned_value = foundName == name;
     }
 
-    return err;
+    return status;
   }
 
-  status_t ReverseStringList(const vector<String16>& input,
+  Status ReverseStringList(const vector<String16>& input,
                              vector<String16>* repeated,
                              vector<String16>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
 
-  status_t ReverseNamedCallbackList(const vector<sp<IBinder>>& input,
+  Status ReverseNamedCallbackList(const vector<sp<IBinder>>& input,
                                     vector<sp<IBinder>>* repeated,
                                     vector<sp<IBinder>>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
