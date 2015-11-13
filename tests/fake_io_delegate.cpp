@@ -34,6 +34,13 @@ namespace android {
 namespace aidl {
 namespace test {
 
+// Claims to always write successfully, but can't close the file.
+class BrokenCodeWriter : public CodeWriter {
+  bool Write(const char* /* format */, ...) override {  return true; }
+  bool Close() override { return false; }
+  virtual ~BrokenCodeWriter() = default;
+};  // class BrokenCodeWriter
+
 unique_ptr<string> FakeIoDelegate::GetFileContents(
     const string& relative_filename,
     const string& content_suffix) const {
@@ -73,10 +80,17 @@ bool FakeIoDelegate::CreatedNestedDirs(
 
 std::unique_ptr<CodeWriter> FakeIoDelegate::GetCodeWriter(
     const std::string& file_path) const {
+  if (broken_files_.count(file_path) > 0) {
+    return unique_ptr<CodeWriter>(new BrokenCodeWriter);
+  }
+  removed_files_.erase(file_path);
   written_file_contents_[file_path] = "";
   return GetStringWriter(&written_file_contents_[file_path]);
 }
 
+void FakeIoDelegate::RemovePath(const std::string& file_path) const {
+  removed_files_.insert(file_path);
+}
 
 void FakeIoDelegate::SetFileContents(const string& filename,
                                      const string& contents) {
@@ -104,13 +118,26 @@ void FakeIoDelegate::AddCompoundParcelable(const string& canonical_name,
   SetFileContents(rel_path.value(), contents);
 }
 
+void FakeIoDelegate::AddBrokenFilePath(const std::string& path) {
+  broken_files_.insert(path);
+}
+
 bool FakeIoDelegate::GetWrittenContents(const string& path, string* content) {
   const auto it = written_file_contents_.find(path);
   if (it == written_file_contents_.end()) {
     return false;
   }
-  *content = it->second;
+  if (content) {
+    *content = it->second;
+  }
   return true;
+}
+
+bool FakeIoDelegate::PathWasRemoved(const std::string& path) {
+  if (removed_files_.count(path) > 0) {
+    return true;
+  }
+  return false;
 }
 
 void FakeIoDelegate::AddStub(const string& canonical_name,

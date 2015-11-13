@@ -32,6 +32,7 @@ class CodeWriter {
   // Write a formatted string to this writer in the usual printf sense.
   // Returns false on error.
   virtual bool Write(const char* format, ...) = 0;
+  virtual bool Close() = 0;
   virtual ~CodeWriter() = default;
 };  // class CodeWriter
 

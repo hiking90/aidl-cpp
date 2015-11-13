@@ -666,12 +666,17 @@ bool WriteHeader(const CppOptions& options,
     return false;
   }
 
-  // TODO(wiley): b/25026025 error checking for file I/O
-  header->Write(io_delegate.GetCodeWriter(
-      options.OutputHeaderDir() + OS_PATH_SEPARATOR +
-      HeaderFile(interface, header_type)).get());
+  const string header_path = options.OutputHeaderDir() + OS_PATH_SEPARATOR +
+                             HeaderFile(interface, header_type);
+  unique_ptr<CodeWriter> code_writer(io_delegate.GetCodeWriter(header_path));
+  header->Write(code_writer.get());
 
-  return true;
+  const bool success = code_writer->Close();
+  if (!success) {
+    io_delegate.RemovePath(header_path);
+  }
+
+  return success;
 }
 
 }  // namespace internals
@@ -705,15 +710,18 @@ bool GenerateCpp(const CppOptions& options,
     return false;
   }
 
-  // TODO(wiley): b/25026025 error checking for file I/O.
-  //              If it fails, we should remove all the partial results.
   unique_ptr<CodeWriter> writer = io_delegate.GetCodeWriter(
       options.OutputCppFilePath());
   interface_src->Write(writer.get());
   client_src->Write(writer.get());
   server_src->Write(writer.get());
 
-  return true;
+  const bool success = writer->Close();
+  if (!success) {
+    io_delegate.RemovePath(options.OutputCppFilePath());
+  }
+
+  return success;
 }
 
 }  // namespace cpp

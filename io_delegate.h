@@ -54,6 +54,8 @@ class IoDelegate {
   virtual std::unique_ptr<CodeWriter> GetCodeWriter(
       const std::string& file_path) const;
 
+  virtual void RemovePath(const std::string& file_path) const;
+
  private:
   DISALLOW_COPY_AND_ASSIGN(IoDelegate);
 };  // class IoDelegate

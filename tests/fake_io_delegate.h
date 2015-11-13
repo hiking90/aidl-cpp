@@ -21,6 +21,7 @@
 
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -47,6 +48,7 @@ class FakeIoDelegate : public IoDelegate {
       const std::vector<std::string>& nested_subdirs) const override;
   std::unique_ptr<CodeWriter> GetCodeWriter(
       const std::string& file_path) const override;
+  void RemovePath(const std::string& file_path) const override;
 
   // Methods added to facilitate testing.
   void SetFileContents(const std::string& filename,
@@ -55,9 +57,12 @@ class FakeIoDelegate : public IoDelegate {
   void AddStubInterface(const std::string& canonical_name);
   void AddCompoundParcelable(const std::string& canonical_name,
                              const std::vector<std::string>& subclasses);
+  void AddBrokenFilePath(const std::string& path);
   // Returns true iff we've previously written to |path|.
   // When we return true, we'll set *contents to the written string.
   bool GetWrittenContents(const std::string& path, std::string* content);
+
+  bool PathWasRemoved(const std::string& path);
 
  private:
   void AddStub(const std::string& canonical_name, const char* format_str);
@@ -69,6 +74,11 @@ class FakeIoDelegate : public IoDelegate {
   // GetCodeWriter is a const method.  However, for tests, we break this
   // intentionally by storing the written strings.
   mutable std::map<std::string, std::string> written_file_contents_;
+
+  // We normally just write to strings in |written_file_contents_| but for
+  // files in this list, we simulate I/O errors.
+  std::set<std::string> broken_files_;
+  mutable std::set<std::string> removed_files_;
 
   DISALLOW_COPY_AND_ASSIGN(FakeIoDelegate);
 };  // class FakeIoDelegate

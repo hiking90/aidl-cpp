@@ -24,6 +24,7 @@
 #include <direct.h>
 #else
 #include <sys/stat.h>
+#include <unistd.h>
 #endif
 
 #include <base/strings.h>
@@ -124,6 +125,14 @@ bool IoDelegate::CreatePathForFile(const string& path) const {
 unique_ptr<CodeWriter> IoDelegate::GetCodeWriter(
     const string& file_path) const {
   return GetFileWriter(file_path);
+}
+
+void IoDelegate::RemovePath(const std::string& file_path) const {
+#ifdef _WIN32
+  _unlink(file_path.c_str());
+#else
+  unlink(file_path.c_str());
+#endif
 }
 
 }  // namespace android
