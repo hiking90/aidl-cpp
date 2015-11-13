@@ -32,6 +32,7 @@ namespace {
 class StringCodeWriter : public CodeWriter {
  public:
   StringCodeWriter(std::string* output_buffer) : output_(output_buffer) {}
+  virtual ~StringCodeWriter() = default;
 
   bool Write(const char* format, ...) override {
     va_list ap;
@@ -40,6 +41,8 @@ class StringCodeWriter : public CodeWriter {
     va_end(ap);
     return true;
   }
+
+  bool Close() override { return true; }
 
  private:
   std::string* output_;
@@ -50,8 +53,8 @@ class FileCodeWriter : public CodeWriter {
   FileCodeWriter(FILE* output_file, bool close_on_destruction)
       : output_(output_file),
         close_on_destruction_(close_on_destruction) {}
-  ~FileCodeWriter() {
-    if (close_on_destruction_) {
+  virtual ~FileCodeWriter() {
+    if (close_on_destruction_ && output_ != nullptr) {
       fclose(output_);
     }
   }
@@ -62,10 +65,20 @@ class FileCodeWriter : public CodeWriter {
     va_start(ap, format);
     success = vfprintf(output_, format, ap) >= 0;
     va_end(ap);
+    no_error_ = no_error_ && success;
     return success;
   }
 
+  bool Close() override {
+    if (output_ != nullptr) {
+      no_error_ = fclose(output_) == 0 && no_error_;
+      output_ = nullptr;
+    }
+    return no_error_;
+  }
+
  private:
+  bool no_error_ = true;
   FILE* output_;
   bool close_on_destruction_;
 };  // class StringCodeWriter

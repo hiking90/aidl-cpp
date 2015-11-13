@@ -16,6 +16,7 @@
 
 #include <string>
 
+#include <base/stringprintf.h>
 #include <gtest/gtest.h>
 
 #include "aidl.h"
@@ -23,11 +24,13 @@
 #include "ast_cpp.h"
 #include "code_writer.h"
 #include "generate_cpp.h"
+#include "os.h"
 #include "tests/fake_io_delegate.h"
 #include "tests/test_util.h"
 #include "type_cpp.h"
 
 using android::aidl::test::FakeIoDelegate;
+using android::base::StringPrintf;
 using std::string;
 using std::unique_ptr;
 
@@ -591,6 +594,72 @@ TEST_F(ComplexTypeInterfaceASTTest, GeneratesInterfaceSource) {
   ASSERT_NE(interface, nullptr);
   unique_ptr<Document> doc = internals::BuildInterfaceSource(types_, *interface);
   Compare(doc.get(), kExpectedComplexTypeInterfaceSourceOutput);
+}
+
+namespace test_io_handling {
+
+const char kInputPath[] = "a/IFoo.aidl";
+const char kOutputPath[] = "output.cpp";
+const char kHeaderDir[] = "headers";
+const char kInterfaceHeaderRelPath[] = "a/IFoo.h";
+
+}  // namespace test_io_handling
+
+class IoErrorHandlingTest : public ASTTest {
+ public:
+  IoErrorHandlingTest ()
+      : ASTTest(test_io_handling::kInputPath,
+                "package a; interface IFoo {}"),
+        options_(GetOptions()) {}
+
+  const unique_ptr<CppOptions> options_;
+
+ private:
+  static unique_ptr<CppOptions> GetOptions() {
+    using namespace test_io_handling;
+
+    const int argc = 4;
+    const char* cmdline[argc] = {
+      "aidl-cpp", kInputPath, kHeaderDir, kOutputPath
+    };
+    return CppOptions::Parse(argc, cmdline);
+  }
+};
+
+TEST_F(IoErrorHandlingTest, GenerateCorrectlyAbsentErrors) {
+  // Confirm that this is working correctly without I/O problems.
+  const unique_ptr<AidlInterface> interface = Parse();
+  ASSERT_NE(interface, nullptr);
+  ASSERT_TRUE(GenerateCpp(*options_, types_, *interface, io_delegate_));
+}
+
+TEST_F(IoErrorHandlingTest, HandlesBadHeaderWrite) {
+  using namespace test_io_handling;
+  const unique_ptr<AidlInterface> interface = Parse();
+  ASSERT_NE(interface, nullptr);
+
+  // Simulate issues closing the interface header.
+  const string header_path =
+      StringPrintf("%s%c%s", kHeaderDir, OS_PATH_SEPARATOR,
+                   kInterfaceHeaderRelPath);
+  io_delegate_.AddBrokenFilePath(header_path);
+  ASSERT_FALSE(GenerateCpp(*options_, types_, *interface, io_delegate_));
+  // We should never attempt to write the C++ file if we fail writing headers.
+  ASSERT_FALSE(io_delegate_.GetWrittenContents(kOutputPath, nullptr));
+  // We should remove partial results.
+  ASSERT_TRUE(io_delegate_.PathWasRemoved(header_path));
+}
+
+TEST_F(IoErrorHandlingTest, HandlesBadCppWrite) {
+  using test_io_handling::kOutputPath;
+  const unique_ptr<AidlInterface> interface = Parse();
+  ASSERT_NE(interface, nullptr);
+
+  // Simulate issues closing the cpp file.
+  io_delegate_.AddBrokenFilePath(kOutputPath);
+  ASSERT_FALSE(GenerateCpp(*options_, types_, *interface, io_delegate_));
+  // We should remove partial results.
+  ASSERT_TRUE(io_delegate_.PathWasRemoved(kOutputPath));
 }
 
 }  // namespace cpp
