@@ -110,9 +110,6 @@ LOCAL_SRC_FILES := \
     type_cpp_unittest.cpp \
     type_java_unittest.cpp \
 
-LOCAL_SHARED_LIBRARIES := \
-    libchrome-host \
-
 LOCAL_STATIC_LIBRARIES := \
     libaidl-common \
     $(aidl_static_libraries) \

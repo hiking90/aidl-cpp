@@ -20,11 +20,11 @@
 
 #include <base/strings.h>
 
+#include "os.h"
 #include "tests/test_util.h"
 
 using android::base::Split;
 using android::base::Join;
-using base::FilePath;
 using std::string;
 using std::vector;
 using std::cout;
@@ -35,19 +35,19 @@ namespace android {
 namespace aidl {
 namespace test {
 
-FilePath CanonicalNameToPath(const char* package_class, const char* extension) {
+string CanonicalNameToPath(const char* package_class, const char* extension) {
   string rel_path{package_class};
   for (char& c : rel_path) {
     if (c == '.') {
-      c = FilePath::kSeparators[0];
+      c = OS_PATH_SEPARATOR;
     }
   }
   rel_path += extension;
-  return FilePath(rel_path);
+  return rel_path;
 }
 
 void SplitPackageClass(const string& package_class,
-                       FilePath* rel_path,
+                       string* rel_path,
                        string* package,
                        string* class_name) {
   *package = string{package_class, 0, package_class.rfind('.')};
