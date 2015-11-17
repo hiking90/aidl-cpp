@@ -20,6 +20,7 @@ int isatty(int  fd)
 
 using android::aidl::IoDelegate;
 using android::base::Join;
+using android::base::Split;
 using std::cerr;
 using std::endl;
 using std::string;
@@ -117,16 +118,16 @@ Parser::Parser(const IoDelegate& io_delegate)
 }
 
 AidlParcelable::AidlParcelable(AidlQualifiedName* name, unsigned line,
-                               const std::vector<std::string>& package)
-    : AidlParcelable(name->GetDotName(), line, package) {
-  delete name;
-}
-
-AidlParcelable::AidlParcelable(const std::string& name, unsigned line,
-                               const std::vector<std::string>& package)
+                               const std::vector<std::string>& package,
+                               const std::string& cpp_header)
     : name_(name),
       line_(line),
-      package_(package) {
+      package_(package),
+      cpp_header_(cpp_header) {
+  // Strip off quotation marks if we actually have a cpp header.
+  if (cpp_header_.length() >= 2) {
+    cpp_header_ = cpp_header_.substr(1, cpp_header_.length() - 2);
+  }
   item_type = USER_DATA_TYPE;
 }
 
@@ -163,6 +164,14 @@ AidlQualifiedName::AidlQualifiedName(std::string term,
                                      std::string comments)
     : terms_({term}),
       comments_(comments) {
+  if (term.find('.') != string::npos) {
+    terms_ = Split(term, ".");
+    for (const auto& term: terms_) {
+      if (term.empty()) {
+        LOG(FATAL) << "Malformed qualified identifier: '" << term << "'";
+      }
+    }
+  }
 }
 
 void AidlQualifiedName::AddTerm(std::string term) {

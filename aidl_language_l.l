@@ -69,7 +69,6 @@ package               { return yy::parser::token::PACKAGE; }
 in                    { return yy::parser::token::IN; }
 out                   { return yy::parser::token::OUT; }
 inout                 { return yy::parser::token::INOUT; }
-is                    { return yy::parser::token::IS; }
 from                  { return yy::parser::token::FROM; }
 
 interface             { yylval->token = new AidlToken("interface", extra_text);

@@ -36,7 +36,7 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
 %token<integer> IDVALUE
 
 %token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' ';'
-%token IN OUT INOUT PACKAGE IMPORT PARCELABLE IS FROM
+%token IN OUT INOUT PACKAGE IMPORT PARCELABLE FROM
 
 %type<user_data> parcelable_decl parcelable_decls
 %type<methods> methods
@@ -65,8 +65,6 @@ document
 identifier
  : IDENTIFIER
   { $$ = $1; }
- | IS
-  { $$ = new AidlToken("is", ""); }
  | FROM
   { $$ = new AidlToken("from", ""); };
 
@@ -116,10 +114,7 @@ parcelable_decl
     $$ = new AidlParcelable($2, @2.begin.line, ps->Package());
   }
  | PARCELABLE qualified_name FROM C_STR ';' {
-    $$ = new AidlParcelable($2, @2.begin.line, ps->Package());
-  }
- | PARCELABLE qualified_name IS identifier FROM C_STR ';' {
-    $$ = new AidlParcelable($2, @2.begin.line, ps->Package());
+    $$ = new AidlParcelable($2, @2.begin.line, ps->Package(), $4->GetText());
   }
  | PARCELABLE ';' {
     fprintf(stderr, "%s:%d syntax error in parcelable declaration. Expected type name.\n",

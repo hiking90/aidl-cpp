@@ -170,22 +170,24 @@ class AidlQualifiedName : public AidlNode {
 
 class AidlParcelable : public AidlDocumentItem {
  public:
-  AidlParcelable(const std::string& name, unsigned line,
-                 const std::vector<std::string>& package);
   AidlParcelable(AidlQualifiedName* name, unsigned line,
-                 const std::vector<std::string>& package);
+                 const std::vector<std::string>& package,
+                 const std::string& cpp_header = "");
   virtual ~AidlParcelable() = default;
 
-  const std::string& GetName() const { return name_; }
+  std::string GetName() const { return name_->GetDotName(); }
   unsigned GetLine() const { return line_; }
   std::string GetPackage() const;
   const std::vector<std::string>& GetSplitPackage() const { return package_; }
+  std::string GetCppHeader() const { return cpp_header_; }
 
   AidlParcelable* next = nullptr;
+
  private:
-  std::string name_;
+  std::unique_ptr<AidlQualifiedName> name_;
   unsigned line_;
   const std::vector<std::string> package_;
+  std::string cpp_header_;
 
   DISALLOW_COPY_AND_ASSIGN(AidlParcelable);
 };
