@@ -190,5 +190,32 @@ TEST_F(AidlTest, FailOnParcelable) {
   EXPECT_NE(0, ::android::aidl::compile_aidl_to_java(options, io_delegate_));
 }
 
+TEST_F(AidlTest, UnderstandsNativeParcelables) {
+  io_delegate_.SetFileContents(
+      "p/Bar.aidl",
+      "package p; parcelable Bar from \"baz/header\";");
+  import_paths_.push_back("");
+  const string input_path = "p/IFoo.aidl";
+  const string input = "package p; import p.Bar; interface IFoo { }";
+
+  // C++ understands C++ specific stuff
+  auto cpp_parse_result = Parse(input_path, input, &cpp_types_);
+  EXPECT_NE(nullptr, cpp_parse_result);
+  auto cpp_type = cpp_types_.Find("Bar");
+  ASSERT_NE(nullptr, cpp_type);
+  EXPECT_EQ("p::Bar", cpp_type->CppType(false));
+  set<string> headers;
+  cpp_type->GetHeaders(false, &headers);
+  EXPECT_EQ(1u, headers.size());
+  EXPECT_EQ(1u, headers.count("baz/header"));
+
+  // Java ignores C++ specific stuff
+  auto java_parse_result = Parse(input_path, input, &java_types_);
+  EXPECT_NE(nullptr, java_parse_result);
+  auto java_type = java_types_.Find("Bar");
+  ASSERT_NE(nullptr, java_type);
+  EXPECT_EQ("p.Bar", java_type->InstantiableName());
+}
+
 }  // namespace aidl
 }  // namespace android
