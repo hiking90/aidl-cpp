@@ -48,7 +48,7 @@ TEST_F(JavaTypeNamespaceTest, ContainerTypeCreation) {
   unique_ptr<AidlParcelable> parcelable(
       new AidlParcelable(new AidlQualifiedName("Foo", ""), 0, {"a", "goog"}));
   // Add the parcelable type we care about.
-  EXPECT_TRUE(types_.AddParcelableType(parcelable.get(), __FILE__));
+  EXPECT_TRUE(types_.AddParcelableType(*parcelable.get(), __FILE__));
   // Now we can find the parcelable type, but not the List of them.
   EXPECT_NE(types_.Find("Foo"), nullptr);
   EXPECT_EQ(types_.Find("List<Foo>"), nullptr);
