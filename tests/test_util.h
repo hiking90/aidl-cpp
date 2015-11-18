@@ -19,17 +19,15 @@
 
 #include <string>
 
-#include <base/files/file_path.h>
-
 namespace android {
 namespace aidl {
 namespace test {
 
-::base::FilePath CanonicalNameToPath(const char* package_class,
-                                     const char* extension);
+std::string CanonicalNameToPath(const char* package_class,
+                                const char* extension);
 
 void SplitPackageClass(const std::string& package_class,
-                       ::base::FilePath* rel_path,
+                       std::string* rel_path,
                        std::string* package,
                        std::string* class_name);
 

@@ -74,8 +74,7 @@ TEST_F(EndToEndTest, IExampleInterface) {
   JavaOptions options;
   options.fail_on_parcelable_ = true;
   options.import_paths_.push_back("");
-  options.input_file_name_ =
-      CanonicalNameToPath(kCanonicalName, ".aidl").value();
+  options.input_file_name_ = CanonicalNameToPath(kCanonicalName, ".aidl");
   options.output_file_name_ = kJavaOutputPath;
   options.dep_file_name_ = "an/arbitrary/path/to/deps.P";
 
@@ -94,8 +93,7 @@ TEST_F(EndToEndTest, IExampleInterface) {
 TEST_F(EndToEndTest, IPingResponderCpp) {
   using namespace ::android::aidl::test_data::ping_responder;
 
-  const string input_path =
-      CanonicalNameToPath(kCanonicalName, ".aidl").value();
+  const string input_path = CanonicalNameToPath(kCanonicalName, ".aidl");
   const string output_file = kCppOutputPath;
   const size_t argc = 6;
   const char* cmdline[argc + 1] = {

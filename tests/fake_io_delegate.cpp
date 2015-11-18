@@ -16,7 +16,6 @@
 
 #include "fake_io_delegate.h"
 
-#include <base/files/file_path.h>
 #include <base/stringprintf.h>
 
 #include "logging.h"
@@ -25,7 +24,6 @@
 
 using android::base::StringAppendF;
 using android::base::StringPrintf;
-using base::FilePath;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -107,15 +105,14 @@ void FakeIoDelegate::AddStubInterface(const string& canonical_name) {
 
 void FakeIoDelegate::AddCompoundParcelable(const string& canonical_name,
                                            const vector<string>& subclasses) {
-  string package, class_name;
-  FilePath rel_path;
+  string package, class_name, rel_path;
   SplitPackageClass(canonical_name, &rel_path, &package, &class_name);
   string contents = StringPrintf("package %s;\n", package.c_str());
   for (const string& subclass : subclasses) {
     StringAppendF(&contents, "parcelable %s.%s;\n",
                   class_name.c_str(), subclass.c_str());
   }
-  SetFileContents(rel_path.value(), contents);
+  SetFileContents(rel_path, contents);
 }
 
 void FakeIoDelegate::AddBrokenFilePath(const std::string& path) {
@@ -142,11 +139,10 @@ bool FakeIoDelegate::PathWasRemoved(const std::string& path) {
 
 void FakeIoDelegate::AddStub(const string& canonical_name,
                              const char* format_str) {
-  string package, class_name;
-  FilePath rel_path;
+  string package, class_name, rel_path;
   SplitPackageClass(canonical_name, &rel_path, &package, &class_name);
   SetFileContents(
-      rel_path.value(),
+      rel_path,
       StringPrintf(format_str, package.c_str(), class_name.c_str()));
 }
 
