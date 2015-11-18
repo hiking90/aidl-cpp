@@ -85,12 +85,10 @@ LOCAL_SRC_FILES := main_cpp.cpp
 LOCAL_STATIC_LIBRARIES := libaidl-common $(aidl_static_libraries)
 include $(BUILD_HOST_EXECUTABLE)
 
-
-# TODO(wiley) Compile these for mac as well after b/22771504
-ifeq ($(HOST_OS),linux)
 # Unit tests
 include $(CLEAR_VARS)
 LOCAL_MODULE := aidl_unittests
+LOCAL_MODULE_HOST_OS := darwin linux
 
 LOCAL_CFLAGS := $(aidl_cflags) -g -DUNIT_TEST
 # Tragically, the code is riddled with unused parameters.
@@ -117,9 +115,7 @@ LOCAL_STATIC_LIBRARIES := \
     libgtest_host \
 
 LOCAL_LDLIBS_linux := -lrt
-
 include $(BUILD_HOST_NATIVE_TEST)
-endif # HOST_OS == linux
 
 endif # No TARGET_BUILD_APPS or TARGET_BUILD_PDK
 
