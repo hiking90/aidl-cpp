@@ -97,8 +97,14 @@ void Enum::AddValue(const string& key, const string& value) {
 ArgList::ArgList(const std::string& single_argument)
     : ArgList(vector<string>{single_argument}) {}
 
-ArgList::ArgList(const std::vector<std::string>& arg_list)
-    : arguments_(arg_list) {}
+ArgList::ArgList(const std::vector<std::string>& arg_list) {
+  for (const auto& s : arg_list) {
+    arguments_.emplace_back(new LiteralExpression(s));
+  }
+}
+
+ArgList::ArgList(std::vector<std::unique_ptr<AstNode>> arg_list)
+    : arguments_(std::move(arg_list)) {}
 
 ArgList::ArgList(ArgList&& arg_list)
     : arguments_(std::move(arg_list.arguments_)) {}
@@ -109,7 +115,7 @@ void ArgList::Write(CodeWriter* to) const {
   for (const auto& s : arguments_) {
     if (!is_first) { to->Write(", "); }
     is_first = false;
-    to->Write("%s", s.c_str());
+    s->Write(to);
   }
   to->Write(")");
 }
