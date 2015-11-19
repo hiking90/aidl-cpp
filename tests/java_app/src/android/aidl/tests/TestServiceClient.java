@@ -183,6 +183,24 @@ public class TestServiceClient extends Activity {
         mLog.log("...Basic primitive repeating works.");
     }
 
+    private void checkNullHandling(ITestService service)
+            throws TestFailException {
+        mLog.log("Checking that sending null strings reports an error...");
+        try {
+            String response = service.RepeatString(null);
+            mLog.logAndThrow("Expected to fail on null string input!");
+        } catch (NullPointerException ex) {
+            mLog.log("Caught an exception on null string parameter (expected)");
+            mLog.log("null strings behave as expected");
+            return;
+        } catch (Exception ex) {
+            mLog.logAndThrow("Expected to receive NullPointerException on " +
+                             "null parameter, but got " + ex.toString());
+        }
+        mLog.logAndThrow("Expected to receive NullPointerException on " +
+                         "null parameter, but nothing was thrown??");
+    }
+
     private void checkArrayReversal(ITestService service)
             throws TestFailException {
         mLog.log("Checking that service can reverse and return arrays...");
@@ -400,6 +418,7 @@ public class TestServiceClient extends Activity {
           init();
           ITestService service = getService();
           checkPrimitiveRepeat(service);
+          checkNullHandling(service);
           checkArrayReversal(service);
           checkBinderExchange(service);
           checkListReversal(service);
