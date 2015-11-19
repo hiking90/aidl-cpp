@@ -58,6 +58,7 @@ using android::binder::Status;
 using android::aidl::tests::BnTestService;
 using android::aidl::tests::BnNamedCallback;
 using android::aidl::tests::INamedCallback;
+using android::aidl::tests::SimpleParcelable;
 
 // Standard library
 using std::map;
@@ -177,6 +178,15 @@ class NativeService : public BnTestService {
     return Status::ok();
   }
 
+  Status RepeatParcelable(const SimpleParcelable& input,
+                            SimpleParcelable* repeat,
+                            SimpleParcelable* _aidl_return) override {
+    ALOGI("Repeated a SimpleParcelable %s", input.toString().c_str());
+    *repeat = input;
+    *_aidl_return = input;
+    return Status::ok();
+  }
+
   template<typename T>
   Status ReverseArray(const vector<T>& input,
                         vector<T>* repeated,
@@ -226,6 +236,11 @@ class NativeService : public BnTestService {
   Status ReverseString(const vector<String16>& input,
                          vector<String16>* repeated,
                          vector<String16>* _aidl_return) override {
+    return ReverseArray(input, repeated, _aidl_return);
+  }
+  Status ReverseParcelables(const vector<SimpleParcelable>& input,
+                              vector<SimpleParcelable>* repeated,
+                              vector<SimpleParcelable>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
 

@@ -16,6 +16,7 @@
 
 package android.aidl.tests;
 
+import android.aidl.tests.SimpleParcelable;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -26,11 +27,10 @@ import android.os.ServiceManager;
 import android.util.Log;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.FileOutputStream;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Collections;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 // Generated
 import android.aidl.tests.ITestService;
@@ -410,6 +410,58 @@ public class TestServiceClient extends Activity {
         mLog.log("...service can reverse and return lists.");
     }
 
+    private void checkParcelables(ITestService service)
+            throws TestFailException {
+        mLog.log("Checking that service can repeat and reverse parcelables...");
+        try {
+            {
+                SimpleParcelable input = new SimpleParcelable("foo", 42);
+                SimpleParcelable out_param = new SimpleParcelable();
+                SimpleParcelable returned =
+                        service.RepeatParcelable(input, out_param);
+                if (!input.equals(out_param)) {
+                    mLog.log(input.toString() + " != " + out_param.toString());
+                    mLog.logAndThrow("out param parcelable was not equivalent");
+                }
+                if (!input.equals(returned)) {
+                    mLog.log(input.toString() + " != " + returned.toString());
+                    mLog.logAndThrow("returned parcelable was not equivalent");
+                }
+            }
+            {
+                SimpleParcelable[] input = new SimpleParcelable[3];
+                input[0] = new SimpleParcelable("a", 1);
+                input[1] = new SimpleParcelable("b", 2);
+                input[2] = new SimpleParcelable("c", 3);
+                SimpleParcelable[] repeated = new SimpleParcelable[3];
+                SimpleParcelable[] reversed = service.ReverseParcelables(
+                        input, repeated);
+                if (!Arrays.equals(input, repeated)) {
+                    mLog.logAndThrow(
+                            "Repeated list of parcelables did not match.");
+                }
+                if (input.length != reversed.length) {
+                    mLog.logAndThrow(
+                            "Reversed list of parcelables had wrong length.");
+                }
+                for (int i = 0, k = input.length - 1;
+                     i < input.length;
+                     ++i, --k) {
+                    if (!input[i].equals(reversed[k])) {
+                        mLog.log(input[i].toString() + " != " +
+                                 reversed[k].toString());
+                        mLog.logAndThrow("reversed parcelable was " +
+                                         "not equivalent");
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            mLog.log(ex.toString());
+            mLog.logAndThrow("Service failed to handle Parcelables.");
+        }
+        mLog.log("...service can manipulate parcelables.");
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -422,9 +474,10 @@ public class TestServiceClient extends Activity {
           checkArrayReversal(service);
           checkBinderExchange(service);
           checkListReversal(service);
+          checkParcelables(service);
           mLog.log(mSuccessSentinel);
         } catch (TestFailException e) {
-            mLog.close();
+            mLog.log(mFailureSentinel);
             throw new RuntimeException(e);
         } finally {
             if (mLog != null) {
