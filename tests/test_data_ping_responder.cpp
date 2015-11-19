@@ -81,31 +81,37 @@ BpPingResponder::BpPingResponder(const android::sp<android::IBinder>& impl)
     : BpInterface<IPingResponder>(impl){
 }
 
-android::status_t BpPingResponder::Ping(int32_t token, int32_t* _aidl_return) {
+android::binder::Status BpPingResponder::Ping(int32_t token, int32_t* _aidl_return) {
 android::Parcel data;
 android::Parcel reply;
 android::status_t status;
+android::binder::Status _aidl_status;
 status = data.writeInterfaceToken(getInterfaceDescriptor());
 if (((status) != (android::OK))) {
-return status;
+goto error;
 }
 status = data.writeInt32(token);
 if (((status) != (android::OK))) {
-return status;
+goto error;
 }
 status = remote()->transact(IPingResponder::PING, data, &reply);
 if (((status) != (android::OK))) {
-return status;
+goto error;
 }
-if (reply.readExceptionCode()) {
-status = android::FAILED_TRANSACTION;
-return status;
+status = _aidl_status.readFromParcel(reply);
+if (((status) != (android::OK))) {
+goto error;
+}
+if (!_aidl_status.isOk()) {
+return _aidl_status;
 }
 status = reply.readInt32(_aidl_return);
 if (((status) != (android::OK))) {
-return status;
+goto error;
 }
-return status;
+error:
+_aidl_status.setFromStatusT(status);
+return _aidl_status;
 }
 
 }  // namespace os
@@ -133,12 +139,12 @@ status = data.readInt32(&in_token);
 if (((status) != (android::OK))) {
 break;
 }
-status = Ping(in_token, &_aidl_return);
+android::binder::Status _aidl_status(Ping(in_token, &_aidl_return));
+status = _aidl_status.writeToParcel(reply);
 if (((status) != (android::OK))) {
 break;
 }
-status = reply->writeNoException();
-if (((status) != (android::OK))) {
+if (!_aidl_status.isOk()) {
 break;
 }
 status = reply->writeInt32(_aidl_return);
@@ -152,6 +158,9 @@ default:
 status = android::BBinder::onTransact(code, data, reply, flags);
 }
 break;
+}
+if (status == android::UNEXPECTED_NULL) {
+status = android::binder::Status::fromExceptionCode(android::binder::Status::EX_NULL_POINTER).writeToParcel(reply);
 }
 return status;
 }
@@ -167,6 +176,7 @@ R"(#ifndef AIDL_GENERATED_ANDROID_OS_I_PING_RESPONDER_H_
 
 #include <binder/IBinder.h>
 #include <binder/IInterface.h>
+#include <binder/Status.h>
 #include <cstdint>
 #include <utils/StrongPointer.h>
 
@@ -177,7 +187,7 @@ namespace os {
 class IPingResponder : public android::IInterface {
 public:
 DECLARE_META_INTERFACE(PingResponder);
-virtual android::status_t Ping(int32_t token, int32_t* _aidl_return) = 0;
+virtual android::binder::Status Ping(int32_t token, int32_t* _aidl_return) = 0;
 enum Call {
   PING = android::IBinder::FIRST_CALL_TRANSACTION + 0,
 };
@@ -206,7 +216,7 @@ class BpPingResponder : public android::BpInterface<IPingResponder> {
 public:
 explicit BpPingResponder(const android::sp<android::IBinder>& impl);
 virtual ~BpPingResponder() = default;
-android::status_t Ping(int32_t token, int32_t* _aidl_return) override;
+android::binder::Status Ping(int32_t token, int32_t* _aidl_return) override;
 };  // class BpPingResponder
 
 }  // namespace os

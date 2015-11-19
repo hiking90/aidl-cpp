@@ -35,6 +35,7 @@ using android::String8;
 // libbinder:
 using android::getService;
 using android::IBinder;
+using android::binder::Status;
 
 // generated
 using android::aidl::tests::ITestService;
@@ -62,12 +63,13 @@ bool GetService(sp<ITestService>* service) {
 
 template <typename T>
 bool RepeatPrimitive(const sp<ITestService>& service,
-                     status_t(ITestService::*func)(T, T*),
+                     Status(ITestService::*func)(T, T*),
                      const T input) {
   T reply;
-  status_t status = (*service.*func)(input, &reply);
-  if (status != OK || input != reply) {
-    cerr << "Failed to repeat primitive. status=" << status << "." << endl;
+  Status status = (*service.*func)(input, &reply);
+  if (!status.isOk() || input != reply) {
+    cerr << "Failed to repeat primitive. status=" << status.toString8()
+         << "." << endl;
     return false;
   }
   return true;
@@ -93,11 +95,11 @@ bool ConfirmPrimitiveRepeat(const sp<ITestService>& s) {
   };
   for (const auto& input : inputs) {
     String16 reply;
-    status_t status = s->RepeatString(input, &reply);
-    if (status != OK || input != reply) {
+    Status status = s->RepeatString(input, &reply);
+    if (!status.isOk() || input != reply) {
       cerr << "Failed while requesting service to repeat String16=\""
            << String8(input).string()
-           << "\". Got status=" << status << endl;
+           << "\". Got status=" << status.toString8() << endl;
       return false;
     }
   }
@@ -106,15 +108,16 @@ bool ConfirmPrimitiveRepeat(const sp<ITestService>& s) {
 
 template <typename T>
 bool ReverseArray(const sp<ITestService>& service,
-                  status_t(ITestService::*func)(const vector<T>&,
-                                                vector<T>*,
-                                                vector<T>*),
+                  Status(ITestService::*func)(const vector<T>&,
+                                              vector<T>*,
+                                              vector<T>*),
                   vector<T> input) {
   vector<T> actual_reversed;
   vector<T> actual_repeated;
-  status_t status = (*service.*func)(input, &actual_repeated, &actual_reversed);
-  if (status != OK) {
-    cerr << "Failed to repeat array. status=" << status << "." << endl;
+  Status status = (*service.*func)(input, &actual_repeated, &actual_reversed);
+  if (!status.isOk()) {
+    cerr << "Failed to repeat array. status=" << status.toString8() << "."
+         << endl;
     return false;
   }
   if (input != actual_repeated) {
@@ -168,7 +171,7 @@ bool ConfirmReverseLists(const sp<ITestService>& s) {
 }
 
 bool ConfirmReverseBinderLists(const sp<ITestService>& s) {
-  status_t status;
+  Status status;
   cout << "Confirming passing and returning List<T> works with binders." << endl;
 
   vector<String16> names = {
@@ -183,7 +186,7 @@ bool ConfirmReverseBinderLists(const sp<ITestService>& s) {
     sp<INamedCallback> got;
 
     status = s->GetOtherTestService(names[i], &got);
-    if (status != OK) {
+    if (!status.isOk()) {
       cerr << "Could not retrieve service for test." << endl;
       return false;
     }
@@ -195,6 +198,9 @@ bool ConfirmReverseBinderLists(const sp<ITestService>& s) {
   vector<sp<IBinder>> reversed;
 
   status = s->ReverseNamedCallbackList(input, &output, &reversed);
+  if (!status.isOk()) {
+    cerr << "Failed to reverse named callback list." << endl;
+  }
 
   if (output.size() != 3) {
     cerr << "ReverseNamedCallbackList gave repetition with wrong length." << endl;
@@ -212,7 +218,7 @@ bool ConfirmReverseBinderLists(const sp<ITestService>& s) {
         android::interface_cast<INamedCallback>(output[i]);
     status = named_callback->GetName(&ret);
 
-    if (status != OK) {
+    if (!status.isOk()) {
       cerr << "Could not query INamedCallback from output" << endl;
       return false;
     }
@@ -229,7 +235,7 @@ bool ConfirmReverseBinderLists(const sp<ITestService>& s) {
         android::interface_cast<INamedCallback>(reversed[i]);
     status = named_callback->GetName(&ret);
 
-    if (status != OK) {
+    if (!status.isOk()) {
       cerr << "Could not query INamedCallback from reversed output" << endl;
       return false;
     }
