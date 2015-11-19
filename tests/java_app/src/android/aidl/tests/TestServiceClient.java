@@ -402,6 +402,7 @@ public class TestServiceClient extends Activity {
           checkPrimitiveRepeat(service);
           checkArrayReversal(service);
           checkBinderExchange(service);
+          checkListReversal(service);
           mLog.log(mSuccessSentinel);
         } catch (TestFailException e) {
             mLog.close();
