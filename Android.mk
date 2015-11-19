@@ -119,39 +119,50 @@ include $(BUILD_HOST_NATIVE_TEST)
 
 endif # No TARGET_BUILD_APPS or TARGET_BUILD_PDK
 
-include $(CLEAR_VARS)
-LOCAL_MODULE := aidl_test_service
-LOCAL_SRC_FILES := \
-    tests/android/aidl/tests/ITestService.aidl \
-    tests/android/aidl/tests/INamedCallback.aidl \
-    tests/aidl_test_service.cpp
-LOCAL_SHARED_LIBRARIES := \
+#
+# Everything below here is used for integration testing of generated AIDL code.
+#
+aidl_integration_test_cflags := $(aidl_cflags) -Wunused-parameter
+aidl_integration_test_shared_libs := \
     libbinder \
     liblog \
     libutils
-LOCAL_CFLAGS := $(aidl_cflags) -Wunused-parameter
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := libaidl-integration-test
+LOCAL_MODULE_CLASS := SHARED_LIBRARIES
+LOCAL_CFLAGS := $(aidl_integration_test_cflags)
+LOCAL_SHARED_LIBRARIES := $(aidl_integration_test_shared_libs)
 LOCAL_AIDL_INCLUDES := system/tools/aidl/tests/
+LOCAL_SRC_FILES := \
+    tests/android/aidl/tests/ITestService.aidl \
+    tests/android/aidl/tests/INamedCallback.aidl
+include $(BUILD_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := aidl_test_service
+LOCAL_CFLAGS := $(aidl_integration_test_cflags)
+LOCAL_SHARED_LIBRARIES := \
+    libaidl-integration-test \
+    $(aidl_integration_test_shared_libs)
+LOCAL_SRC_FILES := \
+    tests/aidl_test_service.cpp
 include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := aidl_test_client
-LOCAL_SRC_FILES := \
-    tests/android/aidl/tests/ITestService.aidl \
-    tests/android/aidl/tests/INamedCallback.aidl \
-    tests/aidl_test_client.cpp
+LOCAL_CFLAGS := $(aidl_integration_test_cflags)
 LOCAL_SHARED_LIBRARIES := \
-    libbinder \
-    liblog \
-    libutils
-LOCAL_CFLAGS := $(aidl_cflags) -Wunused-parameter
-LOCAL_AIDL_INCLUDES := system/tools/aidl/tests/
+    libaidl-integration-test \
+    $(aidl_integration_test_shared_libs)
+LOCAL_SRC_FILES := \
+    tests/aidl_test_client.cpp
 include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := aidl_test_sentinel_searcher
 LOCAL_SRC_FILES := tests/aidl_test_sentinel_searcher.cpp
-LOCAL_CFLAGS := $(aidl_cflags) -Wunused-parameter
-LOCAL_AIDL_INCLUDES := system/tools/aidl/tests/
+LOCAL_CFLAGS := $(aidl_integration_test_cflags)
 include $(BUILD_EXECUTABLE)
 
 
