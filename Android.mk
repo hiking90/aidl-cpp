@@ -17,16 +17,20 @@
 LOCAL_PATH := $(call my-dir)
 
 aidl_cflags := -Wall -Wextra -Werror
+aidl_static_libraries := libbase libcutils
+
+aidl_module_host_os := darwin linux windows
+ifdef BRILLO
+  aidl_module_host_os := darwin linux
+endif
 
 # This tool is prebuilt if we're doing an app-only build.
 ifeq ($(TARGET_BUILD_APPS)$(filter true,$(TARGET_BUILD_PDK)),)
 
-aidl_static_libraries := libbase libcutils
-
 # Logic shared between aidl and its unittests
 include $(CLEAR_VARS)
 LOCAL_MODULE := libaidl-common
-LOCAL_MODULE_HOST_OS := darwin linux windows
+LOCAL_MODULE_HOST_OS := $(aidl_module_host_os)
 
 LOCAL_C_INCLUDES := external/gtest/include
 LOCAL_CLANG_CFLAGS := $(aidl_cflags)
@@ -67,7 +71,7 @@ include $(BUILD_HOST_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_MODULE := aidl
 
-LOCAL_MODULE_HOST_OS := darwin linux windows
+LOCAL_MODULE_HOST_OS := $(aidl_module_host_os)
 LOCAL_CFLAGS := $(aidl_cflags)
 LOCAL_C_INCLUDES := external/gtest/include
 LOCAL_SRC_FILES := main_java.cpp
@@ -78,7 +82,7 @@ include $(BUILD_HOST_EXECUTABLE)
 include $(CLEAR_VARS)
 LOCAL_MODULE := aidl-cpp
 
-LOCAL_MODULE_HOST_OS := darwin linux windows
+LOCAL_MODULE_HOST_OS := $(aidl_module_host_os)
 LOCAL_CFLAGS := $(aidl_cflags)
 LOCAL_C_INCLUDES := external/gtest/include
 LOCAL_SRC_FILES := main_cpp.cpp
