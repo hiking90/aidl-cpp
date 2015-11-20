@@ -438,7 +438,8 @@ bool parse_preprocessed_file(const IoDelegate& io_delegate,
     }
 
     if (decl == "parcelable") {
-      AidlParcelable doc(class_name, lineno, package);
+      AidlParcelable doc(new AidlQualifiedName(class_name, ""),
+                         lineno, package);
       types->AddParcelableType(&doc, filename);
     } else if (decl == "interface") {
       auto temp = new std::vector<std::unique_ptr<AidlMethod>>();
