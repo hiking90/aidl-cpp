@@ -369,9 +369,9 @@ class JavaTypeNamespace : public LanguageTypeNamespace<Type> {
   virtual ~JavaTypeNamespace() = default;
 
   void Init() override;
-  bool AddParcelableType(const AidlParcelable& p,
+  bool AddParcelableType(const AidlParcelable* p,
                          const string& filename) override;
-  bool AddBinderType(const AidlInterface& b,
+  bool AddBinderType(const AidlInterface* b,
                      const string& filename) override;
   bool AddListType(const std::string& contained_type_name) override;
   bool AddMapType(const std::string& key_type_name,

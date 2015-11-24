@@ -90,9 +90,9 @@ class TypeNamespace : public ::android::aidl::LanguageTypeNamespace<Type> {
   virtual ~TypeNamespace() = default;
 
   void Init() override;
-  bool AddParcelableType(const AidlParcelable& p,
+  bool AddParcelableType(const AidlParcelable* p,
                          const std::string& filename) override;
-  bool AddBinderType(const AidlInterface& b,
+  bool AddBinderType(const AidlInterface* b,
                      const std::string& filename) override;
   bool AddListType(const std::string& type_name) override;
   bool AddMapType(const std::string& key_type_name,

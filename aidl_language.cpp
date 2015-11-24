@@ -128,17 +128,11 @@ AidlParcelable::AidlParcelable(AidlQualifiedName* name, unsigned line,
   if (cpp_header_.length() >= 2) {
     cpp_header_ = cpp_header_.substr(1, cpp_header_.length() - 2);
   }
+  item_type = USER_DATA_TYPE;
 }
 
 std::string AidlParcelable::GetPackage() const {
   return Join(package_, '.');
-}
-
-std::string AidlParcelable::GetCanonicalName() const {
-  if (package_.empty()) {
-    return GetName();
-  }
-  return GetPackage() + "." + GetName();
 }
 
 AidlInterface::AidlInterface(const std::string& name, unsigned line,
@@ -151,6 +145,7 @@ AidlInterface::AidlInterface(const std::string& name, unsigned line,
       oneway_(oneway),
       methods_(std::move(*methods)),
       package_(package) {
+  item_type = INTERFACE_TYPE_BINDER;
   delete methods;
 }
 
@@ -164,9 +159,6 @@ std::string AidlInterface::GetCanonicalName() const {
   }
   return GetPackage() + "." + GetName();
 }
-
-AidlDocument::AidlDocument(AidlInterface* interface)
-    : interface_(interface) {}
 
 AidlQualifiedName::AidlQualifiedName(std::string term,
                                      std::string comments)
@@ -221,18 +213,13 @@ bool Parser::ParseFile(const string& filename) {
   filename_ = filename;
   package_.reset();
   error_ = 0;
-  document_.reset();
+  document_ = nullptr;
 
   buffer_ = yy_scan_buffer(&(*raw_buffer_)[0], raw_buffer_->length(), scanner_);
 
-  if (yy::parser(this).parse() != 0 || error_ != 0) {
-    return false;}
+  int ret = yy::parser(this).parse();
 
-  if (document_.get() != nullptr)
-    return true;
-
-  LOG(ERROR) << "Parser succeeded but yielded no document!";
-  return false;
+  return ret == 0 && error_ == 0;
 }
 
 void Parser::ReportError(const string& err, unsigned line) {
