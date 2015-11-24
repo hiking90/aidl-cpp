@@ -145,40 +145,39 @@ bool check_filename(const std::string& filename,
     return valid;
 }
 
-bool check_filenames(const std::string& filename, const AidlDocumentItem* items) {
-  if (! items)
+bool check_filenames(const std::string& filename, const AidlDocument* doc) {
+  if (!doc)
     return true;
 
-  if (items->item_type == INTERFACE_TYPE_BINDER) {
-    const AidlInterface* c = reinterpret_cast<const AidlInterface*>(items);
-    return check_filename(filename, c->GetPackage(), c->GetName(), c->GetLine());
+  const AidlInterface* interface = doc->GetInterface();
+
+  if (interface) {
+    return check_filename(filename, interface->GetPackage(),
+                          interface->GetName(), interface->GetLine());
   }
 
   bool success = true;
 
-  for (const AidlParcelable* p = reinterpret_cast<const AidlParcelable*>(items);
-       p; p = p->next)
-    success &= check_filename(filename, p->GetPackage(), p->GetName(),
-                              p->GetLine());
+  for (const auto& item : doc->GetParcelables()) {
+    success &= check_filename(filename, item->GetPackage(), item->GetName(),
+                              item->GetLine());
+  }
 
   return success;
 }
 
 bool gather_types(const std::string& filename,
-                  const AidlDocumentItem* all_items,
+                  const AidlDocument* doc,
                   TypeNamespace* types) {
   bool success = true;
 
-  if (! all_items)
-    return true;
+  const AidlInterface* interface = doc->GetInterface();
 
-  if (all_items->item_type == INTERFACE_TYPE_BINDER)
-    return types->AddBinderType(reinterpret_cast<const AidlInterface *>(all_items), filename);
+  if (interface)
+    return types->AddBinderType(*interface, filename);
 
-  for (const AidlParcelable* item =
-       reinterpret_cast<const AidlParcelable *>(all_items);
-       item; item = item->next) {
-    success &= types->AddParcelableType(item, filename);
+  for (const auto& item : doc->GetParcelables()) {
+    success &= types->AddParcelableType(*item, filename);
   }
 
   return success;
@@ -440,11 +439,11 @@ bool parse_preprocessed_file(const IoDelegate& io_delegate,
     if (decl == "parcelable") {
       AidlParcelable doc(new AidlQualifiedName(class_name, ""),
                          lineno, package);
-      types->AddParcelableType(&doc, filename);
+      types->AddParcelableType(doc, filename);
     } else if (decl == "interface") {
       auto temp = new std::vector<std::unique_ptr<AidlMethod>>();
       AidlInterface doc(class_name, lineno, "", false, temp, package);
-      types->AddBinderType(&doc, filename);
+      types->AddBinderType(doc, filename);
     } else {
       success = false;
       break;
@@ -468,7 +467,7 @@ AidlError load_and_validate_aidl(
     std::vector<std::unique_ptr<AidlImport>>* returned_imports) {
   AidlError err = AidlError::OK;
 
-  std::map<AidlImport*,std::unique_ptr<AidlDocumentItem>> docs;
+  std::map<AidlImport*,std::unique_ptr<AidlDocument>> docs;
 
   // import the preprocessed file
   for (const string& s : preprocessed_files) {
@@ -486,18 +485,15 @@ AidlError load_and_validate_aidl(
     return AidlError::PARSE_ERROR;
   }
 
-  AidlDocumentItem* parsed_doc = p.GetDocument();
-  if (parsed_doc == nullptr) {
-    return AidlError::PARSE_ERROR;
-  }
-  if (parsed_doc->item_type != INTERFACE_TYPE_BINDER) {
+  AidlDocument* parsed_doc = p.GetDocument();
+
+  unique_ptr<AidlInterface> interface(parsed_doc->ReleaseInterface());
+
+  if (!interface) {
     LOG(ERROR) << "refusing to generate code from aidl file defining "
                   "parcelable";
     return AidlError::FOUND_PARCELABLE;
   }
-
-  unique_ptr<AidlInterface> interface(
-      reinterpret_cast<AidlInterface*>(parsed_doc));
 
   if (!check_filename(input_file_name.c_str(), interface->GetPackage(),
                       interface->GetName(), interface->GetLine()) ||
@@ -534,21 +530,29 @@ AidlError load_and_validate_aidl(
       continue;
     }
 
-    AidlDocumentItem* document = p.GetDocument();
-    if (!check_filenames(import->GetFilename(), document))
+    std::unique_ptr<AidlDocument> document(p.ReleaseDocument());
+    if (!check_filenames(import->GetFilename(), document.get()))
       err = AidlError::BAD_IMPORT;
-    docs[import.get()] = std::unique_ptr<AidlDocumentItem>(document);
+    docs[import.get()] = std::move(document);
   }
   if (err != AidlError::OK) {
     return err;
   }
 
   // gather the types that have been declared
-  if (!gather_types(input_file_name.c_str(), parsed_doc, types)) {
+  if (!types->AddBinderType(*interface.get(), input_file_name)) {
     err = AidlError::BAD_TYPE;
   }
+
   for (const auto& import : p.GetImports()) {
-    if (!gather_types(import->GetFilename(), docs[import.get()].get(), types)) {
+    // If we skipped an unresolved import above (see comment there) we'll have
+    // an empty bucket here.
+    const auto import_itr = docs.find(import.get());
+    if (import_itr == docs.cend()) {
+      continue;
+    }
+
+    if (!gather_types(import->GetFilename(), import_itr->second.get(), types)) {
       err = AidlError::BAD_TYPE;
     }
   }
@@ -652,70 +656,35 @@ int compile_aidl_to_java(const JavaOptions& options,
                        interface.get(), types.get(), io_delegate);
 }
 
-int preprocess_aidl(const JavaOptions& options,
-                    const IoDelegate& io_delegate) {
-    vector<string> lines;
+bool preprocess_aidl(const JavaOptions& options,
+                     const IoDelegate& io_delegate) {
+  unique_ptr<CodeWriter> writer =
+      io_delegate.GetCodeWriter(options.output_file_name_);
 
-    // read files
-    int N = options.files_to_preprocess_.size();
-    for (int i=0; i<N; i++) {
-        Parser p{io_delegate};
-        if (!p.ParseFile(options.files_to_preprocess_[i]))
-          return 1;
-        AidlDocumentItem* doc = p.GetDocument();
-        string line;
-        if (doc->item_type == USER_DATA_TYPE) {
-            AidlParcelable* parcelable = reinterpret_cast<AidlParcelable*>(doc);
+  for (const auto& file : options.files_to_preprocess_) {
+    Parser p{io_delegate};
+    if (!p.ParseFile(file))
+      return false;
+    AidlDocument* doc = p.GetDocument();
+    string line;
 
-            line = "parcelable ";
+    const AidlInterface* interface = doc->GetInterface();
 
-            if (! parcelable->GetPackage().empty()) {
-                line += parcelable->GetPackage();
-                line += '.';
-            }
-            line += parcelable->GetName();
-        } else {
-            line = "interface ";
-            AidlInterface* iface = reinterpret_cast<AidlInterface*>(doc);
-            if (!iface->GetPackage().empty()) {
-                line += iface->GetPackage();
-                line += '.';
-            }
-            line += iface->GetName();
-        }
-        line += ";\n";
-        lines.push_back(line);
+    if (interface != nullptr &&
+        !writer->Write("interface %s;\n",
+                       interface->GetCanonicalName().c_str())) {
+      return false;
     }
 
-    // write preprocessed file
-    int fd = open( options.output_file_name_.c_str(),
-                   O_RDWR|O_CREAT|O_TRUNC|O_BINARY,
-#ifdef _WIN32
-                   _S_IREAD|_S_IWRITE);
-#else
-                   S_IRUSR|S_IWUSR|S_IRGRP);
-#endif
-    if (fd == -1) {
-        fprintf(stderr, "aidl: could not open file for write: %s\n",
-                options.output_file_name_.c_str());
-        return 1;
+    for (const auto& parcelable : doc->GetParcelables()) {
+      if (!writer->Write("parcelable %s;\n",
+                         parcelable->GetCanonicalName().c_str())) {
+        return false;
+      }
     }
+  }
 
-    N = lines.size();
-    for (int i=0; i<N; i++) {
-        const string& s = lines[i];
-        int len = s.length();
-        if (len != write(fd, s.c_str(), len)) {
-            fprintf(stderr, "aidl: error writing to file %s\n",
-                options.output_file_name_.c_str());
-            close(fd);
-            unlink(options.output_file_name_.c_str());
-            return 1;
-        }
-    }
-
-    close(fd);
-    return 0;
+  return writer->Close();
 }
 
 }  // namespace android

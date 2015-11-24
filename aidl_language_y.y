@@ -29,7 +29,8 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
     std::vector<std::unique_ptr<AidlMethod>>* methods;
     AidlQualifiedName* qname;
     AidlInterface* interface_obj;
-    AidlParcelable* user_data;
+    AidlParcelable* parcelable;
+    AidlDocument* parcelable_list;
 }
 
 %token<token> IDENTIFIER INTERFACE ONEWAY C_STR
@@ -38,7 +39,8 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
 %token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' ';'
 %token IN OUT INOUT PACKAGE IMPORT PARCELABLE FROM
 
-%type<user_data> parcelable_decl parcelable_decls
+%type<parcelable_list> parcelable_decls
+%type<parcelable> parcelable_decl
 %type<methods> methods
 %type<interface_obj> interface_decl
 %type<method> method_decl
@@ -55,7 +57,7 @@ document
  : package imports parcelable_decls
   { ps->SetDocument($3); }
  | package imports interface_decl
-  { ps->SetDocument($3); };
+  { ps->SetDocument(new AidlDocument($3)); };
 
 /* A couple of tokens that are keywords elsewhere are identifiers when
  * occurring in the identifier position. Therefore identifier is a
@@ -93,14 +95,10 @@ qualified_name
 
 parcelable_decls
  :
-  { $$ = NULL; }
+  { $$ = new AidlDocument(); }
  | parcelable_decls parcelable_decl {
    $$ = $1;
-   AidlParcelable **pos = &$$;
-   while (*pos)
-     pos = &(*pos)->next;
-   if ($2)
-     *pos = $2;
+   $$->AddParcelable($2);
   }
  | parcelable_decls error {
     fprintf(stderr, "%s:%d: syntax error don't know what to do with \"%s\"\n",
