@@ -43,11 +43,19 @@ namespace cpp {
 namespace internals {
 namespace {
 
-const char kStatusVarName[] = "_aidl_status";
+const char kAndroidStatusVarName[] = "_aidl_ret_status";
+const char kCodeVarName[] = "_aidl_code";
+const char kFlagsVarName[] = "_aidl_flags";
+const char kDataVarName[] = "_aidl_data";
+const char kErrorLabel[] = "_aidl_error";
+const char kImplVarName[] = "_aidl_impl";
+const char kReplyVarName[] = "_aidl_reply";
 const char kReturnVarName[] = "_aidl_return";
-const char kAndroidStatusLiteral[] = "android::status_t";
-const char kAndroidParcelLiteral[] = "android::Parcel";
-const char kBinderStatusLiteral[] = "android::binder::Status";
+const char kStatusVarName[] = "_aidl_status";
+const char kAndroidParcelLiteral[] = "::android::Parcel";
+const char kAndroidStatusLiteral[] = "::android::status_t";
+const char kAndroidStatusOk[] = "::android::OK";
+const char kBinderStatusLiteral[] = "::android::binder::Status";
 const char kIBinderHeader[] = "binder/IBinder.h";
 const char kIInterfaceHeader[] = "binder/IInterface.h";
 const char kParcelHeader[] = "binder/Parcel.h";
@@ -56,26 +64,26 @@ const char kStrongPointerHeader[] = "utils/StrongPointer.h";
 
 unique_ptr<AstNode> BreakOnStatusNotOk() {
   IfStatement* ret = new IfStatement(new Comparison(
-      new LiteralExpression("status"), "!=",
-      new LiteralExpression("android::OK")));
+      new LiteralExpression(kAndroidStatusVarName), "!=",
+      new LiteralExpression(kAndroidStatusOk)));
   ret->OnTrue()->AddLiteral("break");
   return unique_ptr<AstNode>(ret);
 }
 
 unique_ptr<AstNode> GotoErrorOnBadStatus() {
   IfStatement* ret = new IfStatement(new Comparison(
-      new LiteralExpression("status"), "!=",
-      new LiteralExpression("android::OK")));
-  ret->OnTrue()->AddLiteral("goto error");
+      new LiteralExpression(kAndroidStatusVarName), "!=",
+      new LiteralExpression(kAndroidStatusOk)));
+  ret->OnTrue()->AddLiteral(StringPrintf("goto %s", kErrorLabel));
   return unique_ptr<AstNode>(ret);
 }
 
 
 unique_ptr<AstNode> ReturnOnStatusNotOk() {
   IfStatement* ret = new IfStatement(new Comparison(
-      new LiteralExpression("status"), "!=",
-      new LiteralExpression("android::OK")));
-  ret->OnTrue()->AddLiteral("return status");
+      new LiteralExpression(kAndroidStatusVarName), "!=",
+      new LiteralExpression(kAndroidStatusOk)));
+  ret->OnTrue()->AddLiteral(StringPrintf("return %s", kAndroidStatusVarName));
   return unique_ptr<AstNode>(ret);
 }
 
@@ -271,24 +279,27 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
   StatementBlock* b = ret->GetStatementBlock();
 
   // Declare parcels to hold our query and the response.
-  b->AddLiteral(StringPrintf("%s data", kAndroidParcelLiteral));
+  b->AddLiteral(StringPrintf("%s %s", kAndroidParcelLiteral, kDataVarName));
   // Even if we're oneway, the transact method still takes a parcel.
-  b->AddLiteral(StringPrintf("%s reply", kAndroidParcelLiteral));
+  b->AddLiteral(StringPrintf("%s %s", kAndroidParcelLiteral, kReplyVarName));
 
   // Declare the status_t variable we need for error handling.
-  b->AddLiteral(StringPrintf("%s status", kAndroidStatusLiteral));
+  b->AddLiteral(StringPrintf("%s %s", kAndroidStatusLiteral,
+                             kAndroidStatusVarName));
   // We unconditionally return a Status object.
   b->AddLiteral(StringPrintf("%s %s", kBinderStatusLiteral, kStatusVarName));
 
   // Add the name of the interface we're hoping to call.
   b->AddStatement(new Assignment(
-      "status",
-      new MethodCall("data.writeInterfaceToken", "getInterfaceDescriptor()")));
+      kAndroidStatusVarName,
+      new MethodCall(StringPrintf("%s.writeInterfaceToken",
+                                  kDataVarName),
+                     "getInterfaceDescriptor()")));
   b->AddStatement(GotoErrorOnBadStatus());
 
   // Serialization looks roughly like:
-  //     status = data.WriteInt32(in_param_name);
-  //     if (status != android::OK) { goto error; }
+  //     _aidl_ret_status = _aidl_data.WriteInt32(in_param_name);
+  //     if (_aidl_ret_status != ::android::OK) { goto error; }
   for (const AidlArgument* a : method.GetInArguments()) {
     const Type* type = types.Find(a->GetType().GetName());
     string method =
@@ -297,8 +308,9 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
     string var_name = ((a->IsOut()) ? "*" : "") + a->GetName();
     var_name = type->WriteCast(var_name);
     b->AddStatement(new Assignment(
-        "status",
-        new MethodCall("data." + method, ArgList(var_name))));
+        kAndroidStatusVarName,
+        new MethodCall(StringPrintf("%s.%s", kDataVarName, method.c_str()),
+                       ArgList(var_name))));
     b->AddStatement(GotoErrorOnBadStatus());
   }
 
@@ -306,25 +318,27 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
   string transaction_code = StringPrintf(
       "%s::%s", i_name.c_str(), UpperCase(method.GetName()).c_str());
 
-  vector<string> args = {transaction_code, "data", "&reply"};
+  vector<string> args = {transaction_code, kDataVarName,
+                         StringPrintf("&%s", kReplyVarName)};
 
   if (interface.IsOneway() || method.IsOneway()) {
-    args.push_back("android::IBinder::FLAG_ONEWAY");
+    args.push_back("::android::IBinder::FLAG_ONEWAY");
   }
 
   b->AddStatement(new Assignment(
-      "status",
+      kAndroidStatusVarName,
       new MethodCall("remote()->transact",
                      ArgList(args))));
   b->AddStatement(GotoErrorOnBadStatus());
 
   if (!interface.IsOneway() && !method.IsOneway()) {
     // Strip off the exception header and fail if we see a remote exception.
-    // status = _aidl_status.readFromParcel(reply);
-    // if (status != android::OK) { goto error; }
-    // if (!_aidl_status.isOk()) { return _aidl_status; }
+    // _aidl_ret_status = _aidl_status.readFromParcel(_aidl_reply);
+    // if (_aidl_ret_status != ::android::OK) { goto error; }
+    // if (!_aidl_status.isOk()) { return _aidl_ret_status; }
     b->AddStatement(new Assignment(
-        "status", StringPrintf("%s.readFromParcel(reply)", kStatusVarName)));
+        kAndroidStatusVarName,
+        StringPrintf("%s.readFromParcel(%s)", kStatusVarName, kReplyVarName)));
     b->AddStatement(GotoErrorOnBadStatus());
     IfStatement* exception_check = new IfStatement(
         new LiteralExpression(StringPrintf("!%s.isOk()", kStatusVarName)));
@@ -342,22 +356,26 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
     string method_call = return_type->ReadFromParcelMethod(
         method.GetType().IsArray());
     b->AddStatement(new Assignment(
-        "status",
-        new MethodCall("reply." + method_call, ArgList(kReturnVarName))));
+        kAndroidStatusVarName,
+        new MethodCall(StringPrintf("%s.%s", kReplyVarName,
+                                    method_call.c_str()),
+                       ArgList(kReturnVarName))));
     b->AddStatement(GotoErrorOnBadStatus());
   }
 
   for (const AidlArgument* a : method.GetOutArguments()) {
     // Deserialization looks roughly like:
-    //     status = reply.ReadInt32(out_param_name);
-    //     if (status != android::OK) { goto error; }
+    //     _aidl_ret_status = _aidl_reply.ReadInt32(out_param_name);
+    //     if (_aidl_status != ::android::OK) { goto _aidl_error; }
     string method =
       types.Find(a->GetType().GetName())
         ->ReadFromParcelMethod(a->GetType().IsArray());
 
     b->AddStatement(new Assignment(
-        "status",
-        new MethodCall("reply." + method, ArgList(a->GetName()))));
+        kAndroidStatusVarName,
+        new MethodCall(StringPrintf("%s.%s", kReplyVarName,
+                                    method.c_str()),
+                       ArgList(a->GetName()))));
     b->AddStatement(GotoErrorOnBadStatus());
   }
 
@@ -366,9 +384,10 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
   //   2) We've only read status_t == OK and there was no exception in the
   //      response.
   // In both cases, we're free to set Status from the status_t and return.
-  b->AddLiteral("error:\n", false /* no semicolon */);
+  b->AddLiteral(StringPrintf("%s:\n", kErrorLabel), false /* no semicolon */);
   b->AddLiteral(
-      StringPrintf("%s.setFromStatusT(status)", kStatusVarName));
+      StringPrintf("%s.setFromStatusT(%s)", kStatusVarName,
+                   kAndroidStatusVarName));
   b->AddLiteral(StringPrintf("return %s", kStatusVarName));
 
   return unique_ptr<Declaration>(ret.release());
@@ -389,8 +408,9 @@ unique_ptr<Document> BuildClientSource(const TypeNamespace& types,
   const string i_name = ClassName(interface, ClassNames::INTERFACE);
   file_decls.push_back(unique_ptr<Declaration>{new ConstructorImpl{
       ClassName(interface, ClassNames::CLIENT),
-      ArgList{"const android::sp<android::IBinder>& impl"},
-      { "BpInterface<" + i_name + ">(impl)" }}});
+      ArgList{StringPrintf("const ::android::sp<::android::IBinder>& %s",
+                           kImplVarName)},
+      { "BpInterface<" + i_name + ">(" + kImplVarName + ")" }}});
 
   // Clients define a method per transaction.
   for (const auto& method : interface.GetMethods()) {
@@ -425,24 +445,25 @@ bool HandleServerTransaction(const TypeNamespace& types,
 
   // Check that the client is calling the correct interface.
   IfStatement* interface_check = new IfStatement(
-      new MethodCall("data.checkInterface", "this"),
+      new MethodCall(StringPrintf("%s.checkInterface",
+                                  kDataVarName), "this"),
       true /* invert the check */);
   b->AddStatement(interface_check);
   interface_check->OnTrue()->AddStatement(
-      new Assignment("status", "android::BAD_TYPE"));
+      new Assignment(kAndroidStatusVarName, "::android::BAD_TYPE"));
   interface_check->OnTrue()->AddLiteral("break");
 
   // Deserialize each "in" parameter to the transaction.
   for (const AidlArgument* a : method.GetInArguments()) {
     // Deserialization looks roughly like:
-    //     status = data.ReadInt32(&in_param_name);
-    //     if (status != android::OK) { break; }
+    //     _aidl_ret_status = _aidl_data.ReadInt32(&in_param_name);
+    //     if (_aidl_ret_status != ::android::OK) { break; }
     const Type* type = types.Find(a->GetType().GetName());
     string readMethod = type->ReadFromParcelMethod(a->GetType().IsArray());
 
     b->AddStatement(new Assignment{
-        "status",
-        new MethodCall{"data." + readMethod,
+        kAndroidStatusVarName,
+        new MethodCall{string(kDataVarName) + "." + readMethod,
                        "&" + BuildVarName(*a)}});
     b->AddStatement(BreakOnStatusNotOk());
   }
@@ -459,7 +480,8 @@ bool HandleServerTransaction(const TypeNamespace& types,
   // Write exceptions during transaction handling to parcel.
   if (!method.IsOneway()) {
     b->AddStatement(new Assignment(
-        "status", StringPrintf("%s.writeToParcel(reply)", kStatusVarName)));
+        kAndroidStatusVarName,
+        StringPrintf("%s.writeToParcel(%s)", kStatusVarName, kReplyVarName)));
     b->AddStatement(BreakOnStatusNotOk());
     IfStatement* exception_check = new IfStatement(
         new LiteralExpression(StringPrintf("!%s.isOk()", kStatusVarName)));
@@ -470,10 +492,10 @@ bool HandleServerTransaction(const TypeNamespace& types,
   // If we have a return value, write it first.
   if (return_type != types.VoidType()) {
     string writeMethod =
-        "reply->" +
+        string(kReplyVarName) + "->" +
         return_type->WriteToParcelMethod(method.GetType().IsArray());
     b->AddStatement(new Assignment{
-        "status", new MethodCall{writeMethod,
+        kAndroidStatusVarName, new MethodCall{writeMethod,
         ArgList{return_type->WriteCast(kReturnVarName)}}});
     b->AddStatement(BreakOnStatusNotOk());
   }
@@ -481,14 +503,14 @@ bool HandleServerTransaction(const TypeNamespace& types,
   // Write each out parameter to the reply parcel.
   for (const AidlArgument* a : method.GetOutArguments()) {
     // Serialization looks roughly like:
-    //     status = data.WriteInt32(out_param_name);
-    //     if (status != android::OK) { break; }
+    //     _aidl_ret_status = data.WriteInt32(out_param_name);
+    //     if (_aidl_ret_status != ::android::OK) { break; }
     const Type* type = types.Find(a->GetType().GetName());
     string writeMethod = type->WriteToParcelMethod(a->GetType().IsArray());
 
     b->AddStatement(new Assignment{
-        "status",
-        new MethodCall{"reply->" + writeMethod,
+        kAndroidStatusVarName,
+        new MethodCall{string(kReplyVarName) + "->" + writeMethod,
                        type->WriteCast(BuildVarName(*a))}});
     b->AddStatement(BreakOnStatusNotOk());
   }
@@ -507,18 +529,19 @@ unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
   };
   unique_ptr<MethodImpl> on_transact{new MethodImpl{
       kAndroidStatusLiteral, bn_name, "onTransact",
-      ArgList{{"uint32_t code",
-               StringPrintf("const %s& data", kAndroidParcelLiteral),
-               StringPrintf("%s* reply", kAndroidParcelLiteral),
-               "uint32_t flags"}}
+      ArgList{{StringPrintf("uint32_t %s", kCodeVarName),
+               StringPrintf("const %s& %s", kAndroidParcelLiteral,
+                            kDataVarName),
+               StringPrintf("%s* %s", kAndroidParcelLiteral, kReplyVarName),
+               StringPrintf("uint32_t %s", kFlagsVarName)}}
       }};
 
   // Declare the status_t variable
   on_transact->GetStatementBlock()->AddLiteral(
-      StringPrintf("%s status", kAndroidStatusLiteral));
+      StringPrintf("%s %s", kAndroidStatusLiteral, kAndroidStatusVarName));
 
   // Add the all important switch statement, but retain a pointer to it.
-  SwitchStatement* s = new SwitchStatement{"code"};
+  SwitchStatement* s = new SwitchStatement{kCodeVarName};
   on_transact->GetStatementBlock()->AddStatement(s);
 
   // The switch statement has a case statement for each transaction code.
@@ -532,21 +555,26 @@ unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
   // The switch statement has a default case which defers to the super class.
   // The superclass handles a few pre-defined transactions.
   StatementBlock* b = s->AddCase("");
-  b->AddLiteral(
-      "status = android::BBinder::onTransact(code, data, reply, flags)");
+  b->AddLiteral(StringPrintf(
+                "%s = ::android::BBinder::onTransact(%s, %s, "
+                "%s, %s)", kAndroidStatusVarName, kCodeVarName,
+                kDataVarName, kReplyVarName, kFlagsVarName));
 
   // If we saw a null reference, we can map that to an appropriate exception.
   IfStatement* null_check = new IfStatement(
-      new LiteralExpression("status == android::UNEXPECTED_NULL"));
+      new LiteralExpression(string(kAndroidStatusVarName) +
+                            " == ::android::UNEXPECTED_NULL"));
   on_transact->GetStatementBlock()->AddStatement(null_check);
   null_check->OnTrue()->AddStatement(new Assignment(
-      "status",
+      kAndroidStatusVarName,
       StringPrintf("%s::fromExceptionCode(%s::EX_NULL_POINTER)"
-                   ".writeToParcel(reply)",
-                   kBinderStatusLiteral, kBinderStatusLiteral)));
+                   ".writeToParcel(%s)",
+                   kBinderStatusLiteral, kBinderStatusLiteral,
+                   kReplyVarName)));
 
   // Finally, the server's onTransact method just returns a status code.
-  on_transact->GetStatementBlock()->AddLiteral("return status");
+  on_transact->GetStatementBlock()->AddLiteral(
+      StringPrintf("return %s", kAndroidStatusVarName));
 
   return unique_ptr<Document>{new CppSource{
       include_list,
@@ -582,7 +610,8 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
 
   unique_ptr<ConstructorDecl> constructor{new ConstructorDecl{
       bp_name,
-      ArgList{"const android::sp<android::IBinder>& impl"},
+      ArgList{StringPrintf("const ::android::sp<::android::IBinder>& %s",
+                           kImplVarName)},
       ConstructorDecl::IS_EXPLICIT
   }};
   unique_ptr<ConstructorDecl> destructor{new ConstructorDecl{
@@ -600,7 +629,7 @@ unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
 
   unique_ptr<ClassDecl> bp_class{
       new ClassDecl{bp_name,
-                    "android::BpInterface<" + i_name + ">",
+                    "::android::BpInterface<" + i_name + ">",
                     std::move(publics),
                     {}
       }};
@@ -621,10 +650,11 @@ unique_ptr<Document> BuildServerHeader(const TypeNamespace& /* types */,
 
   unique_ptr<Declaration> on_transact{new MethodDecl{
       kAndroidStatusLiteral, "onTransact",
-      ArgList{{"uint32_t code",
-               StringPrintf("const %s& data", kAndroidParcelLiteral),
-               StringPrintf("%s* reply", kAndroidParcelLiteral),
-               "uint32_t flags = 0"}},
+      ArgList{{StringPrintf("uint32_t %s", kCodeVarName),
+               StringPrintf("const %s& %s", kAndroidParcelLiteral,
+                            kDataVarName),
+               StringPrintf("%s* %s", kAndroidParcelLiteral, kReplyVarName),
+               StringPrintf("uint32_t %s = 0", kFlagsVarName)}},
       MethodDecl::IS_OVERRIDE
   }};
 
@@ -633,7 +663,7 @@ unique_ptr<Document> BuildServerHeader(const TypeNamespace& /* types */,
 
   unique_ptr<ClassDecl> bn_class{
       new ClassDecl{bn_name,
-                    "android::BnInterface<" + i_name + ">",
+                    "::android::BnInterface<" + i_name + ">",
                     std::move(publics),
                     {}
       }};
@@ -662,7 +692,7 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
 
   unique_ptr<ClassDecl> if_class{
       new ClassDecl{ClassName(interface, ClassNames::INTERFACE),
-                    "android::IInterface"}};
+                    "::android::IInterface"}};
   if_class->AddPublic(unique_ptr<Declaration>{new ConstructorDecl{
       "DECLARE_META_INTERFACE",
       ArgList{vector<string>{ClassName(interface, ClassNames::BASE)}}}});
@@ -673,7 +703,7 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
     if_class->AddPublic(BuildMethodDecl(*method, types, true));
     call_enum->AddValue(
         UpperCase(method->GetName()),
-        StringPrintf("android::IBinder::FIRST_CALL_TRANSACTION + %d",
+        StringPrintf("::android::IBinder::FIRST_CALL_TRANSACTION + %d",
                      method->GetId()));
   }
   if_class->AddPublic(std::move(call_enum));
