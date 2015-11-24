@@ -25,6 +25,10 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.util.Log;
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -470,6 +474,43 @@ public class TestServiceClient extends Activity {
         mLog.log("...service can manipulate parcelables.");
     }
 
+    private void checkFileDescriptorPassing(ITestService service)
+            throws TestFailException {
+        mLog.log("Checking that service can receive and return file descriptors...");
+        try {
+            FileOutputStream fileOutputStream =
+                    openFileOutput("test-dummy", Context.MODE_PRIVATE);
+
+            FileDescriptor descriptor = fileOutputStream.getFD();
+            FileDescriptor journeyed = service.RepeatFileDescriptor(descriptor);
+            fileOutputStream.close();
+
+            FileOutputStream journeyedStream = new FileOutputStream(journeyed);
+
+            String testData = "FrazzleSnazzleFlimFlamFlibbityGumboChops";
+            byte[] output = testData.getBytes();
+            journeyedStream.write(output);
+            journeyedStream.close();
+
+            FileInputStream fileInputStream = openFileInput("test-dummy");
+            byte[] input = new byte[output.length];
+            if (fileInputStream.read(input) != input.length) {
+                mLog.logAndThrow("Read short count from file");
+            }
+
+            if (!Arrays.equals(input, output)) {
+                mLog.logAndThrow("Read incorrect data");
+            }
+        } catch (RemoteException ex) {
+            mLog.log(ex.toString());
+            mLog.logAndThrow("Service failed to repeat a file descriptor.");
+        } catch (IOException ex) {
+            mLog.log(ex.toString());
+            mLog.logAndThrow("Exception while operating on temporary file");
+        }
+        mLog.log("...service can receive and return file descriptors.");
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -483,6 +524,7 @@ public class TestServiceClient extends Activity {
           checkBinderExchange(service);
           checkListReversal(service);
           checkParcelables(service);
+          checkFileDescriptorPassing(service);
           mLog.log(mSuccessSentinel);
         } catch (TestFailException e) {
             mLog.log(mFailureSentinel);
