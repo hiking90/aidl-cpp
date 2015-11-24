@@ -55,14 +55,12 @@ class JavaOptions final {
   bool auto_dep_file_{false};
   std::vector<std::string> files_to_preprocess_;
 
-  // TODO: Mock file IO and remove this (b/24816077)
-  std::string output_file_name_for_deps_test_;
-
  private:
   JavaOptions() = default;
 
   FRIEND_TEST(EndToEndTest, IExampleInterface);
   FRIEND_TEST(AidlTest, FailOnParcelable);
+  FRIEND_TEST(AidlTest, WritePreprocessedFile);
   DISALLOW_COPY_AND_ASSIGN(JavaOptions);
 };
 
