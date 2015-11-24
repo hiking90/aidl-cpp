@@ -154,24 +154,6 @@ TEST_F(AidlTest, PreferImportToPreprocessed) {
   EXPECT_EQ("one.IBar", type->QualifiedName());
 }
 
-TEST_F(AidlTest, WritePreprocessedFile) {
-  io_delegate_.SetFileContents("p/Outer.aidl",
-                               "package p; parcelable Outer.Inner;");
-  io_delegate_.SetFileContents("one/IBar.aidl", "package one; import p.Outer;"
-                                                "interface IBar {}");
-
-  JavaOptions options;
-  options.output_file_name_ = "preprocessed";
-  options.files_to_preprocess_.resize(2);
-  options.files_to_preprocess_[0] = "p/Outer.aidl";
-  options.files_to_preprocess_[1] = "one/IBar.aidl";
-  EXPECT_TRUE(::android::aidl::preprocess_aidl(options, io_delegate_));
-
-  string output;
-  EXPECT_TRUE(io_delegate_.GetWrittenContents("preprocessed", &output));
-  EXPECT_EQ("parcelable p.Outer.Inner;\ninterface one.IBar;\n", output);
-}
-
 TEST_F(AidlTest, RequireOuterClass) {
   io_delegate_.SetFileContents("p/Outer.aidl",
                                "package p; parcelable Outer.Inner;");

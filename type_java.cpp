@@ -796,27 +796,27 @@ const Type* JavaTypeNamespace::Find(const char* package,
   return Find(s);
 }
 
-bool JavaTypeNamespace::AddParcelableType(const AidlParcelable& p,
+bool JavaTypeNamespace::AddParcelableType(const AidlParcelable* p,
                                           const std::string& filename) {
   Type* type =
-      new UserDataType(this, p.GetPackage(), p.GetName(), false,
-                       true, filename, p.GetLine());
+      new UserDataType(this, p->GetPackage(), p->GetName(), false,
+                       true, filename, p->GetLine());
   return Add(type);
 }
 
-bool JavaTypeNamespace::AddBinderType(const AidlInterface& b,
+bool JavaTypeNamespace::AddBinderType(const AidlInterface* b,
                                       const std::string& filename) {
   // for interfaces, add the stub, proxy, and interface types.
   Type* type =
-      new InterfaceType(this, b.GetPackage(), b.GetName(), false,
-                        b.IsOneway(), filename, b.GetLine());
-  Type* stub = new Type(this, b.GetPackage(),
-                        b.GetName() + ".Stub", ValidatableType::KIND_GENERATED,
-                        false, false, filename, b.GetLine());
-  Type* proxy = new Type(this, b.GetPackage(),
-                         b.GetName() + ".Stub.Proxy",
+      new InterfaceType(this, b->GetPackage(), b->GetName(), false,
+                        b->IsOneway(), filename, b->GetLine());
+  Type* stub = new Type(this, b->GetPackage(),
+                        b->GetName() + ".Stub", ValidatableType::KIND_GENERATED,
+                        false, false, filename, b->GetLine());
+  Type* proxy = new Type(this, b->GetPackage(),
+                         b->GetName() + ".Stub.Proxy",
                          ValidatableType::KIND_GENERATED,
-                         false, false, filename, b.GetLine());
+                         false, false, filename, b->GetLine());
 
   bool success = true;
   success &= Add(type);

@@ -37,9 +37,7 @@ int main(int argc, char** argv) {
     case JavaOptions::COMPILE_AIDL_TO_JAVA:
       return android::aidl::compile_aidl_to_java(*options, io_delegate);
     case JavaOptions::PREPROCESS_AIDL:
-      if (android::aidl::preprocess_aidl(*options, io_delegate))
-        return 0;
-      return 1;
+      return android::aidl::preprocess_aidl(*options, io_delegate);
   }
   std::cerr << "aidl: internal error" << std::endl;
   return 1;

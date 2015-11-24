@@ -72,9 +72,9 @@ class TypeNamespace {
   virtual void Init() = 0;
 
   // Load this TypeNamespace with user defined types.
-  virtual bool AddParcelableType(const AidlParcelable& p,
+  virtual bool AddParcelableType(const AidlParcelable* p,
                                  const std::string& filename) = 0;
-  virtual bool AddBinderType(const AidlInterface& b,
+  virtual bool AddBinderType(const AidlInterface* b,
                              const std::string& filename) = 0;
   // We dynamically create container types as we discover them in the parse
   // tree.  Returns false if the contained types cannot be canonicalized.
