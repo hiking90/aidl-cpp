@@ -87,6 +87,10 @@ string AidlArgument::ToString() const {
   return ret;
 }
 
+AidlConstant::AidlConstant(std::string name, int32_t value)
+    : name_(name),
+      value_(value) {}
+
 AidlMethod::AidlMethod(bool oneway, AidlType* type, std::string name,
                        std::vector<std::unique_ptr<AidlArgument>>* args,
                        unsigned line, const std::string& comments, int id)
@@ -143,15 +147,28 @@ std::string AidlParcelable::GetCanonicalName() const {
 
 AidlInterface::AidlInterface(const std::string& name, unsigned line,
                              const std::string& comments, bool oneway,
-                             std::vector<std::unique_ptr<AidlMethod>>* methods,
+                             std::vector<std::unique_ptr<AidlMember>>* members,
                              const std::vector<std::string>& package)
     : name_(name),
       comments_(comments),
       line_(line),
       oneway_(oneway),
-      methods_(std::move(*methods)),
       package_(package) {
-  delete methods;
+  for (auto& member : *members) {
+    AidlMember* local = member.release();
+    AidlMethod* method = local->AsMethod();
+    AidlConstant* constant = local->AsConstant();
+
+    if (method) {
+      methods_.emplace_back(method);
+    } else if (constant) {
+      constants_.emplace_back(constant);
+    } else {
+      LOG(FATAL) << "Member is neither method nor constant!";
+    }
+  }
+
+  delete members;
 }
 
 std::string AidlInterface::GetPackage() const {

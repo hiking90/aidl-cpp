@@ -87,7 +87,38 @@ class AidlArgument : public AidlNode {
   DISALLOW_COPY_AND_ASSIGN(AidlArgument);
 };
 
-class AidlMethod {
+class AidlMethod;
+class AidlConstant;
+class AidlMember : public AidlNode {
+ public:
+  AidlMember() = default;
+  virtual ~AidlMember() = default;
+
+  virtual AidlMethod* AsMethod() { return nullptr; }
+  virtual AidlConstant* AsConstant() { return nullptr; }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AidlMember);
+};
+
+class AidlConstant : public AidlMember {
+ public:
+  AidlConstant(std::string name, int32_t value);
+  virtual ~AidlConstant() = default;
+
+  const std::string& GetName() const { return name_; }
+  int GetValue() const { return value_; }
+
+  AidlConstant* AsConstant() override { return this; }
+
+ private:
+  std::string name_;
+  int32_t value_;
+
+  DISALLOW_COPY_AND_ASSIGN(AidlConstant);
+};
+
+class AidlMethod : public AidlMember {
  public:
   AidlMethod(bool oneway, AidlType* type, std::string name,
              std::vector<std::unique_ptr<AidlArgument>>* args,
@@ -96,6 +127,8 @@ class AidlMethod {
              std::vector<std::unique_ptr<AidlArgument>>* args,
              unsigned line, const std::string& comments, int id);
   virtual ~AidlMethod() = default;
+
+  AidlMethod* AsMethod() override { return this; }
 
   const std::string& GetComments() const { return comments_; }
   const AidlType& GetType() const { return *type_; }
@@ -205,7 +238,7 @@ class AidlInterface : public AidlNode {
  public:
   AidlInterface(const std::string& name, unsigned line,
                 const std::string& comments, bool oneway_,
-                std::vector<std::unique_ptr<AidlMethod>>* methods,
+                std::vector<std::unique_ptr<AidlMember>>* members,
                 const std::vector<std::string>& package);
   virtual ~AidlInterface() = default;
 
@@ -215,6 +248,8 @@ class AidlInterface : public AidlNode {
   bool IsOneway() const { return oneway_; }
   const std::vector<std::unique_ptr<AidlMethod>>& GetMethods() const
       { return methods_; }
+  const std::vector<std::unique_ptr<AidlConstant>>& GetConstants() const
+      { return constants_; }
   std::string GetPackage() const;
   std::string GetCanonicalName() const;
   const std::vector<std::string>& GetSplitPackage() const { return package_; }
@@ -225,6 +260,7 @@ class AidlInterface : public AidlNode {
   unsigned line_;
   bool oneway_;
   std::vector<std::unique_ptr<AidlMethod>> methods_;
+  std::vector<std::unique_ptr<AidlConstant>> constants_;
   std::vector<std::string> package_;
 
   DISALLOW_COPY_AND_ASSIGN(AidlInterface);

@@ -262,6 +262,16 @@ generate_read_from_parcel(const Type* t, StatementBlock* addTo, Variable* v,
 
 
 static void
+generate_constant(const AidlConstant& constant, Class* interface)
+{
+    Constant* decl = new Constant;
+        decl->name = constant.GetName();
+        decl->value = constant.GetValue();
+
+    interface->elements.push_back(decl);
+}
+
+static void
 generate_method(const AidlMethod& method, Class* interface,
                 StubClass* stubClass, ProxyClass* proxyClass, int index,
                 JavaTypeNamespace* types)
@@ -543,12 +553,15 @@ generate_binder_interface_class(const AidlInterface* iface,
     // stub and proxy support for getInterfaceDescriptor()
     generate_interface_descriptors(stub, proxy, types);
 
+    // all the declared constants of the interface
+    for (const auto& item : iface->GetConstants()) {
+        generate_constant(*item, interface);
+    }
+
     // all the declared methods of the interface
-    int index = 0;
     for (const auto& item : iface->GetMethods()) {
         generate_method(*item, interface, stub, proxy,
                         item->GetId(), types);
-        index++;
     }
 
     return interface;

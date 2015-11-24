@@ -72,7 +72,15 @@ void ClassDecl::AddPrivate(std::unique_ptr<Declaration> member) {
   private_members_.push_back(std::move(member));
 }
 
-Enum::EnumField::EnumField(const string& k, const string&v)
+ConstDecl::ConstDecl(const std::string& name, int value)
+    : name_(name),
+      value_(value) {}
+
+void ConstDecl::Write(CodeWriter* to) const {
+  to->Write("static constexpr int32_t %s = %d;\n", name_.c_str(), value_);
+}
+
+Enum::EnumField::EnumField(const string& k, const string& v)
     : key(k),
       value(v) {}
 
