@@ -136,11 +136,12 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libaidl-integration-test
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES
 LOCAL_CFLAGS := $(aidl_integration_test_cflags)
-LOCAL_SHARED_LIBRARIES := $(aidl_integration_test_shared_libs)
+LOCAL_SHARED_LIBRARIES := $(aidl_integration_test_shared_libs) libbase
 LOCAL_AIDL_INCLUDES := system/tools/aidl/tests/
 LOCAL_SRC_FILES := \
     tests/android/aidl/tests/ITestService.aidl \
-    tests/android/aidl/tests/INamedCallback.aidl
+    tests/android/aidl/tests/INamedCallback.aidl \
+    tests/simple_parcelable.cpp
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -186,6 +187,7 @@ LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/tests/java_app/resources
 LOCAL_SRC_FILES := \
     tests/android/aidl/tests/ITestService.aidl \
     tests/android/aidl/tests/INamedCallback.aidl \
+    tests/java_app/src/android/aidl/tests/SimpleParcelable.java \
     tests/java_app/src/android/aidl/tests/TestServiceClient.java
 LOCAL_AIDL_INCLUDES := system/tools/aidl/tests/
 include $(BUILD_PACKAGE)
