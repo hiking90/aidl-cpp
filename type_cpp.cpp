@@ -110,6 +110,26 @@ class BinderType : public Type {
   }
 };
 
+class ParcelableType : public Type {
+ public:
+  ParcelableType(const AidlParcelable& parcelable,
+                 const std::string& src_file_name)
+      : Type(ValidatableType::KIND_PARCELABLE,
+             parcelable.GetPackage(), parcelable.GetName(),
+             parcelable.GetCppHeader(), GetCppName(parcelable),
+             "readParcelable", "writeParcelable",
+             "readParcelableVector", "writeParcelableVector",
+             src_file_name, parcelable.GetLine()) {}
+  virtual ~ParcelableType() = default;
+  bool CanBeOutParameter() const override { return true; }
+
+ private:
+  static string GetCppName(const AidlParcelable& parcelable) {
+    return Join(parcelable.GetSplitPackage(), "::") +
+        "::" + parcelable.GetName();
+  }
+};
+
 class StringListType : public Type {
  public:
   StringListType()
@@ -262,10 +282,9 @@ void TypeNamespace::Init() {
   Add(void_type_);
 }
 
-bool TypeNamespace::AddParcelableType(const AidlParcelable* /* p */,
-                                      const string& /* filename */) {
-  // TODO Support parcelables b/23600712
-  LOG(ERROR) << "Passing parcelables in unimplemented in C++ generation.";
+bool TypeNamespace::AddParcelableType(const AidlParcelable* p,
+                                      const string& filename) {
+  Add(new ParcelableType(*p, filename));
   return true;
 }
 
