@@ -17,6 +17,7 @@
 package android.aidl.tests;
 
 import android.aidl.tests.INamedCallback;
+import android.aidl.tests.SimpleParcelable;
 
 interface ITestService {
   // Test that primitives work as parameters and return types.
@@ -29,6 +30,9 @@ interface ITestService {
   double RepeatDouble(double token);
   String RepeatString(String token);
 
+  SimpleParcelable RepeatParcelable(in SimpleParcelable input,
+                                    out SimpleParcelable repeat);
+
   // Test that arrays work as parameters and return types.
   boolean[] ReverseBoolean(in boolean[] input, out boolean[] repeated);
   byte[]    ReverseByte   (in byte[]    input, out byte[]    repeated);
@@ -38,6 +42,9 @@ interface ITestService {
   float[]   ReverseFloat  (in float[]   input, out float[]   repeated);
   double[]  ReverseDouble (in double[]  input, out double[]  repeated);
   String[]  ReverseString (in String[]  input, out String[]  repeated);
+
+  SimpleParcelable[]  ReverseParcelables (in SimpleParcelable[]  input,
+                                          out SimpleParcelable[]  repeated);
 
   // Test that clients can send and receive Binders.
   INamedCallback GetOtherTestService(String name);

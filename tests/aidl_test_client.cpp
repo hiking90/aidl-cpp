@@ -40,6 +40,7 @@ using android::binder::Status;
 // generated
 using android::aidl::tests::ITestService;
 using android::aidl::tests::INamedCallback;
+using android::aidl::tests::SimpleParcelable;
 
 using std::cerr;
 using std::cout;
@@ -170,6 +171,41 @@ bool ConfirmReverseLists(const sp<ITestService>& s) {
   return true;
 }
 
+bool ConfirmParcelables(const sp<ITestService>& s) {
+  cout << "Confirming passing and returning Parcelables works." << endl;
+
+  SimpleParcelable input("Booya", 42);
+  SimpleParcelable out_param, returned;
+  Status status = s->RepeatParcelable(input, &out_param, &returned);
+  if (!status.isOk()) {
+    cout << "Binder call failed." << endl;
+    return false;
+  }
+  if (input != out_param || input != returned) {
+    cout << "Failed to repeat parcelables." << endl;
+    return false;
+  }
+
+  cout << "Attempting to reverse an array of parcelables." << endl;
+  const vector<SimpleParcelable> original{SimpleParcelable("first", 0),
+                                          SimpleParcelable("second", 1),
+                                          SimpleParcelable("third", 2)};
+  vector<SimpleParcelable> repeated;
+  vector<SimpleParcelable> reversed;
+  status = s->ReverseParcelables(original, &repeated, &reversed);
+  if (!status.isOk()) {
+    cout << "Binder call failed." << endl;
+    return false;
+  }
+  std::reverse(reversed.begin(), reversed.end());
+  if (repeated != original || reversed != original) {
+    cout << "Failed to reverse an array of parcelables." << endl;
+    return false;
+  }
+
+  return true;
+}
+
 bool ConfirmReverseBinderLists(const sp<ITestService>& s) {
   Status status;
   cout << "Confirming passing and returning List<T> works with binders." << endl;
@@ -260,6 +296,8 @@ int main(int /* argc */, char * /* argv */ []) {
   if (!ConfirmReverseArrays(service)) return 1;
 
   if (!ConfirmReverseLists(service)) return 1;
+
+  if (!ConfirmParcelables(service)) return 1;
 
   if (!ConfirmReverseBinderLists(service)) return 1;
 
