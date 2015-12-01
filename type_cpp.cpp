@@ -282,15 +282,15 @@ void TypeNamespace::Init() {
   Add(void_type_);
 }
 
-bool TypeNamespace::AddParcelableType(const AidlParcelable* p,
+bool TypeNamespace::AddParcelableType(const AidlParcelable& p,
                                       const string& filename) {
-  Add(new ParcelableType(*p, filename));
+  Add(new ParcelableType(p, filename));
   return true;
 }
 
-bool TypeNamespace::AddBinderType(const AidlInterface* b,
+bool TypeNamespace::AddBinderType(const AidlInterface& b,
                                   const string& file_name) {
-  Add(new BinderType(*b, file_name));
+  Add(new BinderType(b, file_name));
   return true;
 }
 

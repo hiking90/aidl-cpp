@@ -52,11 +52,7 @@ generate_java(const string& filename, const string& originalSrc,
                 AidlInterface* iface, JavaTypeNamespace* types,
                 const IoDelegate& io_delegate)
 {
-    Class* cl;
-
-    if (iface->item_type == INTERFACE_TYPE_BINDER) {
-        cl = generate_binder_interface_class(iface, types);
-    }
+    Class* cl = generate_binder_interface_class(iface, types);
 
     Document* document = new Document;
         document->comment = "";
