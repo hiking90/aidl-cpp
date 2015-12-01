@@ -48,6 +48,8 @@ interface IComplexTypeInterface {
   IFooType TakesABinder(IFooType f);
   List<String> StringListMethod(in java.util.List<String> input, out List<String> output);
   List<IBinder> BinderListMethod(in java.util.List<IBinder> input, out List<IBinder> output);
+  FileDescriptor TakesAFileDescriptor(in FileDescriptor f);
+  FileDescriptor[] TakesAFileDescriptorArray(in FileDescriptor[] f);
 })";
 
 const char kExpectedComplexTypeClientHeaderOutput[] =
@@ -72,6 +74,8 @@ android::binder::Status Piff(int32_t times) override;
 android::binder::Status TakesABinder(const android::sp<::foo::IFooType>& f, android::sp<::foo::IFooType>* _aidl_return) override;
 android::binder::Status StringListMethod(const std::vector<android::String16>& input, std::vector<android::String16>* output, std::vector<android::String16>* _aidl_return) override;
 android::binder::Status BinderListMethod(const std::vector<android::sp<::android::IBinder>>& input, std::vector<android::sp<::android::IBinder>>* output, std::vector<android::sp<::android::IBinder>>* _aidl_return) override;
+android::binder::Status TakesAFileDescriptor(const ::ScopedFd& f, ::ScopedFd* _aidl_return) override;
+android::binder::Status TakesAFileDescriptorArray(const std::vector<::ScopedFd>& f, std::vector<::ScopedFd>* _aidl_return) override;
 };  // class BpComplexTypeInterface
 
 }  // namespace os
@@ -266,6 +270,72 @@ _aidl_status.setFromStatusT(status);
 return _aidl_status;
 }
 
+android::binder::Status BpComplexTypeInterface::TakesAFileDescriptor(const ::ScopedFd& f, ::ScopedFd* _aidl_return) {
+android::Parcel data;
+android::Parcel reply;
+android::status_t status;
+android::binder::Status _aidl_status;
+status = data.writeInterfaceToken(getInterfaceDescriptor());
+if (((status) != (android::OK))) {
+goto error;
+}
+status = data.writeUniqueFileDescriptor(f);
+if (((status) != (android::OK))) {
+goto error;
+}
+status = remote()->transact(IComplexTypeInterface::TAKESAFILEDESCRIPTOR, data, &reply);
+if (((status) != (android::OK))) {
+goto error;
+}
+status = _aidl_status.readFromParcel(reply);
+if (((status) != (android::OK))) {
+goto error;
+}
+if (!_aidl_status.isOk()) {
+return _aidl_status;
+}
+status = reply.readUniqueFileDescriptor(_aidl_return);
+if (((status) != (android::OK))) {
+goto error;
+}
+error:
+_aidl_status.setFromStatusT(status);
+return _aidl_status;
+}
+
+android::binder::Status BpComplexTypeInterface::TakesAFileDescriptorArray(const std::vector<::ScopedFd>& f, std::vector<::ScopedFd>* _aidl_return) {
+android::Parcel data;
+android::Parcel reply;
+android::status_t status;
+android::binder::Status _aidl_status;
+status = data.writeInterfaceToken(getInterfaceDescriptor());
+if (((status) != (android::OK))) {
+goto error;
+}
+status = data.writeUniqueFileDescriptorVector(f);
+if (((status) != (android::OK))) {
+goto error;
+}
+status = remote()->transact(IComplexTypeInterface::TAKESAFILEDESCRIPTORARRAY, data, &reply);
+if (((status) != (android::OK))) {
+goto error;
+}
+status = _aidl_status.readFromParcel(reply);
+if (((status) != (android::OK))) {
+goto error;
+}
+if (!_aidl_status.isOk()) {
+return _aidl_status;
+}
+status = reply.readUniqueFileDescriptorVector(_aidl_return);
+if (((status) != (android::OK))) {
+goto error;
+}
+error:
+_aidl_status.setFromStatusT(status);
+return _aidl_status;
+}
+
 }  // namespace os
 
 }  // namespace android
@@ -446,6 +516,58 @@ break;
 }
 }
 break;
+case Call::TAKESAFILEDESCRIPTOR:
+{
+::ScopedFd in_f;
+::ScopedFd _aidl_return;
+if (!(data.checkInterface(this))) {
+status = android::BAD_TYPE;
+break;
+}
+status = data.readUniqueFileDescriptor(&in_f);
+if (((status) != (android::OK))) {
+break;
+}
+android::binder::Status _aidl_status(TakesAFileDescriptor(in_f, &_aidl_return));
+status = _aidl_status.writeToParcel(reply);
+if (((status) != (android::OK))) {
+break;
+}
+if (!_aidl_status.isOk()) {
+break;
+}
+status = reply->writeUniqueFileDescriptor(_aidl_return);
+if (((status) != (android::OK))) {
+break;
+}
+}
+break;
+case Call::TAKESAFILEDESCRIPTORARRAY:
+{
+std::vector<::ScopedFd> in_f;
+std::vector<::ScopedFd> _aidl_return;
+if (!(data.checkInterface(this))) {
+status = android::BAD_TYPE;
+break;
+}
+status = data.readUniqueFileDescriptorVector(&in_f);
+if (((status) != (android::OK))) {
+break;
+}
+android::binder::Status _aidl_status(TakesAFileDescriptorArray(in_f, &_aidl_return));
+status = _aidl_status.writeToParcel(reply);
+if (((status) != (android::OK))) {
+break;
+}
+if (!_aidl_status.isOk()) {
+break;
+}
+status = reply->writeUniqueFileDescriptorVector(_aidl_return);
+if (((status) != (android::OK))) {
+break;
+}
+}
+break;
 default:
 {
 status = android::BBinder::onTransact(code, data, reply, flags);
@@ -472,6 +594,7 @@ R"(#ifndef AIDL_GENERATED_ANDROID_OS_I_COMPLEX_TYPE_INTERFACE_H_
 #include <binder/Status.h>
 #include <cstdint>
 #include <foo/IFooType.h>
+#include <nativehelper/ScopedFd.h>
 #include <utils/String16.h>
 #include <utils/StrongPointer.h>
 #include <vector>
@@ -488,12 +611,16 @@ virtual android::binder::Status Piff(int32_t times) = 0;
 virtual android::binder::Status TakesABinder(const android::sp<::foo::IFooType>& f, android::sp<::foo::IFooType>* _aidl_return) = 0;
 virtual android::binder::Status StringListMethod(const std::vector<android::String16>& input, std::vector<android::String16>* output, std::vector<android::String16>* _aidl_return) = 0;
 virtual android::binder::Status BinderListMethod(const std::vector<android::sp<::android::IBinder>>& input, std::vector<android::sp<::android::IBinder>>* output, std::vector<android::sp<::android::IBinder>>* _aidl_return) = 0;
+virtual android::binder::Status TakesAFileDescriptor(const ::ScopedFd& f, ::ScopedFd* _aidl_return) = 0;
+virtual android::binder::Status TakesAFileDescriptorArray(const std::vector<::ScopedFd>& f, std::vector<::ScopedFd>* _aidl_return) = 0;
 enum Call {
   SEND = android::IBinder::FIRST_CALL_TRANSACTION + 0,
   PIFF = android::IBinder::FIRST_CALL_TRANSACTION + 1,
   TAKESABINDER = android::IBinder::FIRST_CALL_TRANSACTION + 2,
   STRINGLISTMETHOD = android::IBinder::FIRST_CALL_TRANSACTION + 3,
   BINDERLISTMETHOD = android::IBinder::FIRST_CALL_TRANSACTION + 4,
+  TAKESAFILEDESCRIPTOR = android::IBinder::FIRST_CALL_TRANSACTION + 5,
+  TAKESAFILEDESCRIPTORARRAY = android::IBinder::FIRST_CALL_TRANSACTION + 6,
 };
 };  // class IComplexTypeInterface
 

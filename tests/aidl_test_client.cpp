@@ -17,6 +17,11 @@
 #include <iostream>
 #include <vector>
 
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <nativehelper/ScopedFd.h>
 #include <binder/IServiceManager.h>
 #include <utils/String8.h>
 #include <utils/String16.h>
@@ -45,6 +50,7 @@ using android::aidl::tests::SimpleParcelable;
 using std::cerr;
 using std::cout;
 using std::endl;
+using std::string;
 using std::vector;
 
 namespace {
@@ -284,6 +290,123 @@ bool ConfirmReverseBinderLists(const sp<ITestService>& s) {
 
   return true;
 }
+
+#define FdByName(_fd) #_fd, _fd
+
+bool DoWrite(string name, const ScopedFd& fd, const string& buf) {
+  int wrote;
+
+  while ((wrote = write(fd.get(), buf.data(), buf.size())) < 0 && errno == EINTR);
+
+  if (wrote == (signed)buf.size()) {
+    return true;
+  }
+
+  if (wrote < 0) {
+    cerr << "Error writing to file descriptor '" << name << "': "
+        << strerror(errno) << endl;
+  } else {
+    cerr << "File descriptor '" << name << "'accepted short data." << endl;
+  }
+
+  return false;
+}
+
+bool DoRead(string name, const ScopedFd& fd, const string& expected) {
+  size_t length = expected.size();
+  int got;
+  string buf;
+  buf.resize(length);
+
+  while ((got = read(fd.get(), &buf[0], length)) < 0 && errno == EINTR);
+
+  if (got < 0) {
+    cerr << "Error reading from '" << name << "': " << strerror(errno) << endl;
+    return false;
+  }
+
+  if (buf != expected) {
+    cerr << "Expected '" << expected << "' got '" << buf << "'" << endl;
+    return false;
+  }
+
+  return true;
+}
+
+bool DoPipe(ScopedFd* read_side, ScopedFd* write_side) {
+  int fds[2];
+  ScopedFd return_fd;
+
+  if (pipe(fds)) {
+    cout << "Error creating pipes: " << strerror(errno) << endl;
+    return false;
+  }
+
+  read_side->reset(fds[0]);
+  write_side->reset(fds[1]);
+  return true;
+}
+
+bool ConfirmFileDescriptors(const sp<ITestService>& s) {
+  Status status;
+  cout << "Confirming passing and returning file descriptors works." << endl;
+
+  ScopedFd return_fd;
+  ScopedFd read_fd;
+  ScopedFd write_fd;
+
+  if (!DoPipe(&read_fd, &write_fd)) {
+    return false;
+  }
+
+  status = s->RepeatFileDescriptor(write_fd, &return_fd);
+
+  if (!status.isOk()) {
+    cerr << "Could not repeat file descriptors." << endl;
+    return false;
+  }
+
+  /* A note on some of the spookier stuff going on here: IIUC writes to pipes
+   * should be atomic and non-blocking so long as the total size doesn't exceed
+   * PIPE_BUF. We thus play a bit fast and loose with failure modes here.
+   */
+
+  bool ret =
+      DoWrite(FdByName(return_fd), "ReturnString") &&
+      DoRead(FdByName(read_fd), "ReturnString");
+
+  return ret;
+}
+
+bool ConfirmFileDescriptorArrays(const sp<ITestService>& s) {
+  Status status;
+  cout << "Confirming passing and returning file descriptor arrays works." << endl;
+
+  vector<ScopedFd> array;
+  array.resize(2);
+
+  if (!DoPipe(&array[0], &array[1])) {
+    return false;
+  }
+
+  vector<ScopedFd> repeated;
+  vector<ScopedFd> reversed;
+
+  status = s->ReverseFileDescriptorArray(array, &repeated, &reversed);
+
+  if (!status.isOk()) {
+    cerr << "Could not reverse file descriptor array." << endl;
+    return false;
+  }
+
+  bool ret =
+      DoWrite(FdByName(array[1]), "First") &&
+      DoWrite(FdByName(repeated[1]), "Second") &&
+      DoWrite(FdByName(reversed[0]), "Third") &&
+      DoRead(FdByName(reversed[1]), "FirstSecondThird");
+
+  return ret;
+}
 }  // namespace
 
 int main(int /* argc */, char * /* argv */ []) {
@@ -300,6 +423,10 @@ int main(int /* argc */, char * /* argv */ []) {
   if (!ConfirmParcelables(service)) return 1;
 
   if (!ConfirmReverseBinderLists(service)) return 1;
+
+  if (!ConfirmFileDescriptors(service)) return 1;
+
+  if (!ConfirmFileDescriptorArrays(service)) return 1;
 
   return 0;
 }

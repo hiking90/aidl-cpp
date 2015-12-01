@@ -113,6 +113,25 @@ class BasicType : public Type {
   string m_readArrayParcel;
 };
 
+class FileDescriptorType : public Type {
+ public:
+  FileDescriptorType(const JavaTypeNamespace* types);
+
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
+
+  bool CanBeArray() const override { return true; }
+
+  void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                          int flags) const override;
+  void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
+                             Variable* parcel, Variable** cl) const override;
+  void ReadArrayFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                           Variable** cl) const override;
+};
+
 class BooleanType : public Type {
  public:
   BooleanType(const JavaTypeNamespace* types);
