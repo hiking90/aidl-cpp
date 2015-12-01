@@ -77,40 +77,40 @@ namespace android {
 
 namespace os {
 
-BpPingResponder::BpPingResponder(const android::sp<android::IBinder>& impl)
-    : BpInterface<IPingResponder>(impl){
+BpPingResponder::BpPingResponder(const ::android::sp<::android::IBinder>& _aidl_impl)
+    : BpInterface<IPingResponder>(_aidl_impl){
 }
 
-android::binder::Status BpPingResponder::Ping(int32_t token, int32_t* _aidl_return) {
-android::Parcel data;
-android::Parcel reply;
-android::status_t status;
-android::binder::Status _aidl_status;
-status = data.writeInterfaceToken(getInterfaceDescriptor());
-if (((status) != (android::OK))) {
-goto error;
+::android::binder::Status BpPingResponder::Ping(int32_t token, int32_t* _aidl_return) {
+::android::Parcel _aidl_data;
+::android::Parcel _aidl_reply;
+::android::status_t _aidl_ret_status;
+::android::binder::Status _aidl_status;
+_aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = data.writeInt32(token);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_data.writeInt32(token);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = remote()->transact(IPingResponder::PING, data, &reply);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = remote()->transact(IPingResponder::PING, _aidl_data, &_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = _aidl_status.readFromParcel(reply);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_status.readFromParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
 if (!_aidl_status.isOk()) {
 return _aidl_status;
 }
-status = reply.readInt32(_aidl_return);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_reply.readInt32(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-error:
-_aidl_status.setFromStatusT(status);
+_aidl_error:
+_aidl_status.setFromStatusT(_aidl_ret_status);
 return _aidl_status;
 }
 
@@ -124,45 +124,45 @@ namespace android {
 
 namespace os {
 
-android::status_t BnPingResponder::onTransact(uint32_t code, const android::Parcel& data, android::Parcel* reply, uint32_t flags) {
-android::status_t status;
-switch (code) {
+::android::status_t BnPingResponder::onTransact(uint32_t _aidl_code, const ::android::Parcel& _aidl_data, ::android::Parcel* _aidl_reply, uint32_t _aidl_flags) {
+::android::status_t _aidl_ret_status;
+switch (_aidl_code) {
 case Call::PING:
 {
 int32_t in_token;
 int32_t _aidl_return;
-if (!(data.checkInterface(this))) {
-status = android::BAD_TYPE;
+if (!(_aidl_data.checkInterface(this))) {
+_aidl_ret_status = ::android::BAD_TYPE;
 break;
 }
-status = data.readInt32(&in_token);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_data.readInt32(&in_token);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
-android::binder::Status _aidl_status(Ping(in_token, &_aidl_return));
-status = _aidl_status.writeToParcel(reply);
-if (((status) != (android::OK))) {
+::android::binder::Status _aidl_status(Ping(in_token, &_aidl_return));
+_aidl_ret_status = _aidl_status.writeToParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
 if (!_aidl_status.isOk()) {
 break;
 }
-status = reply->writeInt32(_aidl_return);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_reply->writeInt32(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
 }
 break;
 default:
 {
-status = android::BBinder::onTransact(code, data, reply, flags);
+_aidl_ret_status = ::android::BBinder::onTransact(_aidl_code, _aidl_data, _aidl_reply, _aidl_flags);
 }
 break;
 }
-if (status == android::UNEXPECTED_NULL) {
-status = android::binder::Status::fromExceptionCode(android::binder::Status::EX_NULL_POINTER).writeToParcel(reply);
+if (_aidl_ret_status == ::android::UNEXPECTED_NULL) {
+_aidl_ret_status = ::android::binder::Status::fromExceptionCode(::android::binder::Status::EX_NULL_POINTER).writeToParcel(_aidl_reply);
 }
-return status;
+return _aidl_ret_status;
 }
 
 }  // namespace os
@@ -184,12 +184,12 @@ namespace android {
 
 namespace os {
 
-class IPingResponder : public android::IInterface {
+class IPingResponder : public ::android::IInterface {
 public:
 DECLARE_META_INTERFACE(PingResponder);
-virtual android::binder::Status Ping(int32_t token, int32_t* _aidl_return) = 0;
+virtual ::android::binder::Status Ping(int32_t token, int32_t* _aidl_return) = 0;
 enum Call {
-  PING = android::IBinder::FIRST_CALL_TRANSACTION + 0,
+  PING = ::android::IBinder::FIRST_CALL_TRANSACTION + 0,
 };
 };  // class IPingResponder
 
@@ -212,11 +212,11 @@ namespace android {
 
 namespace os {
 
-class BpPingResponder : public android::BpInterface<IPingResponder> {
+class BpPingResponder : public ::android::BpInterface<IPingResponder> {
 public:
-explicit BpPingResponder(const android::sp<android::IBinder>& impl);
+explicit BpPingResponder(const ::android::sp<::android::IBinder>& _aidl_impl);
 virtual ~BpPingResponder() = default;
-android::binder::Status Ping(int32_t token, int32_t* _aidl_return) override;
+::android::binder::Status Ping(int32_t token, int32_t* _aidl_return) override;
 };  // class BpPingResponder
 
 }  // namespace os
@@ -236,9 +236,9 @@ namespace android {
 
 namespace os {
 
-class BnPingResponder : public android::BnInterface<IPingResponder> {
+class BnPingResponder : public ::android::BnInterface<IPingResponder> {
 public:
-android::status_t onTransact(uint32_t code, const android::Parcel& data, android::Parcel* reply, uint32_t flags = 0) override;
+::android::status_t onTransact(uint32_t _aidl_code, const ::android::Parcel& _aidl_data, ::android::Parcel* _aidl_reply, uint32_t _aidl_flags = 0) override;
 };  // class BnPingResponder
 
 }  // namespace os

@@ -92,7 +92,7 @@ class BinderType : public Type {
  private:
   static string GetCppName(const AidlInterface& interface) {
     vector<string> name = interface.GetSplitPackage();
-    string ret = "android::sp<";
+    string ret = "::android::sp<";
 
     name.push_back(interface.GetName());
 
@@ -134,7 +134,7 @@ class StringListType : public Type {
  public:
   StringListType()
       : Type(ValidatableType::KIND_BUILT_IN, "java.util", "List<String>",
-            "utils/String16.h", "std::vector<android::String16>",
+            "utils/String16.h", "::std::vector<::android::String16>",
              "readString16Vector", "writeString16Vector") {}
   virtual ~StringListType() = default;
   bool CanBeOutParameter() const override { return true; }
@@ -157,7 +157,7 @@ class BinderListType : public Type {
   BinderListType()
       : Type(ValidatableType::KIND_BUILT_IN, "java.util",
              "List<android.os.IBinder>", "binder/IBinder.h",
-             "std::vector<android::sp<::android::IBinder>>",
+             "::std::vector<::android::sp<::android::IBinder>>",
              "readStrongBinderVector", "writeStrongBinderVector") {}
   virtual ~BinderListType() = default;
   bool CanBeOutParameter() const override { return true; }
@@ -210,7 +210,7 @@ void Type::GetHeaders(bool is_array, set<string>* headers) const {
 
 string Type::CppType(bool is_array) const {
   if (is_array) {
-    return "std::vector<" + cpp_type_ + ">";
+    return "::std::vector<" + cpp_type_ + ">";
   } else {
     return cpp_type_;
   }
@@ -264,14 +264,14 @@ void TypeNamespace::Init() {
       "readCharVector", "writeCharVector"));
 
   string_type_ = new Type(ValidatableType::KIND_BUILT_IN, kNoPackage, "String",
-                          "utils/String16.h", "android::String16",
+                          "utils/String16.h", "::android::String16",
                           "readString16", "writeString16",
                           "readString16Vector", "writeString16Vector");
   Add(string_type_);
 
   ibinder_type_ = new Type(ValidatableType::KIND_BUILT_IN, "android.os",
                            "IBinder", "binder/IBinder.h",
-                           "sp<android::IBinder>", "readStrongBinder",
+                           "::android::sp<::android::IBinder>", "readStrongBinder",
                            "writeStrongBinder");
   Add(ibinder_type_);
 

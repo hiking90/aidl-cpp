@@ -29,8 +29,8 @@
 #include "tests/test_util.h"
 #include "type_cpp.h"
 
-using android::aidl::test::FakeIoDelegate;
-using android::base::StringPrintf;
+using ::android::aidl::test::FakeIoDelegate;
+using ::android::base::StringPrintf;
 using std::string;
 using std::unique_ptr;
 
@@ -65,17 +65,17 @@ namespace android {
 
 namespace os {
 
-class BpComplexTypeInterface : public android::BpInterface<IComplexTypeInterface> {
+class BpComplexTypeInterface : public ::android::BpInterface<IComplexTypeInterface> {
 public:
-explicit BpComplexTypeInterface(const android::sp<android::IBinder>& impl);
+explicit BpComplexTypeInterface(const ::android::sp<::android::IBinder>& _aidl_impl);
 virtual ~BpComplexTypeInterface() = default;
-android::binder::Status Send(const std::vector<int32_t>& goes_in, std::vector<double>* goes_in_and_out, std::vector<bool>* goes_out, std::vector<int32_t>* _aidl_return) override;
-android::binder::Status Piff(int32_t times) override;
-android::binder::Status TakesABinder(const android::sp<::foo::IFooType>& f, android::sp<::foo::IFooType>* _aidl_return) override;
-android::binder::Status StringListMethod(const std::vector<android::String16>& input, std::vector<android::String16>* output, std::vector<android::String16>* _aidl_return) override;
-android::binder::Status BinderListMethod(const std::vector<android::sp<::android::IBinder>>& input, std::vector<android::sp<::android::IBinder>>* output, std::vector<android::sp<::android::IBinder>>* _aidl_return) override;
-android::binder::Status TakesAFileDescriptor(const ::ScopedFd& f, ::ScopedFd* _aidl_return) override;
-android::binder::Status TakesAFileDescriptorArray(const std::vector<::ScopedFd>& f, std::vector<::ScopedFd>* _aidl_return) override;
+::android::binder::Status Send(const ::std::vector<int32_t>& goes_in, ::std::vector<double>* goes_in_and_out, ::std::vector<bool>* goes_out, ::std::vector<int32_t>* _aidl_return) override;
+::android::binder::Status Piff(int32_t times) override;
+::android::binder::Status TakesABinder(const ::android::sp<::foo::IFooType>& f, ::android::sp<::foo::IFooType>* _aidl_return) override;
+::android::binder::Status StringListMethod(const ::std::vector<::android::String16>& input, ::std::vector<::android::String16>* output, ::std::vector<::android::String16>* _aidl_return) override;
+::android::binder::Status BinderListMethod(const ::std::vector<::android::sp<::android::IBinder>>& input, ::std::vector<::android::sp<::android::IBinder>>* output, ::std::vector<::android::sp<::android::IBinder>>* _aidl_return) override;
+::android::binder::Status TakesAFileDescriptor(const ::ScopedFd& f, ::ScopedFd* _aidl_return) override;
+::android::binder::Status TakesAFileDescriptorArray(const ::std::vector<::ScopedFd>& f, ::std::vector<::ScopedFd>* _aidl_return) override;
 };  // class BpComplexTypeInterface
 
 }  // namespace os
@@ -92,247 +92,247 @@ namespace android {
 
 namespace os {
 
-BpComplexTypeInterface::BpComplexTypeInterface(const android::sp<android::IBinder>& impl)
-    : BpInterface<IComplexTypeInterface>(impl){
+BpComplexTypeInterface::BpComplexTypeInterface(const ::android::sp<::android::IBinder>& _aidl_impl)
+    : BpInterface<IComplexTypeInterface>(_aidl_impl){
 }
 
-android::binder::Status BpComplexTypeInterface::Send(const std::vector<int32_t>& goes_in, std::vector<double>* goes_in_and_out, std::vector<bool>* goes_out, std::vector<int32_t>* _aidl_return) {
-android::Parcel data;
-android::Parcel reply;
-android::status_t status;
-android::binder::Status _aidl_status;
-status = data.writeInterfaceToken(getInterfaceDescriptor());
-if (((status) != (android::OK))) {
-goto error;
+::android::binder::Status BpComplexTypeInterface::Send(const ::std::vector<int32_t>& goes_in, ::std::vector<double>* goes_in_and_out, ::std::vector<bool>* goes_out, ::std::vector<int32_t>* _aidl_return) {
+::android::Parcel _aidl_data;
+::android::Parcel _aidl_reply;
+::android::status_t _aidl_ret_status;
+::android::binder::Status _aidl_status;
+_aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = data.writeInt32Vector(goes_in);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_data.writeInt32Vector(goes_in);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = data.writeDoubleVector(*goes_in_and_out);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_data.writeDoubleVector(*goes_in_and_out);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = remote()->transact(IComplexTypeInterface::SEND, data, &reply);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = remote()->transact(IComplexTypeInterface::SEND, _aidl_data, &_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = _aidl_status.readFromParcel(reply);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_status.readFromParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
 if (!_aidl_status.isOk()) {
 return _aidl_status;
 }
-status = reply.readInt32Vector(_aidl_return);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_reply.readInt32Vector(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = reply.readDoubleVector(goes_in_and_out);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_reply.readDoubleVector(goes_in_and_out);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = reply.readBoolVector(goes_out);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_reply.readBoolVector(goes_out);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-error:
-_aidl_status.setFromStatusT(status);
+_aidl_error:
+_aidl_status.setFromStatusT(_aidl_ret_status);
 return _aidl_status;
 }
 
-android::binder::Status BpComplexTypeInterface::Piff(int32_t times) {
-android::Parcel data;
-android::Parcel reply;
-android::status_t status;
-android::binder::Status _aidl_status;
-status = data.writeInterfaceToken(getInterfaceDescriptor());
-if (((status) != (android::OK))) {
-goto error;
+::android::binder::Status BpComplexTypeInterface::Piff(int32_t times) {
+::android::Parcel _aidl_data;
+::android::Parcel _aidl_reply;
+::android::status_t _aidl_ret_status;
+::android::binder::Status _aidl_status;
+_aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = data.writeInt32(times);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_data.writeInt32(times);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = remote()->transact(IComplexTypeInterface::PIFF, data, &reply, android::IBinder::FLAG_ONEWAY);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = remote()->transact(IComplexTypeInterface::PIFF, _aidl_data, &_aidl_reply, ::android::IBinder::FLAG_ONEWAY);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-error:
-_aidl_status.setFromStatusT(status);
+_aidl_error:
+_aidl_status.setFromStatusT(_aidl_ret_status);
 return _aidl_status;
 }
 
-android::binder::Status BpComplexTypeInterface::TakesABinder(const android::sp<::foo::IFooType>& f, android::sp<::foo::IFooType>* _aidl_return) {
-android::Parcel data;
-android::Parcel reply;
-android::status_t status;
-android::binder::Status _aidl_status;
-status = data.writeInterfaceToken(getInterfaceDescriptor());
-if (((status) != (android::OK))) {
-goto error;
+::android::binder::Status BpComplexTypeInterface::TakesABinder(const ::android::sp<::foo::IFooType>& f, ::android::sp<::foo::IFooType>* _aidl_return) {
+::android::Parcel _aidl_data;
+::android::Parcel _aidl_reply;
+::android::status_t _aidl_ret_status;
+::android::binder::Status _aidl_status;
+_aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = data.writeStrongBinder(IFooType::asBinder(f));
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_data.writeStrongBinder(IFooType::asBinder(f));
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = remote()->transact(IComplexTypeInterface::TAKESABINDER, data, &reply);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = remote()->transact(IComplexTypeInterface::TAKESABINDER, _aidl_data, &_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = _aidl_status.readFromParcel(reply);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_status.readFromParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
 if (!_aidl_status.isOk()) {
 return _aidl_status;
 }
-status = reply.readStrongBinder(_aidl_return);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_reply.readStrongBinder(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-error:
-_aidl_status.setFromStatusT(status);
+_aidl_error:
+_aidl_status.setFromStatusT(_aidl_ret_status);
 return _aidl_status;
 }
 
-android::binder::Status BpComplexTypeInterface::StringListMethod(const std::vector<android::String16>& input, std::vector<android::String16>* output, std::vector<android::String16>* _aidl_return) {
-android::Parcel data;
-android::Parcel reply;
-android::status_t status;
-android::binder::Status _aidl_status;
-status = data.writeInterfaceToken(getInterfaceDescriptor());
-if (((status) != (android::OK))) {
-goto error;
+::android::binder::Status BpComplexTypeInterface::StringListMethod(const ::std::vector<::android::String16>& input, ::std::vector<::android::String16>* output, ::std::vector<::android::String16>* _aidl_return) {
+::android::Parcel _aidl_data;
+::android::Parcel _aidl_reply;
+::android::status_t _aidl_ret_status;
+::android::binder::Status _aidl_status;
+_aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = data.writeString16Vector(input);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_data.writeString16Vector(input);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = remote()->transact(IComplexTypeInterface::STRINGLISTMETHOD, data, &reply);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = remote()->transact(IComplexTypeInterface::STRINGLISTMETHOD, _aidl_data, &_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = _aidl_status.readFromParcel(reply);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_status.readFromParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
 if (!_aidl_status.isOk()) {
 return _aidl_status;
 }
-status = reply.readString16Vector(_aidl_return);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_reply.readString16Vector(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = reply.readString16Vector(output);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_reply.readString16Vector(output);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-error:
-_aidl_status.setFromStatusT(status);
+_aidl_error:
+_aidl_status.setFromStatusT(_aidl_ret_status);
 return _aidl_status;
 }
 
-android::binder::Status BpComplexTypeInterface::BinderListMethod(const std::vector<android::sp<::android::IBinder>>& input, std::vector<android::sp<::android::IBinder>>* output, std::vector<android::sp<::android::IBinder>>* _aidl_return) {
-android::Parcel data;
-android::Parcel reply;
-android::status_t status;
-android::binder::Status _aidl_status;
-status = data.writeInterfaceToken(getInterfaceDescriptor());
-if (((status) != (android::OK))) {
-goto error;
+::android::binder::Status BpComplexTypeInterface::BinderListMethod(const ::std::vector<::android::sp<::android::IBinder>>& input, ::std::vector<::android::sp<::android::IBinder>>* output, ::std::vector<::android::sp<::android::IBinder>>* _aidl_return) {
+::android::Parcel _aidl_data;
+::android::Parcel _aidl_reply;
+::android::status_t _aidl_ret_status;
+::android::binder::Status _aidl_status;
+_aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = data.writeStrongBinderVector(input);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_data.writeStrongBinderVector(input);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = remote()->transact(IComplexTypeInterface::BINDERLISTMETHOD, data, &reply);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = remote()->transact(IComplexTypeInterface::BINDERLISTMETHOD, _aidl_data, &_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = _aidl_status.readFromParcel(reply);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_status.readFromParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
 if (!_aidl_status.isOk()) {
 return _aidl_status;
 }
-status = reply.readStrongBinderVector(_aidl_return);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_reply.readStrongBinderVector(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = reply.readStrongBinderVector(output);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_reply.readStrongBinderVector(output);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-error:
-_aidl_status.setFromStatusT(status);
+_aidl_error:
+_aidl_status.setFromStatusT(_aidl_ret_status);
 return _aidl_status;
 }
 
-android::binder::Status BpComplexTypeInterface::TakesAFileDescriptor(const ::ScopedFd& f, ::ScopedFd* _aidl_return) {
-android::Parcel data;
-android::Parcel reply;
-android::status_t status;
-android::binder::Status _aidl_status;
-status = data.writeInterfaceToken(getInterfaceDescriptor());
-if (((status) != (android::OK))) {
-goto error;
+::android::binder::Status BpComplexTypeInterface::TakesAFileDescriptor(const ::ScopedFd& f, ::ScopedFd* _aidl_return) {
+::android::Parcel _aidl_data;
+::android::Parcel _aidl_reply;
+::android::status_t _aidl_ret_status;
+::android::binder::Status _aidl_status;
+_aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = data.writeUniqueFileDescriptor(f);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_data.writeUniqueFileDescriptor(f);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = remote()->transact(IComplexTypeInterface::TAKESAFILEDESCRIPTOR, data, &reply);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = remote()->transact(IComplexTypeInterface::TAKESAFILEDESCRIPTOR, _aidl_data, &_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = _aidl_status.readFromParcel(reply);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_status.readFromParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
 if (!_aidl_status.isOk()) {
 return _aidl_status;
 }
-status = reply.readUniqueFileDescriptor(_aidl_return);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_reply.readUniqueFileDescriptor(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-error:
-_aidl_status.setFromStatusT(status);
+_aidl_error:
+_aidl_status.setFromStatusT(_aidl_ret_status);
 return _aidl_status;
 }
 
-android::binder::Status BpComplexTypeInterface::TakesAFileDescriptorArray(const std::vector<::ScopedFd>& f, std::vector<::ScopedFd>* _aidl_return) {
-android::Parcel data;
-android::Parcel reply;
-android::status_t status;
-android::binder::Status _aidl_status;
-status = data.writeInterfaceToken(getInterfaceDescriptor());
-if (((status) != (android::OK))) {
-goto error;
+::android::binder::Status BpComplexTypeInterface::TakesAFileDescriptorArray(const ::std::vector<::ScopedFd>& f, ::std::vector<::ScopedFd>* _aidl_return) {
+::android::Parcel _aidl_data;
+::android::Parcel _aidl_reply;
+::android::status_t _aidl_ret_status;
+::android::binder::Status _aidl_status;
+_aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = data.writeUniqueFileDescriptorVector(f);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_data.writeUniqueFileDescriptorVector(f);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = remote()->transact(IComplexTypeInterface::TAKESAFILEDESCRIPTORARRAY, data, &reply);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = remote()->transact(IComplexTypeInterface::TAKESAFILEDESCRIPTORARRAY, _aidl_data, &_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-status = _aidl_status.readFromParcel(reply);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_status.readFromParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
 if (!_aidl_status.isOk()) {
 return _aidl_status;
 }
-status = reply.readUniqueFileDescriptorVector(_aidl_return);
-if (((status) != (android::OK))) {
-goto error;
+_aidl_ret_status = _aidl_reply.readUniqueFileDescriptorVector(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
 }
-error:
-_aidl_status.setFromStatusT(status);
+_aidl_error:
+_aidl_status.setFromStatusT(_aidl_ret_status);
 return _aidl_status;
 }
 
@@ -352,9 +352,9 @@ namespace android {
 
 namespace os {
 
-class BnComplexTypeInterface : public android::BnInterface<IComplexTypeInterface> {
+class BnComplexTypeInterface : public ::android::BnInterface<IComplexTypeInterface> {
 public:
-android::status_t onTransact(uint32_t code, const android::Parcel& data, android::Parcel* reply, uint32_t flags = 0) override;
+::android::status_t onTransact(uint32_t _aidl_code, const ::android::Parcel& _aidl_data, ::android::Parcel* _aidl_reply, uint32_t _aidl_flags = 0) override;
 };  // class BnComplexTypeInterface
 
 }  // namespace os
@@ -371,45 +371,45 @@ namespace android {
 
 namespace os {
 
-android::status_t BnComplexTypeInterface::onTransact(uint32_t code, const android::Parcel& data, android::Parcel* reply, uint32_t flags) {
-android::status_t status;
-switch (code) {
+::android::status_t BnComplexTypeInterface::onTransact(uint32_t _aidl_code, const ::android::Parcel& _aidl_data, ::android::Parcel* _aidl_reply, uint32_t _aidl_flags) {
+::android::status_t _aidl_ret_status;
+switch (_aidl_code) {
 case Call::SEND:
 {
-std::vector<int32_t> in_goes_in;
-std::vector<double> in_goes_in_and_out;
-std::vector<bool> out_goes_out;
-std::vector<int32_t> _aidl_return;
-if (!(data.checkInterface(this))) {
-status = android::BAD_TYPE;
+::std::vector<int32_t> in_goes_in;
+::std::vector<double> in_goes_in_and_out;
+::std::vector<bool> out_goes_out;
+::std::vector<int32_t> _aidl_return;
+if (!(_aidl_data.checkInterface(this))) {
+_aidl_ret_status = ::android::BAD_TYPE;
 break;
 }
-status = data.readInt32Vector(&in_goes_in);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_data.readInt32Vector(&in_goes_in);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
-status = data.readDoubleVector(&in_goes_in_and_out);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_data.readDoubleVector(&in_goes_in_and_out);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
-android::binder::Status _aidl_status(Send(in_goes_in, &in_goes_in_and_out, &out_goes_out, &_aidl_return));
-status = _aidl_status.writeToParcel(reply);
-if (((status) != (android::OK))) {
+::android::binder::Status _aidl_status(Send(in_goes_in, &in_goes_in_and_out, &out_goes_out, &_aidl_return));
+_aidl_ret_status = _aidl_status.writeToParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
 if (!_aidl_status.isOk()) {
 break;
 }
-status = reply->writeInt32Vector(_aidl_return);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_reply->writeInt32Vector(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
-status = reply->writeDoubleVector(in_goes_in_and_out);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_reply->writeDoubleVector(in_goes_in_and_out);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
-status = reply->writeBoolVector(out_goes_out);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_reply->writeBoolVector(out_goes_out);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
 }
@@ -417,101 +417,101 @@ break;
 case Call::PIFF:
 {
 int32_t in_times;
-if (!(data.checkInterface(this))) {
-status = android::BAD_TYPE;
+if (!(_aidl_data.checkInterface(this))) {
+_aidl_ret_status = ::android::BAD_TYPE;
 break;
 }
-status = data.readInt32(&in_times);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_data.readInt32(&in_times);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
-android::binder::Status _aidl_status(Piff(in_times));
+::android::binder::Status _aidl_status(Piff(in_times));
 }
 break;
 case Call::TAKESABINDER:
 {
-android::sp<::foo::IFooType> in_f;
-android::sp<::foo::IFooType> _aidl_return;
-if (!(data.checkInterface(this))) {
-status = android::BAD_TYPE;
+::android::sp<::foo::IFooType> in_f;
+::android::sp<::foo::IFooType> _aidl_return;
+if (!(_aidl_data.checkInterface(this))) {
+_aidl_ret_status = ::android::BAD_TYPE;
 break;
 }
-status = data.readStrongBinder(&in_f);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_data.readStrongBinder(&in_f);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
-android::binder::Status _aidl_status(TakesABinder(in_f, &_aidl_return));
-status = _aidl_status.writeToParcel(reply);
-if (((status) != (android::OK))) {
+::android::binder::Status _aidl_status(TakesABinder(in_f, &_aidl_return));
+_aidl_ret_status = _aidl_status.writeToParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
 if (!_aidl_status.isOk()) {
 break;
 }
-status = reply->writeStrongBinder(IFooType::asBinder(_aidl_return));
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_reply->writeStrongBinder(IFooType::asBinder(_aidl_return));
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
 }
 break;
 case Call::STRINGLISTMETHOD:
 {
-std::vector<android::String16> in_input;
-std::vector<android::String16> out_output;
-std::vector<android::String16> _aidl_return;
-if (!(data.checkInterface(this))) {
-status = android::BAD_TYPE;
+::std::vector<::android::String16> in_input;
+::std::vector<::android::String16> out_output;
+::std::vector<::android::String16> _aidl_return;
+if (!(_aidl_data.checkInterface(this))) {
+_aidl_ret_status = ::android::BAD_TYPE;
 break;
 }
-status = data.readString16Vector(&in_input);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_data.readString16Vector(&in_input);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
-android::binder::Status _aidl_status(StringListMethod(in_input, &out_output, &_aidl_return));
-status = _aidl_status.writeToParcel(reply);
-if (((status) != (android::OK))) {
+::android::binder::Status _aidl_status(StringListMethod(in_input, &out_output, &_aidl_return));
+_aidl_ret_status = _aidl_status.writeToParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
 if (!_aidl_status.isOk()) {
 break;
 }
-status = reply->writeString16Vector(_aidl_return);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_reply->writeString16Vector(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
-status = reply->writeString16Vector(out_output);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_reply->writeString16Vector(out_output);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
 }
 break;
 case Call::BINDERLISTMETHOD:
 {
-std::vector<android::sp<::android::IBinder>> in_input;
-std::vector<android::sp<::android::IBinder>> out_output;
-std::vector<android::sp<::android::IBinder>> _aidl_return;
-if (!(data.checkInterface(this))) {
-status = android::BAD_TYPE;
+::std::vector<::android::sp<::android::IBinder>> in_input;
+::std::vector<::android::sp<::android::IBinder>> out_output;
+::std::vector<::android::sp<::android::IBinder>> _aidl_return;
+if (!(_aidl_data.checkInterface(this))) {
+_aidl_ret_status = ::android::BAD_TYPE;
 break;
 }
-status = data.readStrongBinderVector(&in_input);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_data.readStrongBinderVector(&in_input);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
-android::binder::Status _aidl_status(BinderListMethod(in_input, &out_output, &_aidl_return));
-status = _aidl_status.writeToParcel(reply);
-if (((status) != (android::OK))) {
+::android::binder::Status _aidl_status(BinderListMethod(in_input, &out_output, &_aidl_return));
+_aidl_ret_status = _aidl_status.writeToParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
 if (!_aidl_status.isOk()) {
 break;
 }
-status = reply->writeStrongBinderVector(_aidl_return);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_reply->writeStrongBinderVector(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
-status = reply->writeStrongBinderVector(out_output);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_reply->writeStrongBinderVector(out_output);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
 }
@@ -520,64 +520,64 @@ case Call::TAKESAFILEDESCRIPTOR:
 {
 ::ScopedFd in_f;
 ::ScopedFd _aidl_return;
-if (!(data.checkInterface(this))) {
-status = android::BAD_TYPE;
+if (!(_aidl_data.checkInterface(this))) {
+_aidl_ret_status = ::android::BAD_TYPE;
 break;
 }
-status = data.readUniqueFileDescriptor(&in_f);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_data.readUniqueFileDescriptor(&in_f);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
-android::binder::Status _aidl_status(TakesAFileDescriptor(in_f, &_aidl_return));
-status = _aidl_status.writeToParcel(reply);
-if (((status) != (android::OK))) {
+::android::binder::Status _aidl_status(TakesAFileDescriptor(in_f, &_aidl_return));
+_aidl_ret_status = _aidl_status.writeToParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
 if (!_aidl_status.isOk()) {
 break;
 }
-status = reply->writeUniqueFileDescriptor(_aidl_return);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_reply->writeUniqueFileDescriptor(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
 }
 break;
 case Call::TAKESAFILEDESCRIPTORARRAY:
 {
-std::vector<::ScopedFd> in_f;
-std::vector<::ScopedFd> _aidl_return;
-if (!(data.checkInterface(this))) {
-status = android::BAD_TYPE;
+::std::vector<::ScopedFd> in_f;
+::std::vector<::ScopedFd> _aidl_return;
+if (!(_aidl_data.checkInterface(this))) {
+_aidl_ret_status = ::android::BAD_TYPE;
 break;
 }
-status = data.readUniqueFileDescriptorVector(&in_f);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_data.readUniqueFileDescriptorVector(&in_f);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
-android::binder::Status _aidl_status(TakesAFileDescriptorArray(in_f, &_aidl_return));
-status = _aidl_status.writeToParcel(reply);
-if (((status) != (android::OK))) {
+::android::binder::Status _aidl_status(TakesAFileDescriptorArray(in_f, &_aidl_return));
+_aidl_ret_status = _aidl_status.writeToParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
 if (!_aidl_status.isOk()) {
 break;
 }
-status = reply->writeUniqueFileDescriptorVector(_aidl_return);
-if (((status) != (android::OK))) {
+_aidl_ret_status = _aidl_reply->writeUniqueFileDescriptorVector(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
 }
 break;
 default:
 {
-status = android::BBinder::onTransact(code, data, reply, flags);
+_aidl_ret_status = ::android::BBinder::onTransact(_aidl_code, _aidl_data, _aidl_reply, _aidl_flags);
 }
 break;
 }
-if (status == android::UNEXPECTED_NULL) {
-status = android::binder::Status::fromExceptionCode(android::binder::Status::EX_NULL_POINTER).writeToParcel(reply);
+if (_aidl_ret_status == ::android::UNEXPECTED_NULL) {
+_aidl_ret_status = ::android::binder::Status::fromExceptionCode(::android::binder::Status::EX_NULL_POINTER).writeToParcel(_aidl_reply);
 }
-return status;
+return _aidl_ret_status;
 }
 
 }  // namespace os
@@ -603,24 +603,24 @@ namespace android {
 
 namespace os {
 
-class IComplexTypeInterface : public android::IInterface {
+class IComplexTypeInterface : public ::android::IInterface {
 public:
 DECLARE_META_INTERFACE(ComplexTypeInterface);
-virtual android::binder::Status Send(const std::vector<int32_t>& goes_in, std::vector<double>* goes_in_and_out, std::vector<bool>* goes_out, std::vector<int32_t>* _aidl_return) = 0;
-virtual android::binder::Status Piff(int32_t times) = 0;
-virtual android::binder::Status TakesABinder(const android::sp<::foo::IFooType>& f, android::sp<::foo::IFooType>* _aidl_return) = 0;
-virtual android::binder::Status StringListMethod(const std::vector<android::String16>& input, std::vector<android::String16>* output, std::vector<android::String16>* _aidl_return) = 0;
-virtual android::binder::Status BinderListMethod(const std::vector<android::sp<::android::IBinder>>& input, std::vector<android::sp<::android::IBinder>>* output, std::vector<android::sp<::android::IBinder>>* _aidl_return) = 0;
-virtual android::binder::Status TakesAFileDescriptor(const ::ScopedFd& f, ::ScopedFd* _aidl_return) = 0;
-virtual android::binder::Status TakesAFileDescriptorArray(const std::vector<::ScopedFd>& f, std::vector<::ScopedFd>* _aidl_return) = 0;
+virtual ::android::binder::Status Send(const ::std::vector<int32_t>& goes_in, ::std::vector<double>* goes_in_and_out, ::std::vector<bool>* goes_out, ::std::vector<int32_t>* _aidl_return) = 0;
+virtual ::android::binder::Status Piff(int32_t times) = 0;
+virtual ::android::binder::Status TakesABinder(const ::android::sp<::foo::IFooType>& f, ::android::sp<::foo::IFooType>* _aidl_return) = 0;
+virtual ::android::binder::Status StringListMethod(const ::std::vector<::android::String16>& input, ::std::vector<::android::String16>* output, ::std::vector<::android::String16>* _aidl_return) = 0;
+virtual ::android::binder::Status BinderListMethod(const ::std::vector<::android::sp<::android::IBinder>>& input, ::std::vector<::android::sp<::android::IBinder>>* output, ::std::vector<::android::sp<::android::IBinder>>* _aidl_return) = 0;
+virtual ::android::binder::Status TakesAFileDescriptor(const ::ScopedFd& f, ::ScopedFd* _aidl_return) = 0;
+virtual ::android::binder::Status TakesAFileDescriptorArray(const ::std::vector<::ScopedFd>& f, ::std::vector<::ScopedFd>* _aidl_return) = 0;
 enum Call {
-  SEND = android::IBinder::FIRST_CALL_TRANSACTION + 0,
-  PIFF = android::IBinder::FIRST_CALL_TRANSACTION + 1,
-  TAKESABINDER = android::IBinder::FIRST_CALL_TRANSACTION + 2,
-  STRINGLISTMETHOD = android::IBinder::FIRST_CALL_TRANSACTION + 3,
-  BINDERLISTMETHOD = android::IBinder::FIRST_CALL_TRANSACTION + 4,
-  TAKESAFILEDESCRIPTOR = android::IBinder::FIRST_CALL_TRANSACTION + 5,
-  TAKESAFILEDESCRIPTORARRAY = android::IBinder::FIRST_CALL_TRANSACTION + 6,
+  SEND = ::android::IBinder::FIRST_CALL_TRANSACTION + 0,
+  PIFF = ::android::IBinder::FIRST_CALL_TRANSACTION + 1,
+  TAKESABINDER = ::android::IBinder::FIRST_CALL_TRANSACTION + 2,
+  STRINGLISTMETHOD = ::android::IBinder::FIRST_CALL_TRANSACTION + 3,
+  BINDERLISTMETHOD = ::android::IBinder::FIRST_CALL_TRANSACTION + 4,
+  TAKESAFILEDESCRIPTOR = ::android::IBinder::FIRST_CALL_TRANSACTION + 5,
+  TAKESAFILEDESCRIPTORARRAY = ::android::IBinder::FIRST_CALL_TRANSACTION + 6,
 };
 };  // class IComplexTypeInterface
 
