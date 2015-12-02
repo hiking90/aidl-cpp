@@ -144,6 +144,14 @@ public class TestServiceClient extends Activity {
                 }
             }
             {
+                int query = ITestService.TEST_CONSTANT;
+                int response = service.RepeatInt(query);
+                if (query != response) {
+                    mLog.logAndThrow("Repeat with " + query +
+                                     " responded " + response);
+                }
+            }
+            {
                 long query = 1 << 60;
                 long response = service.RepeatLong(query);
                 if (query != response) {

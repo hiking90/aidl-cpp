@@ -441,7 +441,7 @@ bool parse_preprocessed_file(const IoDelegate& io_delegate,
                          lineno, package);
       types->AddParcelableType(doc, filename);
     } else if (decl == "interface") {
-      auto temp = new std::vector<std::unique_ptr<AidlMethod>>();
+      auto temp = new std::vector<std::unique_ptr<AidlMember>>();
       AidlInterface doc(class_name, lineno, "", false, temp, package);
       types->AddBinderType(doc, filename);
     } else {

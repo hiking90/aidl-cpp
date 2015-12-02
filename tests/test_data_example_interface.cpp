@@ -45,6 +45,7 @@ import android.bar.IAuxInterface;
 import android.test.IAuxInterface2;
 
 interface IExampleInterface {
+    const int EXAMPLE_CONSTANT = 3;
     boolean isEnabled();
     int getState();
     String getAddress();
@@ -431,6 +432,7 @@ static final int TRANSACTION_getRecursiveBinder = (android.os.IBinder.FIRST_CALL
 static final int TRANSACTION_takesAnInterface = (android.os.IBinder.FIRST_CALL_TRANSACTION + 7);
 static final int TRANSACTION_takesAParcelable = (android.os.IBinder.FIRST_CALL_TRANSACTION + 8);
 }
+public static final int EXAMPLE_CONSTANT = 3;
 public boolean isEnabled() throws android.os.RemoteException;
 public int getState() throws android.os.RemoteException;
 public java.lang.String getAddress() throws android.os.RemoteException;

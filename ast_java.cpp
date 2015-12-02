@@ -578,6 +578,13 @@ Method::Write(CodeWriter* to) const
 }
 
 void
+Constant::Write(CodeWriter* to) const
+{
+    WriteModifiers(to, STATIC | FINAL | PUBLIC, ALL_MODIFIERS);
+    to->Write("int %s = %d;\n", name.c_str(), value);
+}
+
+void
 Class::Write(CodeWriter* to) const
 {
     size_t N, i;

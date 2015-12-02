@@ -20,6 +20,9 @@ import android.aidl.tests.INamedCallback;
 import android.aidl.tests.SimpleParcelable;
 
 interface ITestService {
+  // Test that constants are accessible
+  const int TEST_CONSTANT = 42;
+
   // Test that primitives work as parameters and return types.
   boolean RepeatBoolean(boolean token);
   byte RepeatByte(byte token);

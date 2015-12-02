@@ -356,6 +356,17 @@ struct Method : public ClassElement
     void Write(CodeWriter* to) const override;
 };
 
+struct Constant : public ClassElement
+{
+    string name;
+    int value;
+
+    Constant() = default;
+    virtual ~Constant() = default;
+
+    void Write(CodeWriter* to) const override;
+};
+
 struct Class : public ClassElement
 {
     enum {

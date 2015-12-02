@@ -697,6 +697,12 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
       "DECLARE_META_INTERFACE",
       ArgList{vector<string>{ClassName(interface, ClassNames::BASE)}}}});
 
+  for (const auto& constant : interface.GetConstants()) {
+    unique_ptr<ConstDecl> declaration{
+        new ConstDecl(constant->GetName(), constant->GetValue())};
+    if_class->AddPublic(std::move(declaration));
+  }
+
   unique_ptr<Enum> call_enum{new Enum{"Call"}};
   for (const auto& method : interface.GetMethods()) {
     // Each method gets an enum entry and pure virtual declaration.

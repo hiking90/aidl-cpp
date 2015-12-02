@@ -91,7 +91,8 @@ bool ConfirmPrimitiveRepeat(const sp<ITestService>& s) {
       !RepeatPrimitive(s, &ITestService::RepeatInt, int32_t{1 << 30}) ||
       !RepeatPrimitive(s, &ITestService::RepeatLong, int64_t{1ll << 60}) ||
       !RepeatPrimitive(s, &ITestService::RepeatFloat, float{1.0f/3.0f}) ||
-      !RepeatPrimitive(s, &ITestService::RepeatDouble, double{1.0/3.0})) {
+      !RepeatPrimitive(s, &ITestService::RepeatDouble, double{1.0/3.0}) ||
+      !RepeatPrimitive(s, &ITestService::RepeatInt, ITestService::TEST_CONSTANT)) {
     return false;
   }
 

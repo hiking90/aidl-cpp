@@ -43,6 +43,7 @@ const string kComplexTypeInterfaceAIDL =
 R"(package android.os;
 import foo.IFooType;
 interface IComplexTypeInterface {
+  const int MY_CONSTANT = 3;
   int[] Send(in int[] goes_in, inout double[] goes_in_and_out, out boolean[] goes_out);
   oneway void Piff(int times);
   IFooType TakesABinder(IFooType f);
@@ -606,6 +607,7 @@ namespace os {
 class IComplexTypeInterface : public ::android::IInterface {
 public:
 DECLARE_META_INTERFACE(ComplexTypeInterface);
+static constexpr int32_t MY_CONSTANT = 3;
 virtual ::android::binder::Status Send(const ::std::vector<int32_t>& goes_in, ::std::vector<double>* goes_in_and_out, ::std::vector<bool>* goes_out, ::std::vector<int32_t>* _aidl_return) = 0;
 virtual ::android::binder::Status Piff(int32_t times) = 0;
 virtual ::android::binder::Status TakesABinder(const ::android::sp<::foo::IFooType>& f, ::android::sp<::foo::IFooType>* _aidl_return) = 0;

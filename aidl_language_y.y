@@ -26,7 +26,8 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
     AidlArgument::Direction direction;
     std::vector<std::unique_ptr<AidlArgument>>* arg_list;
     AidlMethod* method;
-    std::vector<std::unique_ptr<AidlMethod>>* methods;
+    AidlConstant* constant;
+    std::vector<std::unique_ptr<AidlMember>>* members;
     AidlQualifiedName* qname;
     AidlInterface* interface_obj;
     AidlParcelable* parcelable;
@@ -34,16 +35,17 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
 }
 
 %token<token> IDENTIFIER INTERFACE ONEWAY C_STR
-%token<integer> IDVALUE
+%token<integer> INTVALUE
 
 %token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' ';'
-%token IN OUT INOUT PACKAGE IMPORT PARCELABLE FROM
+%token IN OUT INOUT PACKAGE IMPORT PARCELABLE FROM CONST INT
 
 %type<parcelable_list> parcelable_decls
 %type<parcelable> parcelable_decl
-%type<methods> methods
+%type<members> members
 %type<interface_obj> interface_decl
 %type<method> method_decl
+%type<constant> constant_decl
 %type<type> type
 %type<arg_list> arg_list
 %type<arg> arg
@@ -68,7 +70,9 @@ identifier
  : IDENTIFIER
   { $$ = $1; }
  | FROM
-  { $$ = new AidlToken("from", ""); };
+  { $$ = new AidlToken("from", ""); }
+ | INT
+  { $$ = new AidlToken("int", ""); };
 
 package
  : {}
@@ -126,20 +130,20 @@ parcelable_decl
   };
 
 interface_decl
- : INTERFACE identifier '{' methods '}' {
+ : INTERFACE identifier '{' members '}' {
     $$ = new AidlInterface($2->GetText(), @2.begin.line, $1->GetComments(),
                            false, $4, ps->Package());
     delete $1;
     delete $2;
   }
- | ONEWAY INTERFACE identifier '{' methods '}' {
+ | ONEWAY INTERFACE identifier '{' members '}' {
     $$ = new AidlInterface($3->GetText(), @3.begin.line, $1->GetComments(),
                            true, $5, ps->Package());
     delete $1;
     delete $2;
     delete $3;
   }
- | INTERFACE error '{' methods '}' {
+ | INTERFACE error '{' members '}' {
     fprintf(stderr, "%s:%d: syntax error in interface declaration.  Expected type name, saw \"%s\"\n",
             ps->FileName().c_str(), @2.begin.line, $2->GetText().c_str());
     $$ = NULL;
@@ -154,17 +158,24 @@ interface_decl
     delete $2;
   };
 
-methods
+members
  :
-  { $$ = new std::vector<std::unique_ptr<AidlMethod>>(); }
- | methods method_decl
-  { $1->push_back(std::unique_ptr<AidlMethod>($2)); }
- | methods error ';' {
+  { $$ = new std::vector<std::unique_ptr<AidlMember>>(); }
+ | members method_decl
+  { $1->push_back(std::unique_ptr<AidlMember>($2)); }
+ | members constant_decl
+  { $1->push_back(std::unique_ptr<AidlMember>($2)); }
+ | members error ';' {
     fprintf(stderr, "%s:%d: syntax error before ';' "
-                    "(expected method declaration)\n",
+                    "(expected method or constant declaration)\n",
             ps->FileName().c_str(), @3.begin.line);
     $$ = $1;
   };
+
+constant_decl
+ : CONST INT identifier '=' INTVALUE ';' {
+    $$ = new AidlConstant($3->GetText(), $5);
+ };
 
 method_decl
  : type identifier '(' arg_list ')' ';' {
@@ -178,12 +189,12 @@ method_decl
     delete $1;
     delete $3;
   }
- | type identifier '(' arg_list ')' '=' IDVALUE ';' {
+ | type identifier '(' arg_list ')' '=' INTVALUE ';' {
     $$ = new AidlMethod(false, $1, $2->GetText(), $4, @2.begin.line,
                         $1->GetComments(), $7);
     delete $2;
   }
- | ONEWAY type identifier '(' arg_list ')' '=' IDVALUE ';' {
+ | ONEWAY type identifier '(' arg_list ')' '=' INTVALUE ';' {
     $$ = new AidlMethod(true, $2, $3->GetText(), $5, @3.begin.line,
                         $1->GetComments(), $8);
     delete $1;
