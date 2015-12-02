@@ -35,54 +35,54 @@ class Type : public ValidatableType {
   Type(int kind,  // from ValidatableType
        const std::string& package,
        const std::string& aidl_type,
-       const std::string& header,
+       const std::vector<std::string>& header,
        const std::string& cpp_type,
        const std::string& read_method,
        const std::string& write_method,
-       const std::string& read_array_method = "",
-       const std::string& write_array_method = "",
+       Type* array_type = nullptr,
        const std::string& src_file_name = "",
        int line = -1);
   virtual ~Type() = default;
 
   // overrides of ValidatableType
-  bool CanBeArray() const override;
   bool CanBeOutParameter() const override { return false; }
   bool CanWriteToParcel() const override;
 
-  std::string CppType(bool is_array) const;
-  virtual void GetHeaders(bool is_array, std::set<std::string>* headers) const;
-  const std::string& ReadFromParcelMethod(bool is_array) const;
-  const std::string& WriteToParcelMethod(bool is_array) const;
+  const Type* ArrayType() const override { return array_type_.get(); }
+  std::string CppType() const { return cpp_type_; }
+  const std::string& ReadFromParcelMethod() const {
+    return parcel_read_method_;
+  }
+  const std::string& WriteToParcelMethod() const {
+    return parcel_write_method_;
+  }
+
+  void GetHeaders(std::set<std::string>* headers) const {
+    for (std::string header : headers_) {
+      if (!header.empty()) {
+        headers->insert(header);
+      }
+    }
+  }
   virtual bool IsCppPrimitive() const { return false; }
   virtual std::string WriteCast(const std::string& value) const {
     return value;
   }
 
  private:
-  // |header| is the header we must include to use this type
-  const std::string header_;
+  // |headers| are the headers we must include to use this type
+  const std::vector<std::string> headers_;
   // |aidl_type| is what we find in the yacc generated AST (e.g. "int").
   const std::string aidl_type_;
   // |cpp_type| is what we use in the generated C++ code (e.g. "int32_t").
   const std::string cpp_type_;
   const std::string parcel_read_method_;
   const std::string parcel_write_method_;
-  const std::string parcel_read_array_method_;
-  const std::string parcel_write_array_method_;
+
+  const std::unique_ptr<Type> array_type_;
 
   DISALLOW_COPY_AND_ASSIGN(Type);
 };  // class Type
-
-class PrimitiveType : public Type {
- public:
-  using Type::Type;
-  virtual ~PrimitiveType() = default;
-  bool IsCppPrimitive() const override { return true; }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(PrimitiveType);
-};  // class PrimitiveType
 
 class TypeNamespace : public ::android::aidl::LanguageTypeNamespace<Type> {
  public:

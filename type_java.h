@@ -44,9 +44,10 @@ class Type : public ValidatableType {
        const string& declFile = "", int declLine = -1);
   virtual ~Type() = default;
 
-  bool CanBeArray() const override { return false; }
   bool CanBeOutParameter() const override { return m_canBeOut; }
   bool CanWriteToParcel() const override { return m_canWriteToParcel; }
+
+  const ValidatableType* ArrayType() const override { return m_array_type.get(); }
 
   inline string Package() const { return m_package; }
   virtual string CreatorName() const;
@@ -59,18 +60,12 @@ class Type : public ValidatableType {
   virtual void ReadFromParcel(StatementBlock* addTo, Variable* v,
                               Variable* parcel, Variable** cl) const;
 
-
-  virtual void WriteArrayToParcel(StatementBlock* addTo, Variable* v,
-                                  Variable* parcel, int flags) const;
-  virtual void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                     Variable* parcel, Variable** cl) const;
-  virtual void ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                   Variable* parcel, Variable** cl) const;
-
  protected:
   Expression* BuildWriteToParcelFlags(int flags) const;
 
   const JavaTypeNamespace* m_types;
+
+  std::unique_ptr<Type> m_array_type;
 
  private:
   Type();
@@ -82,6 +77,26 @@ class Type : public ValidatableType {
   string m_declFile;
   bool m_canWriteToParcel;
   bool m_canBeOut;
+};
+
+class BasicArrayType : public Type {
+ public:
+  BasicArrayType(const JavaTypeNamespace* types, const string& name,
+                 const string& writeArrayParcel,
+                 const string& createArrayParcel,
+                 const string& readArrayParcel);
+
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                        Variable** cl) const override;
+  void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                      Variable** cl) const override;
+
+ private:
+  string m_writeArrayParcel;
+  string m_createArrayParcel;
+  string m_readArrayParcel;
 };
 
 class BasicType : public Type {
@@ -96,21 +111,21 @@ class BasicType : public Type {
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                         Variable** cl) const override;
 
-  bool CanBeArray() const override { return true; }
-
-  void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                          int flags) const override;
-  void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, Variable** cl) const override;
-  void ReadArrayFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                           Variable** cl) const override;
-
  private:
   string m_marshallParcel;
   string m_unmarshallParcel;
-  string m_writeArrayParcel;
-  string m_createArrayParcel;
-  string m_readArrayParcel;
+};
+
+class FileDescriptorArrayType : public Type {
+ public:
+  FileDescriptorArrayType(const JavaTypeNamespace* types);
+
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v,
+                        Variable* parcel, Variable** cl) const override;
+  void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                      Variable** cl) const override;
 };
 
 class FileDescriptorType : public Type {
@@ -121,15 +136,18 @@ class FileDescriptorType : public Type {
                      int flags) const override;
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                         Variable** cl) const override;
+};
 
-  bool CanBeArray() const override { return true; }
+class BooleanArrayType : public Type {
+ public:
+  BooleanArrayType(const JavaTypeNamespace* types);
 
-  void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                          int flags) const override;
-  void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, Variable** cl) const override;
-  void ReadArrayFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                           Variable** cl) const override;
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v,
+                        Variable* parcel, Variable** cl) const override;
+  void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                      Variable** cl) const override;
 };
 
 class BooleanType : public Type {
@@ -140,15 +158,18 @@ class BooleanType : public Type {
                      int flags) const override;
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                         Variable** cl) const override;
+};
 
-  bool CanBeArray() const override { return true; }
+class CharArrayType : public Type {
+ public:
+  CharArrayType(const JavaTypeNamespace* types);
 
-  void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                          int flags) const override;
-  void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, Variable** cl) const override;
-  void ReadArrayFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                           Variable** cl) const override;
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v,
+                        Variable* parcel, Variable** cl) const override;
+  void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                      Variable** cl) const override;
 };
 
 class CharType : public Type {
@@ -159,15 +180,20 @@ class CharType : public Type {
                      int flags) const override;
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                         Variable** cl) const override;
+};
 
-  bool CanBeArray() const override { return true; }
+class StringArrayType : public Type {
+ public:
+  StringArrayType(const JavaTypeNamespace* types);
 
-  void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                          int flags) const override;
-  void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, Variable** cl) const override;
-  void ReadArrayFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                           Variable** cl) const override;
+  string CreatorName() const override;
+
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v,
+                        Variable* parcel, Variable** cl) const override;
+  void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                      Variable** cl) const override;
 };
 
 class StringType : public Type {
@@ -180,15 +206,6 @@ class StringType : public Type {
                      int flags) const override;
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                         Variable** cl) const override;
-
-  bool CanBeArray() const override { return true; }
-
-  void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                          int flags) const override;
-  void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, Variable** cl) const override;
-  void ReadArrayFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                           Variable** cl) const override;
 };
 
 class CharSequenceType : public Type {
@@ -223,6 +240,18 @@ class RuntimeExceptionType : public Type {
                         Variable** cl) const override;
 };
 
+class IBinderArrayType : public Type {
+ public:
+  IBinderArrayType(const JavaTypeNamespace* types);
+
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v,
+                        Variable* parcel, Variable** cl) const override;
+  void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                      Variable** cl) const override;
+};
+
 class IBinderType : public Type {
  public:
   IBinderType(const JavaTypeNamespace* types);
@@ -231,13 +260,6 @@ class IBinderType : public Type {
                      int flags) const override;
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                         Variable** cl) const override;
-
-  void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                          int flags) const override;
-  void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, Variable** cl) const override;
-  void ReadArrayFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                           Variable** cl) const override;
 };
 
 class IInterfaceType : public Type {
@@ -316,6 +338,22 @@ class ListType : public Type {
                       Variable** cl) const override;
 };
 
+class UserDataArrayType : public Type {
+ public:
+  UserDataArrayType(const JavaTypeNamespace* types, const string& package,
+                    const string& name, bool builtIn, bool canWriteToParcel,
+                    const string& declFile = "", int declLine = -1);
+
+  string CreatorName() const override;
+
+  void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                     int flags) const override;
+  void CreateFromParcel(StatementBlock* addTo, Variable* v,
+                        Variable* parcel, Variable** cl) const override;
+  void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
+                      Variable** cl) const override;
+};
+
 class UserDataType : public Type {
  public:
   UserDataType(const JavaTypeNamespace* types, const string& package,
@@ -330,22 +368,14 @@ class UserDataType : public Type {
                         Variable** cl) const override;
   void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                       Variable** cl) const override;
-
-  bool CanBeArray() const override { return true; }
-
-  void WriteArrayToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                          int flags) const override;
-  void CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                             Variable* parcel, Variable** cl) const override;
-  void ReadArrayFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
-                           Variable** cl) const override;
 };
 
 class InterfaceType : public Type {
  public:
   InterfaceType(const JavaTypeNamespace* types, const string& package,
                 const string& name, bool builtIn, bool oneway,
-                const string& declFile, int declLine);
+                const string& declFile, int declLine, const Type* stub,
+                const Type* proxy);
 
   bool OneWay() const;
 
@@ -353,9 +383,13 @@ class InterfaceType : public Type {
                      int flags) const override;
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                         Variable** cl) const override;
+  const Type* GetStub() const { return stub_; }
+  const Type* GetProxy() const { return proxy_; }
 
  private:
   bool m_oneway;
+  const Type* stub_;
+  const Type* proxy_;
 };
 
 class ClassLoaderType : public Type {

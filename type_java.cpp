@@ -82,30 +82,6 @@ void Type::ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                                    m_qualifiedName + " */"));
 }
 
-void Type::WriteArrayToParcel(StatementBlock* addTo, Variable* v,
-                              Variable* parcel, int flags) const {
-  fprintf(stderr, "aidl:internal error %s:%d qualifiedName=%s\n", __FILE__,
-          __LINE__, m_qualifiedName.c_str());
-  addTo->Add(new LiteralExpression("/* WriteArrayToParcel error " +
-                                   m_qualifiedName + " */"));
-}
-
-void Type::CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
-                                 Variable* parcel, Variable**) const {
-  fprintf(stderr, "aidl:internal error %s:%d qualifiedName=%s\n", __FILE__,
-          __LINE__, m_qualifiedName.c_str());
-  addTo->Add(new LiteralExpression("/* CreateArrayFromParcel error " +
-                                   m_qualifiedName + " */"));
-}
-
-void Type::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
-                               Variable* parcel, Variable**) const {
-  fprintf(stderr, "aidl:internal error %s:%d qualifiedName=%s\n", __FILE__,
-          __LINE__, m_qualifiedName.c_str());
-  addTo->Add(new LiteralExpression("/* ReadArrayFromParcel error " +
-                                   m_qualifiedName + " */"));
-}
-
 Expression* Type::BuildWriteToParcelFlags(int flags) const {
   if (flags == 0) {
     return new LiteralExpression("0");
@@ -127,10 +103,10 @@ BasicType::BasicType(const JavaTypeNamespace* types, const string& name,
                      const string& readArrayParcel)
     : Type(types, name, ValidatableType::KIND_BUILT_IN, true, false),
       m_marshallParcel(marshallParcel),
-      m_unmarshallParcel(unmarshallParcel),
-      m_writeArrayParcel(writeArrayParcel),
-      m_createArrayParcel(createArrayParcel),
-      m_readArrayParcel(readArrayParcel) {}
+      m_unmarshallParcel(unmarshallParcel) {
+  m_array_type.reset(new BasicArrayType(types, name, writeArrayParcel,
+                                        createArrayParcel, readArrayParcel));
+}
 
 void BasicType::WriteToParcel(StatementBlock* addTo, Variable* v,
                               Variable* parcel, int flags) const {
@@ -142,17 +118,28 @@ void BasicType::CreateFromParcel(StatementBlock* addTo, Variable* v,
   addTo->Add(new Assignment(v, new MethodCall(parcel, m_unmarshallParcel)));
 }
 
-void BasicType::WriteArrayToParcel(StatementBlock* addTo, Variable* v,
+BasicArrayType::BasicArrayType(const JavaTypeNamespace* types,
+                               const string& name,
+                               const string& writeArrayParcel,
+                               const string& createArrayParcel,
+                               const string& readArrayParcel)
+    : Type(types, name, ValidatableType::KIND_BUILT_IN, true, false),
+      m_writeArrayParcel(writeArrayParcel),
+      m_createArrayParcel(createArrayParcel),
+      m_readArrayParcel(readArrayParcel) {}
+
+
+void BasicArrayType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                    Variable* parcel, int flags) const {
   addTo->Add(new MethodCall(parcel, m_writeArrayParcel, 1, v));
 }
 
-void BasicType::CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
+void BasicArrayType::CreateFromParcel(StatementBlock* addTo, Variable* v,
                                       Variable* parcel, Variable**) const {
   addTo->Add(new Assignment(v, new MethodCall(parcel, m_createArrayParcel)));
 }
 
-void BasicType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
+void BasicArrayType::ReadFromParcel(StatementBlock* addTo, Variable* v,
                                     Variable* parcel, Variable**) const {
   addTo->Add(new MethodCall(parcel, m_readArrayParcel, 1, v));
 }
@@ -161,7 +148,9 @@ void BasicType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
 
 FileDescriptorType::FileDescriptorType(const JavaTypeNamespace* types)
     : Type(types, "java.io", "FileDescriptor", ValidatableType::KIND_BUILT_IN,
-           true, false) {}
+           true, false) {
+    m_array_type.reset(new FileDescriptorArrayType(types));
+}
 
 void FileDescriptorType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                        Variable* parcel, int flags) const {
@@ -173,17 +162,21 @@ void FileDescriptorType::CreateFromParcel(StatementBlock* addTo, Variable* v,
   addTo->Add(new Assignment(v, new MethodCall(parcel, "readRawFileDescriptor")));
 }
 
-void FileDescriptorType::WriteArrayToParcel(StatementBlock* addTo, Variable* v,
+FileDescriptorArrayType::FileDescriptorArrayType(const JavaTypeNamespace* types)
+    : Type(types, "java.io", "FileDescriptor", ValidatableType::KIND_BUILT_IN,
+           true, true) {}
+
+void FileDescriptorArrayType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                             Variable* parcel, int flags) const {
   addTo->Add(new MethodCall(parcel, "writeRawFileDescriptorArray", 1, v));
 }
 
-void FileDescriptorType::CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
+void FileDescriptorArrayType::CreateFromParcel(StatementBlock* addTo, Variable* v,
                                                Variable* parcel, Variable**) const {
   addTo->Add(new Assignment(v, new MethodCall(parcel, "createRawFileDescriptorArray")));
 }
 
-void FileDescriptorType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
+void FileDescriptorArrayType::ReadFromParcel(StatementBlock* addTo, Variable* v,
                                              Variable* parcel, Variable**) const {
   addTo->Add(new MethodCall(parcel, "readRawFileDescriptorArray", 1, v));
 }
@@ -191,7 +184,9 @@ void FileDescriptorType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
 // ================================================================
 
 BooleanType::BooleanType(const JavaTypeNamespace* types)
-    : Type(types, "boolean", ValidatableType::KIND_BUILT_IN, true, false) {}
+    : Type(types, "boolean", ValidatableType::KIND_BUILT_IN, true, false) {
+    m_array_type.reset(new BooleanArrayType(types));
+}
 
 void BooleanType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                 Variable* parcel, int flags) const {
@@ -207,17 +202,20 @@ void BooleanType::CreateFromParcel(StatementBlock* addTo, Variable* v,
                                        new MethodCall(parcel, "readInt"))));
 }
 
-void BooleanType::WriteArrayToParcel(StatementBlock* addTo, Variable* v,
+BooleanArrayType::BooleanArrayType(const JavaTypeNamespace* types)
+    : Type(types, "boolean", ValidatableType::KIND_BUILT_IN, true, true) {}
+
+void BooleanArrayType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                      Variable* parcel, int flags) const {
   addTo->Add(new MethodCall(parcel, "writeBooleanArray", 1, v));
 }
 
-void BooleanType::CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
+void BooleanArrayType::CreateFromParcel(StatementBlock* addTo, Variable* v,
                                         Variable* parcel, Variable**) const {
   addTo->Add(new Assignment(v, new MethodCall(parcel, "createBooleanArray")));
 }
 
-void BooleanType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
+void BooleanArrayType::ReadFromParcel(StatementBlock* addTo, Variable* v,
                                       Variable* parcel, Variable**) const {
   addTo->Add(new MethodCall(parcel, "readBooleanArray", 1, v));
 }
@@ -225,7 +223,9 @@ void BooleanType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
 // ================================================================
 
 CharType::CharType(const JavaTypeNamespace* types)
-    : Type(types, "char", ValidatableType::KIND_BUILT_IN, true, false) {}
+    : Type(types, "char", ValidatableType::KIND_BUILT_IN, true, false) {
+    m_array_type.reset(new CharArrayType(types));
+}
 
 void CharType::WriteToParcel(StatementBlock* addTo, Variable* v,
                              Variable* parcel, int flags) const {
@@ -238,17 +238,20 @@ void CharType::CreateFromParcel(StatementBlock* addTo, Variable* v,
   addTo->Add(new Assignment(v, new MethodCall(parcel, "readInt"), this));
 }
 
-void CharType::WriteArrayToParcel(StatementBlock* addTo, Variable* v,
+CharArrayType::CharArrayType(const JavaTypeNamespace* types)
+    : Type(types, "char", ValidatableType::KIND_BUILT_IN, true, true) {}
+
+void CharArrayType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                   Variable* parcel, int flags) const {
   addTo->Add(new MethodCall(parcel, "writeCharArray", 1, v));
 }
 
-void CharType::CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
+void CharArrayType::CreateFromParcel(StatementBlock* addTo, Variable* v,
                                      Variable* parcel, Variable**) const {
   addTo->Add(new Assignment(v, new MethodCall(parcel, "createCharArray")));
 }
 
-void CharType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
+void CharArrayType::ReadFromParcel(StatementBlock* addTo, Variable* v,
                                    Variable* parcel, Variable**) const {
   addTo->Add(new MethodCall(parcel, "readCharArray", 1, v));
 }
@@ -257,7 +260,9 @@ void CharType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
 
 StringType::StringType(const JavaTypeNamespace* types)
     : Type(types, "java.lang", "String", ValidatableType::KIND_BUILT_IN,
-           true, false) {}
+           true, false) {
+    m_array_type.reset(new StringArrayType(types));
+}
 
 string StringType::CreatorName() const {
   return "android.os.Parcel.STRING_CREATOR";
@@ -273,17 +278,25 @@ void StringType::CreateFromParcel(StatementBlock* addTo, Variable* v,
   addTo->Add(new Assignment(v, new MethodCall(parcel, "readString")));
 }
 
-void StringType::WriteArrayToParcel(StatementBlock* addTo, Variable* v,
+StringArrayType::StringArrayType(const JavaTypeNamespace* types)
+    : Type(types, "java.lang", "String", ValidatableType::KIND_BUILT_IN,
+           true, true) {}
+
+string StringArrayType::CreatorName() const {
+  return "android.os.Parcel.STRING_CREATOR";
+}
+
+void StringArrayType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                     Variable* parcel, int flags) const {
   addTo->Add(new MethodCall(parcel, "writeStringArray", 1, v));
 }
 
-void StringType::CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
+void StringArrayType::CreateFromParcel(StatementBlock* addTo, Variable* v,
                                        Variable* parcel, Variable**) const {
   addTo->Add(new Assignment(v, new MethodCall(parcel, "createStringArray")));
 }
 
-void StringType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
+void StringArrayType::ReadFromParcel(StatementBlock* addTo, Variable* v,
                                      Variable* parcel, Variable**) const {
   addTo->Add(new MethodCall(parcel, "readStringArray", 1, v));
 }
@@ -379,7 +392,9 @@ void RuntimeExceptionType::CreateFromParcel(StatementBlock* addTo, Variable* v,
 
 IBinderType::IBinderType(const JavaTypeNamespace* types)
     : Type(types, "android.os", "IBinder", ValidatableType::KIND_BUILT_IN,
-           true, false) {}
+           true, false) {
+  m_array_type.reset(new IBinderArrayType(types));
+}
 
 void IBinderType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                 Variable* parcel, int flags) const {
@@ -391,17 +406,21 @@ void IBinderType::CreateFromParcel(StatementBlock* addTo, Variable* v,
   addTo->Add(new Assignment(v, new MethodCall(parcel, "readStrongBinder")));
 }
 
-void IBinderType::WriteArrayToParcel(StatementBlock* addTo, Variable* v,
+IBinderArrayType::IBinderArrayType(const JavaTypeNamespace* types)
+    : Type(types, "android.os", "IBinder", ValidatableType::KIND_BUILT_IN,
+           true, true) {}
+
+void IBinderArrayType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                      Variable* parcel, int flags) const {
   addTo->Add(new MethodCall(parcel, "writeBinderArray", 1, v));
 }
 
-void IBinderType::CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
+void IBinderArrayType::CreateFromParcel(StatementBlock* addTo, Variable* v,
                                         Variable* parcel, Variable**) const {
   addTo->Add(new Assignment(v, new MethodCall(parcel, "createBinderArray")));
 }
 
-void IBinderType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
+void IBinderArrayType::ReadFromParcel(StatementBlock* addTo, Variable* v,
                                       Variable* parcel, Variable**) const {
   addTo->Add(new MethodCall(parcel, "readBinderArray", 1, v));
 }
@@ -557,7 +576,11 @@ UserDataType::UserDataType(const JavaTypeNamespace* types,
     : Type(types, package, name,
            builtIn ? ValidatableType::KIND_BUILT_IN
                    : ValidatableType::KIND_PARCELABLE,
-           canWriteToParcel, true, declFile, declLine) {}
+           canWriteToParcel, true, declFile, declLine) {
+  m_array_type.reset(new UserDataArrayType(types, package, name, builtIn,
+                                           canWriteToParcel, declFile,
+                                           declLine));
+}
 
 string UserDataType::CreatorName() const {
   return QualifiedName() + ".CREATOR";
@@ -619,20 +642,33 @@ void UserDataType::ReadFromParcel(StatementBlock* addTo, Variable* v,
   addTo->Add(ifpart);
 }
 
-void UserDataType::WriteArrayToParcel(StatementBlock* addTo, Variable* v,
+UserDataArrayType::UserDataArrayType(const JavaTypeNamespace* types,
+                           const string& package, const string& name,
+                           bool builtIn, bool canWriteToParcel,
+                           const string& declFile, int declLine)
+    : Type(types, package, name,
+           builtIn ? ValidatableType::KIND_BUILT_IN
+                   : ValidatableType::KIND_PARCELABLE,
+           canWriteToParcel, true, declFile, declLine) {}
+
+string UserDataArrayType::CreatorName() const {
+  return QualifiedName() + ".CREATOR";
+}
+
+void UserDataArrayType::WriteToParcel(StatementBlock* addTo, Variable* v,
                                       Variable* parcel, int flags) const {
   addTo->Add(new MethodCall(parcel, "writeTypedArray", 2, v,
                             BuildWriteToParcelFlags(flags)));
 }
 
-void UserDataType::CreateArrayFromParcel(StatementBlock* addTo, Variable* v,
+void UserDataArrayType::CreateFromParcel(StatementBlock* addTo, Variable* v,
                                          Variable* parcel, Variable**) const {
   string creator = v->type->QualifiedName() + ".CREATOR";
   addTo->Add(new Assignment(v, new MethodCall(parcel, "createTypedArray", 1,
                                               new LiteralExpression(creator))));
 }
 
-void UserDataType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
+void UserDataArrayType::ReadFromParcel(StatementBlock* addTo, Variable* v,
                                        Variable* parcel, Variable**) const {
   string creator = v->type->QualifiedName() + ".CREATOR";
   addTo->Add(new MethodCall(parcel, "readTypedArray", 2, v,
@@ -644,11 +680,13 @@ void UserDataType::ReadArrayFromParcel(StatementBlock* addTo, Variable* v,
 InterfaceType::InterfaceType(const JavaTypeNamespace* types,
                              const string& package, const string& name,
                              bool builtIn, bool oneway, const string& declFile,
-                             int declLine)
+                             int declLine, const Type* stub, const Type* proxy)
     : Type(types, package, name, builtIn ? ValidatableType::KIND_BUILT_IN
                                          : ValidatableType::KIND_INTERFACE,
            true, false, declFile, declLine),
-      m_oneway(oneway) {}
+      m_oneway(oneway),
+      stub_(stub),
+      proxy_(proxy) {}
 
 bool InterfaceType::OneWay() const { return m_oneway; }
 
@@ -840,9 +878,6 @@ bool JavaTypeNamespace::AddParcelableType(const AidlParcelable& p,
 bool JavaTypeNamespace::AddBinderType(const AidlInterface& b,
                                       const std::string& filename) {
   // for interfaces, add the stub, proxy, and interface types.
-  Type* type =
-      new InterfaceType(this, b.GetPackage(), b.GetName(), false,
-                        b.IsOneway(), filename, b.GetLine());
   Type* stub = new Type(this, b.GetPackage(),
                         b.GetName() + ".Stub", ValidatableType::KIND_GENERATED,
                         false, false, filename, b.GetLine());
@@ -850,6 +885,9 @@ bool JavaTypeNamespace::AddBinderType(const AidlInterface& b,
                          b.GetName() + ".Stub.Proxy",
                          ValidatableType::KIND_GENERATED,
                          false, false, filename, b.GetLine());
+  Type* type =
+      new InterfaceType(this, b.GetPackage(), b.GetName(), false,
+                        b.IsOneway(), filename, b.GetLine(), stub, proxy);
 
   bool success = true;
   success &= Add(type);

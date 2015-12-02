@@ -17,7 +17,7 @@ namespace java {
 class StubClass : public Class
 {
 public:
-    StubClass(const Type* type, const Type* interfaceType,
+    StubClass(const Type* type, const InterfaceType* interfaceType,
               JavaTypeNamespace* types);
     virtual ~StubClass();
 
@@ -27,12 +27,12 @@ public:
     Variable* transact_flags;
     SwitchStatement* transact_switch;
 private:
-    void make_as_interface(const Type* interfaceType, JavaTypeNamespace* types);
+    void make_as_interface(const InterfaceType* interfaceType, JavaTypeNamespace* types);
 
     DISALLOW_COPY_AND_ASSIGN(StubClass);
 };
 
-StubClass::StubClass(const Type* type, const Type* interfaceType,
+StubClass::StubClass(const Type* type, const InterfaceType* interfaceType,
                      JavaTypeNamespace* types)
     :Class()
 {
@@ -103,7 +103,7 @@ StubClass::~StubClass()
 }
 
 void
-StubClass::make_as_interface(const Type *interfaceType,
+StubClass::make_as_interface(const InterfaceType *interfaceType,
                              JavaTypeNamespace* types)
 {
     Variable* obj = new Variable(types->IBinderType(), "obj");
@@ -147,9 +147,7 @@ StubClass::make_as_interface(const Type *interfaceType,
         instOfStatement->statements->Add(new ReturnStatement(new Cast(interfaceType, iin)));
     m->statements->Add(instOfStatement);
 
-    string proxyType = interfaceType->QualifiedName();
-    proxyType += ".Stub.Proxy";
-    NewExpression* ne = new NewExpression(types->Find(proxyType));
+    NewExpression* ne = new NewExpression(interfaceType->GetProxy());
     ne->arguments.push_back(obj);
     m->statements->Add(new ReturnStatement(ne));
 
@@ -228,36 +226,21 @@ static void
 generate_write_to_parcel(const Type* t, StatementBlock* addTo, Variable* v,
                             Variable* parcel, int flags)
 {
-    if (v->dimension == 0) {
-        t->WriteToParcel(addTo, v, parcel, flags);
-    }
-    if (v->dimension == 1) {
-        t->WriteArrayToParcel(addTo, v, parcel, flags);
-    }
+    t->WriteToParcel(addTo, v, parcel, flags);
 }
 
 static void
 generate_create_from_parcel(const Type* t, StatementBlock* addTo, Variable* v,
                             Variable* parcel, Variable** cl)
 {
-    if (v->dimension == 0) {
-        t->CreateFromParcel(addTo, v, parcel, cl);
-    }
-    if (v->dimension == 1) {
-        t->CreateArrayFromParcel(addTo, v, parcel, cl);
-    }
+    t->CreateFromParcel(addTo, v, parcel, cl);
 }
 
 static void
 generate_read_from_parcel(const Type* t, StatementBlock* addTo, Variable* v,
                             Variable* parcel, Variable** cl)
 {
-    if (v->dimension == 0) {
-        t->ReadFromParcel(addTo, v, parcel, cl);
-    }
-    if (v->dimension == 1) {
-        t->ReadArrayFromParcel(addTo, v, parcel, cl);
-    }
+    t->ReadFromParcel(addTo, v, parcel, cl);
 }
 
 
@@ -297,13 +280,13 @@ generate_method(const AidlMethod& method, Class* interface,
     Method* decl = new Method;
         decl->comment = method.GetComments();
         decl->modifiers = PUBLIC;
-        decl->returnType = types->Find(method.GetType().GetName());
+        decl->returnType = method.GetType().GetLanguageType<Type>();
         decl->returnTypeDimension = method.GetType().IsArray() ? 1 : 0;
         decl->name = method.GetName();
 
     for (const std::unique_ptr<AidlArgument>& arg : method.GetArguments()) {
         decl->parameters.push_back(new Variable(
-                            types->Find(arg->GetType().GetName()), arg->GetName(),
+                            arg->GetType().GetLanguageType<Type>(), arg->GetName(),
                             arg->GetType().IsArray() ? 1 : 0));
     }
 
@@ -325,7 +308,7 @@ generate_method(const AidlMethod& method, Class* interface,
     Variable* cl = NULL;
     VariableFactory stubArgs("_arg");
     for (const std::unique_ptr<AidlArgument>& arg : method.GetArguments()) {
-        const Type* t = types->Find(arg->GetType().GetName());
+        const Type* t = arg->GetType().GetLanguageType<Type>();
         Variable* v = stubArgs.Get(t);
         v->dimension = arg->GetType().IsArray() ? 1 : 0;
 
@@ -378,7 +361,7 @@ generate_method(const AidlMethod& method, Class* interface,
     // out parameters
     i = 0;
     for (const std::unique_ptr<AidlArgument>& arg : method.GetArguments()) {
-        const Type* t = types->Find(arg->GetType().GetName());
+        const Type* t = arg->GetType().GetLanguageType<Type>();
         Variable* v = stubArgs.Get(i++);
 
         if (arg->GetDirection() & AidlArgument::OUT_DIR) {
@@ -397,13 +380,13 @@ generate_method(const AidlMethod& method, Class* interface,
     Method* proxy = new Method;
         proxy->comment = method.GetComments();
         proxy->modifiers = PUBLIC | OVERRIDE;
-        proxy->returnType = types->Find(method.GetType().GetName());
+        proxy->returnType = method.GetType().GetLanguageType<Type>();
         proxy->returnTypeDimension = method.GetType().IsArray() ? 1 : 0;
         proxy->name = method.GetName();
         proxy->statements = new StatementBlock;
         for (const std::unique_ptr<AidlArgument>& arg : method.GetArguments()) {
             proxy->parameters.push_back(new Variable(
-                            types->Find(arg->GetType().GetName()), arg->GetName(),
+                            arg->GetType().GetLanguageType<Type>(), arg->GetName(),
                             arg->GetType().IsArray() ? 1 : 0));
         }
         proxy->exceptions.push_back(types->RemoteExceptionType());
@@ -442,7 +425,7 @@ generate_method(const AidlMethod& method, Class* interface,
 
     // the parameters
     for (const std::unique_ptr<AidlArgument>& arg : method.GetArguments()) {
-        const Type* t = types->Find(arg->GetType().GetName());
+        const Type* t = arg->GetType().GetLanguageType<Type>();
         Variable* v = new Variable(t, arg->GetName(), arg->GetType().IsArray() ? 1 : 0);
         AidlArgument::Direction dir = arg->GetDirection();
         if (dir == AidlArgument::OUT_DIR && arg->GetType().IsArray()) {
@@ -483,7 +466,7 @@ generate_method(const AidlMethod& method, Class* interface,
 
         // the out/inout parameters
         for (const std::unique_ptr<AidlArgument>& arg : method.GetArguments()) {
-            const Type* t = types->Find(arg->GetType().GetName());
+            const Type* t = arg->GetType().GetLanguageType<Type>();
             Variable* v = new Variable(t, arg->GetName(), arg->GetType().IsArray() ? 1 : 0);
             if (arg->GetDirection() & AidlArgument::OUT_DIR) {
                 generate_read_from_parcel(t, tryStatement->statements,
@@ -526,8 +509,7 @@ Class*
 generate_binder_interface_class(const AidlInterface* iface,
                                 JavaTypeNamespace* types)
 {
-    const InterfaceType* interfaceType = static_cast<const InterfaceType*>(
-        types->Find(iface->GetCanonicalName()));
+    const InterfaceType* interfaceType = iface->GetLanguageType<InterfaceType>();
 
     // the interface class
     Class* interface = new Class;
@@ -539,14 +521,14 @@ generate_binder_interface_class(const AidlInterface* iface,
 
     // the stub inner class
     StubClass* stub = new StubClass(
-        types->Find(iface->GetCanonicalName() + ".Stub"),
+        interfaceType->GetStub(),
         interfaceType, types);
     interface->elements.push_back(stub);
 
     // the proxy inner class
     ProxyClass* proxy = new ProxyClass(
         types,
-        types->Find(iface->GetCanonicalName() + ".Stub.Proxy"),
+        interfaceType->GetProxy(),
         interfaceType);
     stub->elements.push_back(proxy);
 

@@ -221,9 +221,9 @@ TEST_F(AidlTest, UnderstandsNativeParcelables) {
   EXPECT_NE(nullptr, cpp_parse_result);
   auto cpp_type = cpp_types_.Find("Bar");
   ASSERT_NE(nullptr, cpp_type);
-  EXPECT_EQ("::p::Bar", cpp_type->CppType(false));
+  EXPECT_EQ("::p::Bar", cpp_type->CppType());
   set<string> headers;
-  cpp_type->GetHeaders(false, &headers);
+  cpp_type->GetHeaders(&headers);
   EXPECT_EQ(1u, headers.size());
   EXPECT_EQ(1u, headers.count("baz/header"));
 
