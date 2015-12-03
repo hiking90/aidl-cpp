@@ -65,12 +65,16 @@ class AidlType : public AidlNode {
     return reinterpret_cast<const T*>(language_type_);
   }
 
+  void SetNullable() { nullable_ = true; }
+  bool GetNullable() const { return nullable_; }
+
  private:
   std::string name_;
   unsigned line_;
   bool is_array_;
   std::string comments_;
   const android::aidl::ValidatableType* language_type_ = nullptr;
+  bool nullable_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(AidlType);
 };

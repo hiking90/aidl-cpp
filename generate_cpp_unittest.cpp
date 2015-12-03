@@ -44,7 +44,7 @@ R"(package android.os;
 import foo.IFooType;
 interface IComplexTypeInterface {
   const int MY_CONSTANT = 3;
-  int[] Send(in int[] goes_in, inout double[] goes_in_and_out, out boolean[] goes_out);
+  int[] Send(in @nullable int[] goes_in, inout double[] goes_in_and_out, out boolean[] goes_out);
   oneway void Piff(int times);
   IFooType TakesABinder(IFooType f);
   List<String> StringListMethod(in java.util.List<String> input, out List<String> output);
