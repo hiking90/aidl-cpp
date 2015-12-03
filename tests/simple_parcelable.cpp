@@ -52,5 +52,5 @@ std::string SimpleParcelable::toString() const {
 }
 
 }  // namespace tests
-}  // namespace aidl[
+}  // namespace aidl
 }  // namespace android
