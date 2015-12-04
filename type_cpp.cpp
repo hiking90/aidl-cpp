@@ -45,6 +45,7 @@ const char kNoPackage[] = "";
 const char kNoHeader[] = "";
 const char kNoValidMethod[] = "";
 Type* const kNoArrayType = nullptr;
+Type* const kNoNullableType = nullptr;
 
 bool is_cpp_keyword(const std::string& str) {
   static const std::vector<std::string> kCppKeywords{
@@ -87,25 +88,43 @@ class PrimitiveType : public Type {
                 const std::string& read_array_method,
                 const std::string& write_array_method)
       : Type(kind, package, aidl_type, {header}, cpp_type, read_method,
-             write_method, new PrimitiveType(kind, package, aidl_type + "[]",
-                                             header,
-                                             "::std::vector<" + cpp_type + ">",
-                                             read_array_method,
-                                             write_array_method)) {}
+             write_method, PrimitiveArrayType(kind, package, aidl_type,
+                                              header, cpp_type,
+                                              read_array_method,
+                                              write_array_method)) {}
+
   virtual ~PrimitiveType() = default;
   bool IsCppPrimitive() const override { return true; }
   bool CanBeOutParameter() const override { return is_array_; }
 
  protected:
+  static PrimitiveType* PrimitiveArrayType(int kind,  // from ValidatableType
+                                           const std::string& package,
+                                           const std::string& aidl_type,
+                                           const std::string& header,
+                                           const std::string& cpp_type,
+                                           const std::string& read_method,
+                                           const std::string& write_method) {
+    PrimitiveType* nullable =
+        new PrimitiveType(kind, package, aidl_type + "[]", header,
+                          "::std::unique_ptr<::std::vector<" + cpp_type + ">>",
+                          read_method, write_method);
+
+    return new PrimitiveType(kind, package, aidl_type + "[]", header,
+                             "::std::vector<" + cpp_type + ">",
+                             read_method, write_method, nullable);
+  }
+
   PrimitiveType(int kind,  // from ValidatableType
                 const std::string& package,
                 const std::string& aidl_type,
                 const std::string& header,
                 const std::string& cpp_type,
                 const std::string& read_method,
-                const std::string& write_method)
+                const std::string& write_method,
+                Type* nullable_type = nullptr)
       : Type(kind, package, aidl_type, {header, "vector"}, cpp_type, read_method,
-             write_method) {
+             write_method, kNoArrayType, nullable_type) {
     is_array_ = true;
   }
 
@@ -122,7 +141,8 @@ class BinderType : public Type {
              interface.GetPackage(), interface.GetName(),
              {GetCppHeader(interface)}, GetCppName(interface),
              "readStrongBinder", "writeStrongBinder",
-             kNoArrayType, src_file_name, interface.GetLine()) {}
+             kNoArrayType, kNoNullableType, src_file_name,
+             interface.GetLine()) {}
   virtual ~BinderType() = default;
 
   string WriteCast(const string& val) const override {
@@ -150,21 +170,62 @@ class BinderType : public Type {
   }
 };
 
-class ParcelableArrayType : public Type {
+class NullableParcelableArrayType : public ArrayType {
+ public:
+  NullableParcelableArrayType(const AidlParcelable& parcelable,
+                              const std::string& src_file_name)
+      : ArrayType(ValidatableType::KIND_PARCELABLE,
+                  parcelable.GetPackage(), parcelable.GetName(),
+                  {parcelable.GetCppHeader(), "vector"},
+                  GetCppName(parcelable), "readParcelableVector",
+                  "writeParcelableVector", kNoArrayType, kNoNullableType,
+                  src_file_name, parcelable.GetLine()) {}
+  virtual ~NullableParcelableArrayType() = default;
+
+ private:
+  static string GetCppName(const AidlParcelable& parcelable) {
+    return "::std::unique_ptr<::std::vector<std::unique_ptr<" +
+        Join(parcelable.GetSplitPackage(), "::") + "::" +
+        parcelable.GetName() + ">>>";
+  }
+};
+
+class ParcelableArrayType : public ArrayType {
  public:
   ParcelableArrayType(const AidlParcelable& parcelable,
                       const std::string& src_file_name)
-      : Type(ValidatableType::KIND_PARCELABLE,
-             parcelable.GetPackage(), parcelable.GetName(),
-             {parcelable.GetCppHeader(), "vector"}, GetCppName(parcelable),
-             "readParcelableVector", "writeParcelableVector",
-             kNoArrayType, src_file_name, parcelable.GetLine()) {}
+      : ArrayType(ValidatableType::KIND_PARCELABLE,
+                  parcelable.GetPackage(), parcelable.GetName(),
+                  {parcelable.GetCppHeader(), "vector"},
+                  GetCppName(parcelable), "readParcelableVector",
+                  "writeParcelableVector", kNoArrayType,
+                  new NullableParcelableArrayType(parcelable, src_file_name),
+                  src_file_name, parcelable.GetLine()) {}
   virtual ~ParcelableArrayType() = default;
-  bool CanBeOutParameter() const override { return true; }
 
  private:
   static string GetCppName(const AidlParcelable& parcelable) {
     return "::std::vector<" + Join(parcelable.GetSplitPackage(), "::") +
+        "::" + parcelable.GetName() + ">";
+  }
+};
+
+class NullableParcelableType : public Type {
+ public:
+  NullableParcelableType(const AidlParcelable& parcelable,
+                         const std::string& src_file_name)
+      : Type(ValidatableType::KIND_PARCELABLE,
+             parcelable.GetPackage(), parcelable.GetName(),
+             {parcelable.GetCppHeader()}, GetCppName(parcelable),
+             "readParcelable", "writeNullableParcelable",
+             kNoArrayType, kNoNullableType,
+             src_file_name, parcelable.GetLine()) {}
+  virtual ~NullableParcelableType() = default;
+  bool CanBeOutParameter() const override { return true; }
+
+ private:
+  static string GetCppName(const AidlParcelable& parcelable) {
+    return "::std::unique_ptr<::" + Join(parcelable.GetSplitPackage(), "::") +
         "::" + parcelable.GetName() + ">";
   }
 };
@@ -178,6 +239,7 @@ class ParcelableType : public Type {
              {parcelable.GetCppHeader()}, GetCppName(parcelable),
              "readParcelable", "writeParcelable",
              new ParcelableArrayType(parcelable, src_file_name),
+             new NullableParcelableType(parcelable, src_file_name),
              src_file_name, parcelable.GetLine()) {}
   virtual ~ParcelableType() = default;
   bool CanBeOutParameter() const override { return true; }
@@ -189,13 +251,28 @@ class ParcelableType : public Type {
   }
 };
 
+class NullableStringListType : public Type {
+ public:
+  NullableStringListType()
+      : Type(ValidatableType::KIND_BUILT_IN, "java.util", "List<String>",
+             {"utils/String16.h", "vector"},
+             "::std::unique_ptr<::std::vector<std::unique_ptr<::android::String16>>>",
+             "readString16Vector", "writeString16Vector") {}
+  virtual ~NullableStringListType() = default;
+  bool CanBeOutParameter() const override { return true; }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(NullableStringListType);
+};  // class NullableStringListType
+
 class StringListType : public Type {
  public:
   StringListType()
       : Type(ValidatableType::KIND_BUILT_IN, "java.util", "List<String>",
              {"utils/String16.h", "vector"},
              "::std::vector<::android::String16>",
-             "readString16Vector", "writeString16Vector") {}
+             "readString16Vector", "writeString16Vector",
+             kNoArrayType, new NullableStringListType()) {}
   virtual ~StringListType() = default;
   bool CanBeOutParameter() const override { return true; }
 
@@ -203,13 +280,28 @@ class StringListType : public Type {
   DISALLOW_COPY_AND_ASSIGN(StringListType);
 };  // class StringListType
 
+class NullableBinderListType : public Type {
+ public:
+  NullableBinderListType()
+      : Type(ValidatableType::KIND_BUILT_IN, "java.util",
+             "List<android.os.IBinder>", {"binder/IBinder.h", "vector"},
+             "::std::unique_ptr<::std::vector<::android::sp<::android::IBinder>>>",
+             "readStrongBinderVector", "writeStrongBinderVector") {}
+  virtual ~NullableBinderListType() = default;
+  bool CanBeOutParameter() const override { return true; }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(NullableBinderListType);
+};  // class NullableBinderListType
+
 class BinderListType : public Type {
  public:
   BinderListType()
       : Type(ValidatableType::KIND_BUILT_IN, "java.util",
              "List<android.os.IBinder>", {"binder/IBinder.h", "vector"},
              "::std::vector<::android::sp<::android::IBinder>>",
-             "readStrongBinderVector", "writeStrongBinderVector") {}
+             "readStrongBinderVector", "writeStrongBinderVector",
+             kNoArrayType, new NullableBinderListType()) {}
   virtual ~BinderListType() = default;
   bool CanBeOutParameter() const override { return true; }
 
@@ -227,6 +319,7 @@ Type::Type(int kind,
            const string& read_method,
            const string& write_method,
            Type* array_type,
+           Type* nullable_type,
            const string& src_file_name,
            int line)
     : ValidatableType(kind, package, aidl_type, src_file_name, line),
@@ -235,7 +328,8 @@ Type::Type(int kind,
       cpp_type_(cpp_type),
       parcel_read_method_(read_method),
       parcel_write_method_(write_method),
-      array_type_(array_type) {}
+      array_type_(array_type),
+      nullable_type_(nullable_type) {}
 
 bool Type::CanWriteToParcel() const { return true; }
 
@@ -270,16 +364,29 @@ void TypeNamespace::Init() {
       kNoHeader, "char16_t", "readChar", "writeChar",
       "readCharVector", "writeCharVector"));
 
-  Type* string_array_type = new Type(ValidatableType::KIND_BUILT_IN,
-                                     kNoPackage, "String[]",
-                                     {"utils/String16.h", "vector"},
-                                     "::std::vector<::android::String16>",
-                                     "readString16Vector",
-                                     "writeString16Vector");
+  Type* nullable_string_array_type =
+      new ArrayType(ValidatableType::KIND_BUILT_IN, kNoPackage, "String[]",
+                    {"utils/String16.h", "vector"},
+                    "::std::unique_ptr<::std::vector<::std::unique_ptr<::android::String16>>>",
+                    "readString16Vector", "writeString16Vector");
+
+  Type* string_array_type = new ArrayType(ValidatableType::KIND_BUILT_IN,
+                                          kNoPackage, "String[]",
+                                          {"utils/String16.h", "vector"},
+                                          "::std::vector<::android::String16>",
+                                          "readString16Vector",
+                                          "writeString16Vector", kNoArrayType,
+                                          nullable_string_array_type);
+
+  Type* nullable_string_type =
+      new Type(ValidatableType::KIND_BUILT_IN, kNoPackage, "String",
+               {"utils/String16.h"}, "::std::unique_ptr<::android::String16>",
+               "readString16", "writeString16");
+
   string_type_ = new Type(ValidatableType::KIND_BUILT_IN, kNoPackage, "String",
                           {"utils/String16.h"}, "::android::String16",
                           "readString16", "writeString16",
-                          string_array_type);
+                          string_array_type, nullable_string_type);
   Add(string_type_);
 
   ibinder_type_ = new Type(ValidatableType::KIND_BUILT_IN, "android.os",
@@ -291,7 +398,7 @@ void TypeNamespace::Init() {
   Add(new BinderListType());
   Add(new StringListType());
 
-  Type* fd_vector_type = new Type(
+  Type* fd_vector_type = new ArrayType(
       ValidatableType::KIND_BUILT_IN, kNoPackage, "FileDescriptor[]",
       {"nativehelper/ScopedFd.h", "vector"}, "::std::vector<::ScopedFd>",
       "readUniqueFileDescriptorVector", "writeUniqueFileDescriptorVector");
@@ -364,12 +471,9 @@ bool TypeNamespace::IsValidPackage(const string& package) const {
   return true;
 }
 
-bool TypeNamespace::IsValidArg(const AidlArgument& a,
-                               int arg_index,
-                               const std::string& filename) const {
-  if (!::android::aidl::TypeNamespace::IsValidArg(a, arg_index, filename)) {
-    return false;
-  }
+const ValidatableType* TypeNamespace::GetArgType(const AidlArgument& a,
+    int arg_index,
+    const std::string& filename) const {
   const string error_prefix = StringPrintf(
       "In file %s line %d parameter %s (%d):\n    ",
       filename.c_str(), a.GetLine(), a.GetName().c_str(), arg_index);
@@ -378,10 +482,10 @@ bool TypeNamespace::IsValidArg(const AidlArgument& a,
   if (is_cpp_keyword(a.GetName().c_str())) {
     cerr << error_prefix << "Argument name is a C++ keyword"
          << endl;
-    return false;
+    return nullptr;
   }
 
-  return true;
+  return ::android::aidl::TypeNamespace::GetArgType(a, arg_index, filename);
 }
 
 }  // namespace cpp

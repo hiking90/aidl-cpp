@@ -171,8 +171,8 @@ bool TypeNamespace::IsValidPackage(const string& /* package */) const {
   return true;
 }
 
-bool TypeNamespace::IsValidReturnType(const AidlType& raw_type,
-                                      const string& filename) const {
+const ValidatableType* TypeNamespace::GetReturnType(const AidlType& raw_type,
+                           const string& filename) const {
   const string error_prefix = StringPrintf(
       "In file %s line %d return type %s:\n    ",
       filename.c_str(), raw_type.GetLine(), raw_type.ToString().c_str());
@@ -180,25 +180,38 @@ bool TypeNamespace::IsValidReturnType(const AidlType& raw_type,
   const ValidatableType* return_type = GetValidatableType(raw_type.GetName());
   if (return_type == nullptr) {
     cerr << error_prefix << "unknown return type" << endl;
-    return false;
+    return nullptr;
   }
 
   if (raw_type.GetName() != "void" && !return_type->CanWriteToParcel()) {
     cerr << error_prefix << "return type cannot be marshalled" << endl;
-    return false;
+    return nullptr;
   }
 
-  if (raw_type.IsArray() && !return_type->CanBeArray()) {
+  if (raw_type.IsArray()) {
+      return_type = return_type->ArrayType();
+  }
+
+  if (!return_type) {
     cerr << error_prefix << "return type cannot be an array" << endl;
-    return false;
+    return nullptr;
   }
 
-  return true;
+  if (raw_type.IsNullable()) {
+    return_type = return_type->NullableType();
+  }
+
+  if (!return_type) {
+    cerr << error_prefix << "return type cannot be nullable" << endl;
+    return nullptr;
+  }
+
+  return return_type;
 }
 
-bool TypeNamespace::IsValidArg(const AidlArgument& a,
-                               int arg_index,
-                               const string& filename) const {
+const ValidatableType* TypeNamespace::GetArgType(const AidlArgument& a,
+                           int arg_index,
+                           const string& filename) const {
   string error_prefix = StringPrintf(
       "In file %s line %d parameter %s (%d):\n    ",
       filename.c_str(), a.GetLine(), a.GetName().c_str(), arg_index);
@@ -208,56 +221,69 @@ bool TypeNamespace::IsValidArg(const AidlArgument& a,
   if (t == nullptr) {
     cerr << error_prefix << "unknown type " << a.GetType().GetName().c_str()
          << endl;
-    return false;
+    return nullptr;
   }
 
   if (!t->CanWriteToParcel()) {
     cerr << error_prefix
          << StringPrintf("'%s' can't be marshalled.",
                          a.GetType().ToString().c_str()) << endl;
-    return false;
+    return nullptr;
   }
 
-  if (!a.DirectionWasSpecified() &&
-      (a.GetType().IsArray() || t->CanBeOutParameter())) {
+  if (a.GetType().IsArray()) {
+    t = t->ArrayType();
+  }
+
+  if (!t) {
+    cerr << error_prefix << StringPrintf(
+        "'%s' cannot be an array.",
+        a.ToString().c_str()) << endl;
+    return nullptr;
+  }
+
+  if (a.GetType().IsNullable()) {
+    t = t->NullableType();
+  }
+
+  if (!t) {
+    cerr << error_prefix << StringPrintf(
+        "'%s' cannot be nullable.",
+        a.ToString().c_str()) << endl;
+    return nullptr;
+  }
+
+  if (!a.DirectionWasSpecified() && t->CanBeOutParameter()) {
     cerr << error_prefix << StringPrintf(
         "'%s' can be an out type, so you must declare it as in,"
         " out or inout.",
         a.GetType().ToString().c_str()) << endl;
-    return false;
+    return nullptr;
   }
 
   if (a.GetDirection() != AidlArgument::IN_DIR &&
-      !t->CanBeOutParameter() &&
-      !a.GetType().IsArray()) {
+      !t->CanBeOutParameter()) {
     cerr << error_prefix << StringPrintf(
         "'%s' can only be an in parameter.",
         a.ToString().c_str()) << endl;
-    return false;
-  }
-
-  if (a.GetType().IsArray() && !t->CanBeArray()) {
-    cerr << error_prefix << StringPrintf(
-        "'%s' cannot be an array.",
-        a.ToString().c_str()) << endl;
-    return false;
+    return nullptr;
   }
 
   // check that the name doesn't match a keyword
   if (is_java_keyword(a.GetName().c_str())) {
     cerr << error_prefix << "Argument name is a Java or aidl keyword"
          << endl;
-    return false;
+    return nullptr;
   }
 
   // Reserve a namespace for internal use
   if (a.GetName().substr(0, 5)  == "_aidl") {
     cerr << error_prefix << "Argument name cannot begin with '_aidl'"
          << endl;
-    return false;
+    return nullptr;
   }
 
-  return true;
+  return t;
 }
 
 }  // namespace aidl

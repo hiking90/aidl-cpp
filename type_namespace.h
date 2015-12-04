@@ -47,6 +47,7 @@ class ValidatableType {
   virtual bool CanWriteToParcel() const = 0;
 
   virtual const ValidatableType* ArrayType() const = 0;
+  virtual const ValidatableType* NullableType() const = 0;
 
   // Name() returns the short name of an object (without package qualifiers).
   virtual std::string Name() const { return type_name_; }
@@ -95,13 +96,13 @@ class TypeNamespace {
   virtual bool IsValidPackage(const std::string& package) const;
 
   // Returns true iff |raw_type| is a valid return type.
-  virtual bool IsValidReturnType(const AidlType& raw_type,
-                                 const std::string& filename) const;
+  virtual const ValidatableType* GetReturnType(const AidlType& raw_type,
+      const std::string& filename) const;
 
   // Returns true iff |arg_type| is a valid method argument.
-  virtual bool IsValidArg(const AidlArgument& a,
-                          int arg_index,
-                          const std::string& filename) const;
+  virtual const ValidatableType* GetArgType(const AidlArgument& a,
+                                            int arg_index,
+                                            const std::string& filename) const;
 
   // Returns true if this is a container type, rather than a normal type.
   virtual bool IsContainerType(const std::string& type_name) const;

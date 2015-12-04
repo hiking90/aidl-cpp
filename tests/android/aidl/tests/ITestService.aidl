@@ -65,4 +65,10 @@ interface ITestService {
 
   // Test that service specific exceptions work correctly.
   void ThrowServiceException(int code);
+
+  // Test nullability
+  @nullable int[] RepeatNullableIntArray(in @nullable int[] input);
+  @nullable String RepeatNullableString(in @nullable String input);
+  @nullable List<String> RepeatNullableStringList(in @nullable List<String> input);
+  @nullable SimpleParcelable RepeatNullableParcelable(in @nullable SimpleParcelable input);
 }

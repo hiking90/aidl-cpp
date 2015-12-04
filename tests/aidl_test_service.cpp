@@ -66,6 +66,7 @@ using android::aidl::tests::SimpleParcelable;
 
 // Standard library
 using std::map;
+using std::unique_ptr;
 using std::vector;
 
 namespace android {
@@ -202,6 +203,19 @@ class NativeService : public BnTestService {
     return Status::ok();
   }
 
+  template<typename T>
+  Status RepeatNullable(const unique_ptr<T>& input,
+                        unique_ptr<T>* _aidl_return) {
+    ALOGI("Repeating nullable value");
+
+    _aidl_return->reset();
+    if (input) {
+      _aidl_return->reset(new T(*input));
+    }
+
+    return Status::ok();
+  }
+
   Status ReverseBoolean(const vector<bool>& input,
                         vector<bool>* repeated,
                         vector<bool>* _aidl_return) override {
@@ -304,6 +318,43 @@ class NativeService : public BnTestService {
 
   Status ThrowServiceException(int code) override {
     return Status::fromServiceSpecificError(code);
+  }
+
+  Status RepeatNullableIntArray(const unique_ptr<vector<int32_t>>& input,
+                                unique_ptr<vector<int32_t>>* _aidl_return) {
+    return RepeatNullable(input, _aidl_return);
+  }
+
+  Status RepeatNullableStringList(
+             const unique_ptr<vector<unique_ptr<String16>>>& input,
+             unique_ptr<vector<unique_ptr<String16>>>* _aidl_return) {
+    ALOGI("Repeating nullable string list");
+    if (!input) {
+      _aidl_return->reset();
+      return Status::ok();
+    }
+
+    _aidl_return->reset(new vector<unique_ptr<String16>>);
+
+    for (const auto& item : *input) {
+      if (!item) {
+        (*_aidl_return)->emplace_back(nullptr);
+      } else {
+        (*_aidl_return)->emplace_back(new String16(*item));
+      }
+    }
+
+    return Status::ok();
+  }
+
+  Status RepeatNullableString(const unique_ptr<String16>& input,
+                              unique_ptr<String16>* _aidl_return) {
+    return RepeatNullable(input, _aidl_return);
+  }
+
+  Status RepeatNullableParcelable(const unique_ptr<SimpleParcelable>& input,
+                              unique_ptr<SimpleParcelable>* _aidl_return) {
+    return RepeatNullable(input, _aidl_return);
   }
 
  private:

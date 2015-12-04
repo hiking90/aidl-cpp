@@ -66,7 +66,7 @@ class AidlType : public AidlNode {
   }
 
   void SetNullable() { nullable_ = true; }
-  bool GetNullable() const { return nullable_; }
+  bool IsNullable() const { return nullable_; }
 
  private:
   std::string name_;
