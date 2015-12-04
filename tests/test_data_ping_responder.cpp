@@ -84,7 +84,7 @@ BpPingResponder::BpPingResponder(const ::android::sp<::android::IBinder>& _aidl_
 ::android::binder::Status BpPingResponder::Ping(int32_t token, int32_t* _aidl_return) {
 ::android::Parcel _aidl_data;
 ::android::Parcel _aidl_reply;
-::android::status_t _aidl_ret_status;
+::android::status_t _aidl_ret_status = ::android::OK;
 ::android::binder::Status _aidl_status;
 _aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
 if (((_aidl_ret_status) != (::android::OK))) {
@@ -125,7 +125,7 @@ namespace android {
 namespace os {
 
 ::android::status_t BnPingResponder::onTransact(uint32_t _aidl_code, const ::android::Parcel& _aidl_data, ::android::Parcel* _aidl_reply, uint32_t _aidl_flags) {
-::android::status_t _aidl_ret_status;
+::android::status_t _aidl_ret_status = ::android::OK;
 switch (_aidl_code) {
 case Call::PING:
 {
