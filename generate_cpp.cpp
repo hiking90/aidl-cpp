@@ -23,7 +23,7 @@
 #include <set>
 #include <string>
 
-#include <base/stringprintf.h>
+#include <android-base/stringprintf.h>
 
 #include "aidl_language.h"
 #include "ast_cpp.h"

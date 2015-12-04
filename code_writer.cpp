@@ -19,7 +19,7 @@
 #include <iostream>
 #include <stdarg.h>
 
-#include <base/stringprintf.h>
+#include <android-base/stringprintf.h>
 
 using std::cerr;
 using std::endl;

@@ -18,7 +18,7 @@
 #include <iostream>
 #include <iterator>
 
-#include <base/strings.h>
+#include <android-base/strings.h>
 
 #include "os.h"
 #include "tests/test_util.h"

@@ -16,7 +16,7 @@
 
 #include "fake_io_delegate.h"
 
-#include <base/stringprintf.h>
+#include <android-base/stringprintf.h>
 
 #include "logging.h"
 #include "os.h"

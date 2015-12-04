@@ -16,7 +16,7 @@
 
 #include <string>
 
-#include <base/stringprintf.h>
+#include <android-base/stringprintf.h>
 #include <gtest/gtest.h>
 
 #include "aidl.h"
