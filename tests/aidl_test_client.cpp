@@ -83,7 +83,9 @@ int main(int /* argc */, char * /* argv */ []) {
 
   if (!client_tests::ConfirmReverseBinderLists(service)) return 1;
 
-  if (!client_tests::ConfirmParcelables(service)) return 1;
+  if (!client_tests::ConfirmSimpleParcelables(service)) return 1;
+
+  if (!client_tests::ConfirmPersistableBundles(service)) return 1;
 
   if (!client_tests::ConfirmFileDescriptors(service)) return 1;
 

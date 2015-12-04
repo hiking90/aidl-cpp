@@ -23,6 +23,7 @@ import android.content.Intent;
 import android.os.ServiceSpecificException;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.PersistableBundle;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.util.Log;
@@ -38,8 +39,8 @@ import java.util.Collections;
 import java.util.List;
 
 // Generated
-import android.aidl.tests.ITestService;
 import android.aidl.tests.INamedCallback;
+import android.aidl.tests.ITestService;
 
 public class TestServiceClient extends Activity {
     private static final String TAG = "TestServiceClient";
@@ -423,22 +424,22 @@ public class TestServiceClient extends Activity {
         mLog.log("...service can reverse and return lists.");
     }
 
-    private void checkParcelables(ITestService service)
+    private void checkSimpleParcelables(ITestService service)
             throws TestFailException {
-        mLog.log("Checking that service can repeat and reverse parcelables...");
+        mLog.log("Checking that service can repeat and reverse SimpleParcelable objects...");
         try {
             {
                 SimpleParcelable input = new SimpleParcelable("foo", 42);
                 SimpleParcelable out_param = new SimpleParcelable();
                 SimpleParcelable returned =
-                        service.RepeatParcelable(input, out_param);
+                        service.RepeatSimpleParcelable(input, out_param);
                 if (!input.equals(out_param)) {
                     mLog.log(input.toString() + " != " + out_param.toString());
-                    mLog.logAndThrow("out param parcelable was not equivalent");
+                    mLog.logAndThrow("out param SimpleParcelable was not equivalent");
                 }
                 if (!input.equals(returned)) {
                     mLog.log(input.toString() + " != " + returned.toString());
-                    mLog.logAndThrow("returned parcelable was not equivalent");
+                    mLog.logAndThrow("returned SimpleParcelable was not equivalent");
                 }
             }
             {
@@ -447,15 +448,15 @@ public class TestServiceClient extends Activity {
                 input[1] = new SimpleParcelable("b", 2);
                 input[2] = new SimpleParcelable("c", 3);
                 SimpleParcelable[] repeated = new SimpleParcelable[3];
-                SimpleParcelable[] reversed = service.ReverseParcelables(
+                SimpleParcelable[] reversed = service.ReverseSimpleParcelables(
                         input, repeated);
                 if (!Arrays.equals(input, repeated)) {
                     mLog.logAndThrow(
-                            "Repeated list of parcelables did not match.");
+                            "Repeated list of SimpleParcelable objects did not match.");
                 }
                 if (input.length != reversed.length) {
                     mLog.logAndThrow(
-                            "Reversed list of parcelables had wrong length.");
+                            "Reversed list of SimpleParcelable objects had wrong length.");
                 }
                 for (int i = 0, k = input.length - 1;
                      i < input.length;
@@ -463,16 +464,133 @@ public class TestServiceClient extends Activity {
                     if (!input[i].equals(reversed[k])) {
                         mLog.log(input[i].toString() + " != " +
                                  reversed[k].toString());
-                        mLog.logAndThrow("reversed parcelable was " +
-                                         "not equivalent");
+                        mLog.logAndThrow("reversed SimpleParcelable was not equivalent");
                     }
                 }
             }
         } catch (Exception ex) {
             mLog.log(ex.toString());
-            mLog.logAndThrow("Service failed to handle Parcelables.");
+            mLog.logAndThrow("Service failed to handle SimpleParcelable objects.");
         }
-        mLog.log("...service can manipulate parcelables.");
+        mLog.log("...service can manipulate SimpleParcelable objects.");
+    }
+
+    private void checkPersistableBundles(ITestService service)
+            throws TestFailException {
+        mLog.log("Checking that service can repeat and reverse PersistableBundle objects...");
+        try {
+            {
+                PersistableBundle emptyBundle = new PersistableBundle();
+                PersistableBundle returned = service.RepeatPersistableBundle(emptyBundle);
+                if (emptyBundle.size() != 0 || returned.size() != 0) {
+                    mLog.log(emptyBundle.toString() + " != " + returned.toString());
+                    mLog.logAndThrow("returned empty PersistableBundle object was not equivalent");
+                }
+                mLog.log("...service can repeat and reverse empty PersistableBundle objects...");
+            }
+            {
+                final String testBoolKey = new String("testBool");
+                final String testIntKey = new String("testInt");
+                final String testNestedIntKey = new String("testNestedInt");
+                final String testLongKey = new String("testLong");
+                final String testDoubleKey = new String("testDouble");
+                final String testStringKey = new String("testString");
+                final String testBoolArrayKey = new String("testBoolArray");
+                final String testIntArrayKey = new String("testIntArray");
+                final String testLongArrayKey = new String("testLongArray");
+                final String testDoubleArrayKey = new String("testDoubleArray");
+                final String testStringArrayKey = new String("testStringArray");
+                final String testPersistableBundleKey = new String("testPersistableBundle");
+                PersistableBundle nonEmptyBundle = new PersistableBundle();
+                nonEmptyBundle.putBoolean(testBoolKey, false);
+                nonEmptyBundle.putInt(testIntKey, 33);
+                nonEmptyBundle.putLong(testLongKey, 34359738368L);
+                nonEmptyBundle.putDouble(testDoubleKey, 1.1);
+                nonEmptyBundle.putString(testStringKey, new String("Woot!"));
+                nonEmptyBundle.putBooleanArray(testBoolArrayKey, new boolean[] {true, false, true});
+                nonEmptyBundle.putIntArray(testIntArrayKey, new int[] {33, 44, 55, 142});
+                nonEmptyBundle.putLongArray(
+                    testLongArrayKey, new long[] {34L, 8371L, 34359738375L});
+                nonEmptyBundle.putDoubleArray(testDoubleArrayKey, new double[] {2.2, 5.4});
+                nonEmptyBundle.putStringArray(testStringArrayKey, new String[] {"hello", "world!"});
+                PersistableBundle testNestedPersistableBundle = new PersistableBundle();
+                testNestedPersistableBundle.putInt(testNestedIntKey, 345);
+                nonEmptyBundle.putPersistableBundle(
+                    testPersistableBundleKey, testNestedPersistableBundle);
+                PersistableBundle returned = service.RepeatPersistableBundle(nonEmptyBundle);
+                if (returned.size() != nonEmptyBundle.size()
+                    || returned.getBoolean(testBoolKey) != nonEmptyBundle.getBoolean(testBoolKey)
+                    || returned.getInt(testIntKey) != nonEmptyBundle.getInt(testIntKey)
+                    || returned.getLong(testLongKey) != nonEmptyBundle.getLong(testLongKey)
+                    || returned.getDouble(testDoubleKey) != nonEmptyBundle.getDouble(testDoubleKey)
+                    || !returned.getString(testStringKey)
+                                .equals(nonEmptyBundle.getString(testStringKey))
+                    || !Arrays.equals(nonEmptyBundle.getBooleanArray(testBoolArrayKey),
+                                      returned.getBooleanArray(testBoolArrayKey))
+                    || !Arrays.equals(nonEmptyBundle.getIntArray(testIntArrayKey),
+                                      returned.getIntArray(testIntArrayKey))
+                    || !Arrays.equals(nonEmptyBundle.getLongArray(testLongArrayKey),
+                                      returned.getLongArray(testLongArrayKey))
+                    || !Arrays.equals(nonEmptyBundle.getDoubleArray(testDoubleArrayKey),
+                                      returned.getDoubleArray(testDoubleArrayKey))
+                    || !Arrays.equals(nonEmptyBundle.getStringArray(testStringArrayKey),
+                                      returned.getStringArray(testStringArrayKey))) {
+                    PersistableBundle temp =
+                        returned.getPersistableBundle(testPersistableBundleKey);
+                    if (temp == null
+                        || temp.getInt(testNestedIntKey)
+                            != testNestedPersistableBundle.getInt(testNestedIntKey)) {
+                        mLog.log(nonEmptyBundle.toString() + " != " + returned.toString());
+                        mLog.logAndThrow("returned non-empty PersistableBundle " +
+                                         "object was not equivalent");
+                    }
+                }
+                mLog.log("...service can repeat and reverse non-empty " +
+                         "PersistableBundle objects...");
+            }
+            {
+                PersistableBundle[] input = new PersistableBundle[3];
+                PersistableBundle first = new PersistableBundle();
+                PersistableBundle second = new PersistableBundle();
+                PersistableBundle third = new PersistableBundle();
+                final String testIntKey = new String("testInt");
+                final String testLongKey = new String("testLong");
+                final String testDoubleKey = new String("testDouble");
+                first.putInt(testIntKey, 1231);
+                second.putLong(testLongKey, 222222L);
+                third.putDouble(testDoubleKey, 10.8);
+                input[0] = first;
+                input[1] = second;
+                input[2] = third;
+                final int original_input_size = input.length;
+                PersistableBundle[] repeated = new PersistableBundle[input.length];
+                PersistableBundle[] reversed = service.ReversePersistableBundles(input, repeated);
+                if (input.length != repeated.length || input.length != original_input_size) {
+                    mLog.logAndThrow("Repeated list of PersistableBundle objects had " +
+                                     "wrong length.");
+                }
+                if (input[0].getInt(testIntKey) != repeated[0].getInt(testIntKey)
+                    || input[1].getLong(testLongKey) != repeated[1].getLong(testLongKey)
+                    || input[2].getDouble(testDoubleKey) != repeated[2].getDouble(testDoubleKey)) {
+                    mLog.logAndThrow("Repeated list of PersistableBundle objects did not match.");
+                }
+                if (input.length != reversed.length || input.length != original_input_size) {
+                    mLog.logAndThrow("Reversed list of PersistableBundle objects had " +
+                                     "wrong length.");
+                }
+                if (input[0].getInt(testIntKey) != reversed[2].getInt(testIntKey)
+                    || input[1].getLong(testLongKey) != reversed[1].getLong(testLongKey)
+                    || input[2].getDouble(testDoubleKey) != reversed[0].getDouble(testDoubleKey)) {
+                    mLog.logAndThrow("reversed PersistableBundle objects were not equivalent");
+                }
+                mLog.log("...service can repeat and reverse arrays of " +
+                         "non-empty PersistableBundle objects...");
+            }
+        } catch (Exception ex) {
+            mLog.log(ex.toString());
+            mLog.logAndThrow("Service failed to handle PersistableBundle objects.");
+        }
+        mLog.log("...service can manipulate PersistableBundle objects.");
     }
 
     private void checkFileDescriptorPassing(ITestService service)
@@ -542,7 +660,8 @@ public class TestServiceClient extends Activity {
           checkArrayReversal(service);
           checkBinderExchange(service);
           checkListReversal(service);
-          checkParcelables(service);
+          checkSimpleParcelables(service);
+          checkPersistableBundles(service);
           checkFileDescriptorPassing(service);
           checkServiceSpecificExceptions(service);
           mLog.log(mSuccessSentinel);
