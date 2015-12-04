@@ -16,7 +16,7 @@
 
 #include "tests/simple_parcelable.h"
 
-#include <base/stringprintf.h>
+#include <android-base/stringprintf.h>
 #include <binder/Parcel.h>
 #include <utils/String8.h>
 

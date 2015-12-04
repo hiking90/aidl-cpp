@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-#include <base/logging.h>
+#include <android-base/logging.h>
 #include <gtest/gtest.h>
 
 #include "aidl.h"

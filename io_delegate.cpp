@@ -27,7 +27,7 @@
 #include <unistd.h>
 #endif
 
-#include <base/strings.h>
+#include <android-base/strings.h>
 
 #include "logging.h"
 #include "os.h"

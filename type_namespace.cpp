@@ -21,8 +21,8 @@
 #include <string>
 #include <vector>
 
-#include <base/stringprintf.h>
-#include <base/strings.h>
+#include <android-base/stringprintf.h>
+#include <android-base/strings.h>
 
 #include "aidl_language.h"
 #include "logging.h"

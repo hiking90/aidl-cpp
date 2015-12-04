@@ -32,7 +32,7 @@
 #include <sys/stat.h>
 #endif
 
-#include <base/strings.h>
+#include <android-base/strings.h>
 
 #include "aidl_language.h"
 #include "generate_cpp.h"
