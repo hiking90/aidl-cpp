@@ -35,6 +35,14 @@ class AidlNode {
   DISALLOW_COPY_AND_ASSIGN(AidlNode);
 };
 
+namespace android {
+namespace aidl {
+
+class ValidatableType;
+
+}  // namespace aidl
+}  // namespace android
+
 class AidlType : public AidlNode {
  public:
   AidlType(const std::string& name, unsigned line,
@@ -48,11 +56,21 @@ class AidlType : public AidlNode {
 
   std::string ToString() const;
 
+  void SetLanguageType(const android::aidl::ValidatableType* language_type) {
+    language_type_ = language_type;
+  }
+
+  template<typename T>
+  const T* GetLanguageType() const {
+    return reinterpret_cast<const T*>(language_type_);
+  }
+
  private:
   std::string name_;
   unsigned line_;
   bool is_array_;
   std::string comments_;
+  const android::aidl::ValidatableType* language_type_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(AidlType);
 };
@@ -74,6 +92,7 @@ class AidlArgument : public AidlNode {
   std::string GetName() const { return name_; }
   int GetLine() const { return line_; }
   const AidlType& GetType() const { return *type_; }
+  AidlType* GetMutableType() { return type_.get(); }
 
   std::string ToString() const;
 
@@ -132,6 +151,7 @@ class AidlMethod : public AidlMember {
 
   const std::string& GetComments() const { return comments_; }
   const AidlType& GetType() const { return *type_; }
+  AidlType* GetMutableType() { return type_.get(); }
   bool IsOneway() const { return oneway_; }
   const std::string& GetName() const { return name_; }
   unsigned GetLine() const { return line_; }
@@ -254,6 +274,13 @@ class AidlInterface : public AidlNode {
   std::string GetCanonicalName() const;
   const std::vector<std::string>& GetSplitPackage() const { return package_; }
 
+  void SetLanguageType(const android::aidl::ValidatableType* language_type) {
+    language_type_ = language_type;
+  }
+
+  template<typename T>
+  const T* GetLanguageType() const { return reinterpret_cast<const T*>(language_type_); }
+
  private:
   std::string name_;
   std::string comments_;
@@ -262,6 +289,8 @@ class AidlInterface : public AidlNode {
   std::vector<std::unique_ptr<AidlMethod>> methods_;
   std::vector<std::unique_ptr<AidlConstant>> constants_;
   std::vector<std::string> package_;
+
+  const android::aidl::ValidatableType* language_type_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(AidlInterface);
 };

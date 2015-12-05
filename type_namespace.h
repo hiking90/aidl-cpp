@@ -42,9 +42,11 @@ class ValidatableType {
                   const std::string& decl_file, int decl_line);
   virtual ~ValidatableType() = default;
 
-  virtual bool CanBeArray() const = 0;
+  virtual bool CanBeArray() const { return ArrayType() != nullptr; }
   virtual bool CanBeOutParameter() const = 0;
   virtual bool CanWriteToParcel() const = 0;
+
+  virtual const ValidatableType* ArrayType() const = 0;
 
   // Name() returns the short name of an object (without package qualifiers).
   virtual std::string Name() const { return type_name_; }
@@ -110,13 +112,13 @@ class TypeNamespace {
       std::vector<std::string>* container_class,
       std::vector<std::string>* contained_type_names) const;
 
- protected:
-  TypeNamespace() = default;
-  virtual ~TypeNamespace() = default;
-
   // Get a pointer to an existing type.
   virtual const ValidatableType* GetValidatableType(
       const std::string& name) const = 0;
+
+ protected:
+  TypeNamespace() = default;
+  virtual ~TypeNamespace() = default;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(TypeNamespace);
@@ -132,11 +134,11 @@ class LanguageTypeNamespace : public TypeNamespace {
   // name, and then class name (dropping package qualifiers).
   const T* Find(const std::string& name) const;
 
- protected:
-  bool Add(const T* type);
   const ValidatableType* GetValidatableType(
       const std::string& name) const override { return Find(name); }
 
+ protected:
+  bool Add(const T* type);
  private:
   std::vector<std::unique_ptr<const T>> types_;
 

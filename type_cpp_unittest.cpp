@@ -33,18 +33,18 @@ class CppTypeNamespaceTest : public ::testing::Test {
 };
 
 TEST_F(CppTypeNamespaceTest, HasSomeBasicTypes) {
-  EXPECT_NE(types_.Find("byte"), nullptr);
-  EXPECT_NE(types_.Find("int"), nullptr);
-  EXPECT_NE(types_.Find("long"), nullptr);
-  EXPECT_NE(types_.Find("float"), nullptr);
-  EXPECT_NE(types_.Find("double"), nullptr);
-  EXPECT_NE(types_.Find("boolean"), nullptr);
-  EXPECT_NE(types_.Find("char"), nullptr);
-  EXPECT_NE(types_.Find("String"), nullptr);
+  EXPECT_TRUE(types_.HasType("byte"));
+  EXPECT_TRUE(types_.HasType("int"));
+  EXPECT_TRUE(types_.HasType("long"));
+  EXPECT_TRUE(types_.HasType("float"));
+  EXPECT_TRUE(types_.HasType("double"));
+  EXPECT_TRUE(types_.HasType("boolean"));
+  EXPECT_TRUE(types_.HasType("char"));
+  EXPECT_TRUE(types_.HasType("String"));
 }
 
 TEST_F(CppTypeNamespaceTest, SupportsListString) {
-  EXPECT_NE(types_.Find("List<String>"), nullptr);
+  EXPECT_TRUE(types_.HasType("List<String>"));
 }
 
 }  // namespace cpp

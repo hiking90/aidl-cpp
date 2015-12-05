@@ -198,6 +198,15 @@ int check_types(const string& filename,
       err = 1;  // return type is invalid
     }
 
+    const ValidatableType* return_type =
+        types->GetValidatableType(m->GetType().GetName());
+
+    if (m->GetType().IsArray()) {
+      return_type = return_type->ArrayType();
+    }
+
+    m->GetMutableType()->SetLanguageType(return_type);
+
     if (oneway && m->GetType().GetName() != "void") {
         cerr << filename << ":" << m->GetLine()
             << " oneway method '" << m->GetName() << "' cannot return a value"
@@ -211,6 +220,15 @@ int check_types(const string& filename,
           !types->IsValidArg(*arg, index, filename)) {
         err = 1;
       }
+
+      const ValidatableType* arg_type =
+          types->GetValidatableType(arg->GetType().GetName());
+
+      if (arg->GetType().IsArray()) {
+        arg_type = arg_type->ArrayType();
+      }
+
+      arg->GetMutableType()->SetLanguageType(arg_type);
 
       if (oneway && arg->IsOut()) {
         cerr << filename << ":" << m->GetLine()
@@ -543,6 +561,8 @@ AidlError load_and_validate_aidl(
   if (!types->AddBinderType(*interface.get(), input_file_name)) {
     err = AidlError::BAD_TYPE;
   }
+
+  interface->SetLanguageType(types->GetValidatableType(interface->GetCanonicalName()));
 
   for (const auto& import : p.GetImports()) {
     // If we skipped an unresolved import above (see comment there) we'll have

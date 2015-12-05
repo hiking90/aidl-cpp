@@ -112,9 +112,9 @@ ArgList BuildArgList(const TypeNamespace& types,
     if (for_declaration) {
       // Method declarations need types, pointers to out params, and variable
       // names that match the .aidl specification.
-      const Type* type = types.Find(a->GetType().GetName());
+      const Type* type = a->GetType().GetLanguageType<Type>();
 
-      literal = type->CppType(a->GetType().IsArray());
+      literal = type->CppType();
 
       if (a->IsOut()) {
         literal = literal + "*";
@@ -134,13 +134,13 @@ ArgList BuildArgList(const TypeNamespace& types,
     method_arguments.push_back(literal);
   }
 
-  const Type* return_type = types.Find(method.GetType().GetName());
+  const Type* return_type = method.GetType().GetLanguageType<Type>();
 
   if (return_type != types.VoidType()) {
     string literal;
     if (for_declaration) {
       literal = StringPrintf(
-          "%s* %s", return_type->CppType(method.GetType().IsArray()).c_str(),
+          "%s* %s", return_type->CppType().c_str(),
           kReturnVarName);
     } else {
       literal = string{"&"} + kReturnVarName;
@@ -196,10 +196,10 @@ unique_ptr<CppNamespace> NestInNamespaces(unique_ptr<Declaration> decl,
 
 bool DeclareLocalVariable(const TypeNamespace& types, const AidlArgument& a,
                           StatementBlock* b) {
-  const Type* cpp_type = types.Find(a.GetType().GetName());
+  const Type* cpp_type = a.GetType().GetLanguageType<Type>();
   if (!cpp_type) { return false; }
 
-  string type = cpp_type->CppType(a.GetType().IsArray());
+  string type = cpp_type->CppType();
 
   b->AddLiteral(type + " " + BuildVarName(a));
   return true;
@@ -301,9 +301,8 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
   //     _aidl_ret_status = _aidl_data.WriteInt32(in_param_name);
   //     if (_aidl_ret_status != ::android::OK) { goto error; }
   for (const AidlArgument* a : method.GetInArguments()) {
-    const Type* type = types.Find(a->GetType().GetName());
-    string method =
-      type->WriteToParcelMethod(a->GetType().IsArray());
+    const Type* type = a->GetType().GetLanguageType<Type>();
+    string method = type->WriteToParcelMethod();
 
     string var_name = ((a->IsOut()) ? "*" : "") + a->GetName();
     var_name = type->WriteCast(var_name);
@@ -351,10 +350,9 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
   // status" if we are a oneway method, so no more fear of accessing reply.
 
   // If the method is expected to return something, read it first by convention.
-  const Type* return_type = types.Find(method.GetType().GetName());
+  const Type* return_type = method.GetType().GetLanguageType<Type>();
   if (return_type != types.VoidType()) {
-    string method_call = return_type->ReadFromParcelMethod(
-        method.GetType().IsArray());
+    string method_call = return_type->ReadFromParcelMethod();
     b->AddStatement(new Assignment(
         kAndroidStatusVarName,
         new MethodCall(StringPrintf("%s.%s", kReplyVarName,
@@ -368,8 +366,7 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
     //     _aidl_ret_status = _aidl_reply.ReadInt32(out_param_name);
     //     if (_aidl_status != ::android::OK) { goto _aidl_error; }
     string method =
-      types.Find(a->GetType().GetName())
-        ->ReadFromParcelMethod(a->GetType().IsArray());
+      a->GetType().GetLanguageType<Type>()->ReadFromParcelMethod();
 
     b->AddStatement(new Assignment(
         kAndroidStatusVarName,
@@ -436,10 +433,10 @@ bool HandleServerTransaction(const TypeNamespace& types,
   }
 
   // Declare a variable to hold the return value.
-  const Type* return_type = types.Find(method.GetType().GetName());
+  const Type* return_type = method.GetType().GetLanguageType<Type>();
   if (return_type != types.VoidType()) {
     b->AddLiteral(StringPrintf(
-        "%s %s", return_type->CppType(method.GetType().IsArray()).c_str(),
+        "%s %s", return_type->CppType().c_str(),
         kReturnVarName));
   }
 
@@ -458,8 +455,8 @@ bool HandleServerTransaction(const TypeNamespace& types,
     // Deserialization looks roughly like:
     //     _aidl_ret_status = _aidl_data.ReadInt32(&in_param_name);
     //     if (_aidl_ret_status != ::android::OK) { break; }
-    const Type* type = types.Find(a->GetType().GetName());
-    string readMethod = type->ReadFromParcelMethod(a->GetType().IsArray());
+    const Type* type = a->GetType().GetLanguageType<Type>();
+    string readMethod = type->ReadFromParcelMethod();
 
     b->AddStatement(new Assignment{
         kAndroidStatusVarName,
@@ -493,7 +490,7 @@ bool HandleServerTransaction(const TypeNamespace& types,
   if (return_type != types.VoidType()) {
     string writeMethod =
         string(kReplyVarName) + "->" +
-        return_type->WriteToParcelMethod(method.GetType().IsArray());
+        return_type->WriteToParcelMethod();
     b->AddStatement(new Assignment{
         kAndroidStatusVarName, new MethodCall{writeMethod,
         ArgList{return_type->WriteCast(kReturnVarName)}}});
@@ -505,8 +502,8 @@ bool HandleServerTransaction(const TypeNamespace& types,
     // Serialization looks roughly like:
     //     _aidl_ret_status = data.WriteInt32(out_param_name);
     //     if (_aidl_ret_status != ::android::OK) { break; }
-    const Type* type = types.Find(a->GetType().GetName());
-    string writeMethod = type->WriteToParcelMethod(a->GetType().IsArray());
+    const Type* type = a->GetType().GetLanguageType<Type>();
+    string writeMethod = type->WriteToParcelMethod();
 
     b->AddStatement(new Assignment{
         kAndroidStatusVarName,
@@ -682,12 +679,12 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
 
   for (const auto& method : interface.GetMethods()) {
     for (const auto& argument : method->GetArguments()) {
-      const Type* type = types.Find(argument->GetType().GetName());
-      type->GetHeaders(argument->GetType().IsArray(), &includes);
+      const Type* type = argument->GetType().GetLanguageType<Type>();
+      type->GetHeaders(&includes);
     }
 
-    const Type* return_type = types.Find(method->GetType().GetName());
-    return_type->GetHeaders(method->GetType().IsArray(), &includes);
+    const Type* return_type = method->GetType().GetLanguageType<Type>();
+    return_type->GetHeaders(&includes);
   }
 
   unique_ptr<ClassDecl> if_class{
