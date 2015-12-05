@@ -284,8 +284,9 @@ unique_ptr<Declaration> DefineClientTransaction(const TypeNamespace& types,
   b->AddLiteral(StringPrintf("%s %s", kAndroidParcelLiteral, kReplyVarName));
 
   // Declare the status_t variable we need for error handling.
-  b->AddLiteral(StringPrintf("%s %s", kAndroidStatusLiteral,
-                             kAndroidStatusVarName));
+  b->AddLiteral(StringPrintf("%s %s = %s", kAndroidStatusLiteral,
+                             kAndroidStatusVarName,
+                             kAndroidStatusOk));
   // We unconditionally return a Status object.
   b->AddLiteral(StringPrintf("%s %s", kBinderStatusLiteral, kStatusVarName));
 
@@ -535,7 +536,8 @@ unique_ptr<Document> BuildServerSource(const TypeNamespace& types,
 
   // Declare the status_t variable
   on_transact->GetStatementBlock()->AddLiteral(
-      StringPrintf("%s %s", kAndroidStatusLiteral, kAndroidStatusVarName));
+      StringPrintf("%s %s = %s", kAndroidStatusLiteral, kAndroidStatusVarName,
+                   kAndroidStatusOk));
 
   // Add the all important switch statement, but retain a pointer to it.
   SwitchStatement* s = new SwitchStatement{kCodeVarName};

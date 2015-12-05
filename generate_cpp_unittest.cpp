@@ -100,7 +100,7 @@ BpComplexTypeInterface::BpComplexTypeInterface(const ::android::sp<::android::IB
 ::android::binder::Status BpComplexTypeInterface::Send(const ::std::vector<int32_t>& goes_in, ::std::vector<double>* goes_in_and_out, ::std::vector<bool>* goes_out, ::std::vector<int32_t>* _aidl_return) {
 ::android::Parcel _aidl_data;
 ::android::Parcel _aidl_reply;
-::android::status_t _aidl_ret_status;
+::android::status_t _aidl_ret_status = ::android::OK;
 ::android::binder::Status _aidl_status;
 _aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
 if (((_aidl_ret_status) != (::android::OK))) {
@@ -145,7 +145,7 @@ return _aidl_status;
 ::android::binder::Status BpComplexTypeInterface::Piff(int32_t times) {
 ::android::Parcel _aidl_data;
 ::android::Parcel _aidl_reply;
-::android::status_t _aidl_ret_status;
+::android::status_t _aidl_ret_status = ::android::OK;
 ::android::binder::Status _aidl_status;
 _aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
 if (((_aidl_ret_status) != (::android::OK))) {
@@ -167,7 +167,7 @@ return _aidl_status;
 ::android::binder::Status BpComplexTypeInterface::TakesABinder(const ::android::sp<::foo::IFooType>& f, ::android::sp<::foo::IFooType>* _aidl_return) {
 ::android::Parcel _aidl_data;
 ::android::Parcel _aidl_reply;
-::android::status_t _aidl_ret_status;
+::android::status_t _aidl_ret_status = ::android::OK;
 ::android::binder::Status _aidl_status;
 _aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
 if (((_aidl_ret_status) != (::android::OK))) {
@@ -200,7 +200,7 @@ return _aidl_status;
 ::android::binder::Status BpComplexTypeInterface::StringListMethod(const ::std::vector<::android::String16>& input, ::std::vector<::android::String16>* output, ::std::vector<::android::String16>* _aidl_return) {
 ::android::Parcel _aidl_data;
 ::android::Parcel _aidl_reply;
-::android::status_t _aidl_ret_status;
+::android::status_t _aidl_ret_status = ::android::OK;
 ::android::binder::Status _aidl_status;
 _aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
 if (((_aidl_ret_status) != (::android::OK))) {
@@ -237,7 +237,7 @@ return _aidl_status;
 ::android::binder::Status BpComplexTypeInterface::BinderListMethod(const ::std::vector<::android::sp<::android::IBinder>>& input, ::std::vector<::android::sp<::android::IBinder>>* output, ::std::vector<::android::sp<::android::IBinder>>* _aidl_return) {
 ::android::Parcel _aidl_data;
 ::android::Parcel _aidl_reply;
-::android::status_t _aidl_ret_status;
+::android::status_t _aidl_ret_status = ::android::OK;
 ::android::binder::Status _aidl_status;
 _aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
 if (((_aidl_ret_status) != (::android::OK))) {
@@ -274,7 +274,7 @@ return _aidl_status;
 ::android::binder::Status BpComplexTypeInterface::TakesAFileDescriptor(const ::ScopedFd& f, ::ScopedFd* _aidl_return) {
 ::android::Parcel _aidl_data;
 ::android::Parcel _aidl_reply;
-::android::status_t _aidl_ret_status;
+::android::status_t _aidl_ret_status = ::android::OK;
 ::android::binder::Status _aidl_status;
 _aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
 if (((_aidl_ret_status) != (::android::OK))) {
@@ -307,7 +307,7 @@ return _aidl_status;
 ::android::binder::Status BpComplexTypeInterface::TakesAFileDescriptorArray(const ::std::vector<::ScopedFd>& f, ::std::vector<::ScopedFd>* _aidl_return) {
 ::android::Parcel _aidl_data;
 ::android::Parcel _aidl_reply;
-::android::status_t _aidl_ret_status;
+::android::status_t _aidl_ret_status = ::android::OK;
 ::android::binder::Status _aidl_status;
 _aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
 if (((_aidl_ret_status) != (::android::OK))) {
@@ -373,7 +373,7 @@ namespace android {
 namespace os {
 
 ::android::status_t BnComplexTypeInterface::onTransact(uint32_t _aidl_code, const ::android::Parcel& _aidl_data, ::android::Parcel* _aidl_reply, uint32_t _aidl_flags) {
-::android::status_t _aidl_ret_status;
+::android::status_t _aidl_ret_status = ::android::OK;
 switch (_aidl_code) {
 case Call::SEND:
 {
