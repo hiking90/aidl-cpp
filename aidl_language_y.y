@@ -38,7 +38,7 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
 %token<integer> INTVALUE
 
 %token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' ';'
-%token IN OUT INOUT PACKAGE IMPORT PARCELABLE FROM CONST INT
+%token IN OUT INOUT PACKAGE IMPORT PARCELABLE FROM CONST INT NULLABLE
 
 %type<parcelable_list> parcelable_decls
 %type<parcelable> parcelable_decl
@@ -244,6 +244,10 @@ type
                       $1->GetComments(), false);
     delete $1;
     delete $3;
+  }
+ | NULLABLE type {
+    $$ = $2;
+    $2->SetNullable();
   };
 
 generic_list
