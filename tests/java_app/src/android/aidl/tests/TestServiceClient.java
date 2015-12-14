@@ -20,6 +20,7 @@ import android.aidl.tests.SimpleParcelable;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.os.ServiceSpecificException;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -511,6 +512,24 @@ public class TestServiceClient extends Activity {
         mLog.log("...service can receive and return file descriptors.");
     }
 
+    private void checkServiceSpecificExceptions(
+                ITestService service) throws TestFailException {
+        mLog.log("Checking application exceptions...");
+        for (int i = -1; i < 2; ++i) {
+            try {
+                service.ThrowServiceException(i);
+            } catch (RemoteException ex) {
+                mLog.logAndThrow("Service threw RemoteException: " +
+                                 ex.toString());
+            } catch (ServiceSpecificException ex) {
+                if (ex.errorCode != i) {
+                    mLog.logAndThrow("Service threw wrong error code: " + i);
+                }
+            }
+        }
+        mLog.log("...application exceptions work");
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -525,6 +544,7 @@ public class TestServiceClient extends Activity {
           checkListReversal(service);
           checkParcelables(service);
           checkFileDescriptorPassing(service);
+          checkServiceSpecificExceptions(service);
           mLog.log(mSuccessSentinel);
         } catch (TestFailException e) {
             mLog.log(mFailureSentinel);

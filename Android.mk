@@ -162,9 +162,10 @@ LOCAL_SHARED_LIBRARIES := \
     $(aidl_integration_test_shared_libs)
 LOCAL_SRC_FILES := \
     tests/aidl_test_client.cpp \
-    tests/aidl_test_client_primitives.cpp \
+    tests/aidl_test_client_file_descriptors.cpp \
     tests/aidl_test_client_parcelables.cpp \
-    tests/aidl_test_client_file_descriptors.cpp
+    tests/aidl_test_client_primitives.cpp \
+    tests/aidl_test_client_service_exceptions.cpp
 include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)

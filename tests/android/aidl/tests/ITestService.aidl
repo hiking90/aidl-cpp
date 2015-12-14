@@ -62,4 +62,7 @@ interface ITestService {
   FileDescriptor RepeatFileDescriptor(in FileDescriptor read);
   FileDescriptor[] ReverseFileDescriptorArray(in FileDescriptor[] input,
                                               out FileDescriptor[] repeated);
+
+  // Test that service specific exceptions work correctly.
+  void ThrowServiceException(int code);
 }

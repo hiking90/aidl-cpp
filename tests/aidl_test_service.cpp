@@ -25,6 +25,7 @@
 #include <binder/IPCThreadState.h>
 #include <binder/IServiceManager.h>
 #include <binder/ProcessState.h>
+#include <binder/Status.h>
 #include <nativehelper/ScopedFd.h>
 #include <utils/Errors.h>
 #include <utils/Log.h>
@@ -98,7 +99,7 @@ class NamedCallback : public BnNamedCallback {
 class NativeService : public BnTestService {
  public:
   NativeService() {}
-  ~NativeService() override {}
+  virtual ~NativeService() = default;
 
   int Run() {
     sp<Looper> looper(Looper::prepare(0 /* opts */));
@@ -299,6 +300,10 @@ class NativeService : public BnTestService {
     }
     std::reverse(_aidl_return->begin(), _aidl_return->end());
     return Status::ok();
+  }
+
+  Status ThrowServiceException(int code) override {
+    return Status::fromServiceSpecificError(code);
   }
 
  private:

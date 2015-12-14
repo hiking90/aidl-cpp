@@ -24,6 +24,7 @@
 
 #include "aidl_test_client_file_descriptors.h"
 #include "aidl_test_client_parcelables.h"
+#include "aidl_test_client_service_exceptions.h"
 #include "aidl_test_client_primitives.h"
 
 // libutils:
@@ -68,26 +69,26 @@ bool GetService(sp<ITestService>* service) {
 /* Runs all the test cases in aidl_test_client_*.cpp files. */
 int main(int /* argc */, char * /* argv */ []) {
   sp<ITestService> service;
+  namespace client_tests = android::aidl::tests::client;
 
-  if (!android::aidl::tests::client::GetService(&service)) return 1;
 
-  if (!android::aidl::tests::client::ConfirmPrimitiveRepeat(service)) return 1;
+  if (!client_tests::GetService(&service)) return 1;
 
-  if (!android::aidl::tests::client::ConfirmReverseArrays(service)) return 1;
+  if (!client_tests::ConfirmPrimitiveRepeat(service)) return 1;
 
-  if (!android::aidl::tests::client::ConfirmReverseLists(service)) return 1;
+  if (!client_tests::ConfirmReverseArrays(service)) return 1;
 
-  if (!android::aidl::tests::client::ConfirmReverseBinderLists(service)) {
-    return 1;
-  }
+  if (!client_tests::ConfirmReverseLists(service)) return 1;
 
-  if (!android::aidl::tests::client::ConfirmParcelables(service)) return 1;
+  if (!client_tests::ConfirmReverseBinderLists(service)) return 1;
 
-  if (!android::aidl::tests::client::ConfirmFileDescriptors(service)) return 1;
+  if (!client_tests::ConfirmParcelables(service)) return 1;
 
-  if (!android::aidl::tests::client::ConfirmFileDescriptorArrays(service)) {
-    return 1;
-  }
+  if (!client_tests::ConfirmFileDescriptors(service)) return 1;
+
+  if (!client_tests::ConfirmFileDescriptorArrays(service)) return 1;
+
+  if (!client_tests::ConfirmServiceSpecificExceptions(service)) return 1;
 
   return 0;
 }
