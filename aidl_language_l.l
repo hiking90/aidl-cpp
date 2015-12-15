@@ -70,7 +70,7 @@ int                   { return yy::parser::token::INT; }
 in                    { return yy::parser::token::IN; }
 out                   { return yy::parser::token::OUT; }
 inout                 { return yy::parser::token::INOUT; }
-from                  { return yy::parser::token::FROM; }
+cpp_header            { return yy::parser::token::CPP_HEADER; }
 const                 { return yy::parser::token::CONST; }
 @nullable             { return yy::parser::token::NULLABLE; }
 

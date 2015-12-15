@@ -217,7 +217,7 @@ TEST_F(AidlTest, FailOnParcelable) {
 TEST_F(AidlTest, UnderstandsNativeParcelables) {
   io_delegate_.SetFileContents(
       "p/Bar.aidl",
-      "package p; parcelable Bar from \"baz/header\";");
+      "package p; parcelable Bar cpp_header \"baz/header\";");
   import_paths_.push_back("");
   const string input_path = "p/IFoo.aidl";
   const string input = "package p; import p.Bar; interface IFoo { }";
