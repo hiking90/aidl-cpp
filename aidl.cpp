@@ -193,16 +193,15 @@ int check_types(const string& filename,
   for (const auto& m : c->GetMethods()) {
     bool oneway = m->IsOneway() || c->IsOneway();
 
-    if (!types->MaybeAddContainerType(m->GetType().GetName()) ||
-        !types->IsValidReturnType(m->GetType(), filename)) {
+    if (!types->MaybeAddContainerType(m->GetType().GetName())) {
       err = 1;  // return type is invalid
     }
 
     const ValidatableType* return_type =
-        types->GetValidatableType(m->GetType().GetName());
+        types->GetReturnType(m->GetType(), filename);
 
-    if (m->GetType().IsArray()) {
-      return_type = return_type->ArrayType();
+    if (!return_type) {
+      err = 1;
     }
 
     m->GetMutableType()->SetLanguageType(return_type);
@@ -216,16 +215,15 @@ int check_types(const string& filename,
 
     int index = 1;
     for (const auto& arg : m->GetArguments()) {
-      if (!types->MaybeAddContainerType(arg->GetType().GetName()) ||
-          !types->IsValidArg(*arg, index, filename)) {
+      if (!types->MaybeAddContainerType(arg->GetType().GetName())) {
         err = 1;
       }
 
       const ValidatableType* arg_type =
-          types->GetValidatableType(arg->GetType().GetName());
+          types->GetArgType(*arg, index, filename);
 
-      if (arg->GetType().IsArray()) {
-        arg_type = arg_type->ArrayType();
+      if (!arg_type) {
+        err = 1;
       }
 
       arg->GetMutableType()->SetLanguageType(arg_type);

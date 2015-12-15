@@ -123,7 +123,7 @@ BasicArrayType::BasicArrayType(const JavaTypeNamespace* types,
                                const string& writeArrayParcel,
                                const string& createArrayParcel,
                                const string& readArrayParcel)
-    : Type(types, name, ValidatableType::KIND_BUILT_IN, true, false),
+    : Type(types, name, ValidatableType::KIND_BUILT_IN, true, true),
       m_writeArrayParcel(writeArrayParcel),
       m_createArrayParcel(createArrayParcel),
       m_readArrayParcel(readArrayParcel) {}

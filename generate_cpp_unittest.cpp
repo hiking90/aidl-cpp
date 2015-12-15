@@ -70,7 +70,7 @@ class BpComplexTypeInterface : public ::android::BpInterface<IComplexTypeInterfa
 public:
 explicit BpComplexTypeInterface(const ::android::sp<::android::IBinder>& _aidl_impl);
 virtual ~BpComplexTypeInterface() = default;
-::android::binder::Status Send(const ::std::vector<int32_t>& goes_in, ::std::vector<double>* goes_in_and_out, ::std::vector<bool>* goes_out, ::std::vector<int32_t>* _aidl_return) override;
+::android::binder::Status Send(const ::std::unique_ptr<::std::vector<int32_t>>& goes_in, ::std::vector<double>* goes_in_and_out, ::std::vector<bool>* goes_out, ::std::vector<int32_t>* _aidl_return) override;
 ::android::binder::Status Piff(int32_t times) override;
 ::android::binder::Status TakesABinder(const ::android::sp<::foo::IFooType>& f, ::android::sp<::foo::IFooType>* _aidl_return) override;
 ::android::binder::Status StringListMethod(const ::std::vector<::android::String16>& input, ::std::vector<::android::String16>* output, ::std::vector<::android::String16>* _aidl_return) override;
@@ -97,7 +97,7 @@ BpComplexTypeInterface::BpComplexTypeInterface(const ::android::sp<::android::IB
     : BpInterface<IComplexTypeInterface>(_aidl_impl){
 }
 
-::android::binder::Status BpComplexTypeInterface::Send(const ::std::vector<int32_t>& goes_in, ::std::vector<double>* goes_in_and_out, ::std::vector<bool>* goes_out, ::std::vector<int32_t>* _aidl_return) {
+::android::binder::Status BpComplexTypeInterface::Send(const ::std::unique_ptr<::std::vector<int32_t>>& goes_in, ::std::vector<double>* goes_in_and_out, ::std::vector<bool>* goes_out, ::std::vector<int32_t>* _aidl_return) {
 ::android::Parcel _aidl_data;
 ::android::Parcel _aidl_reply;
 ::android::status_t _aidl_ret_status = ::android::OK;
@@ -377,7 +377,7 @@ namespace os {
 switch (_aidl_code) {
 case Call::SEND:
 {
-::std::vector<int32_t> in_goes_in;
+::std::unique_ptr<::std::vector<int32_t>> in_goes_in;
 ::std::vector<double> in_goes_in_and_out;
 ::std::vector<bool> out_goes_out;
 ::std::vector<int32_t> _aidl_return;
@@ -608,7 +608,7 @@ class IComplexTypeInterface : public ::android::IInterface {
 public:
 DECLARE_META_INTERFACE(ComplexTypeInterface);
 static constexpr int32_t MY_CONSTANT = 3;
-virtual ::android::binder::Status Send(const ::std::vector<int32_t>& goes_in, ::std::vector<double>* goes_in_and_out, ::std::vector<bool>* goes_out, ::std::vector<int32_t>* _aidl_return) = 0;
+virtual ::android::binder::Status Send(const ::std::unique_ptr<::std::vector<int32_t>>& goes_in, ::std::vector<double>* goes_in_and_out, ::std::vector<bool>* goes_out, ::std::vector<int32_t>* _aidl_return) = 0;
 virtual ::android::binder::Status Piff(int32_t times) = 0;
 virtual ::android::binder::Status TakesABinder(const ::android::sp<::foo::IFooType>& f, ::android::sp<::foo::IFooType>* _aidl_return) = 0;
 virtual ::android::binder::Status StringListMethod(const ::std::vector<::android::String16>& input, ::std::vector<::android::String16>* output, ::std::vector<::android::String16>* _aidl_return) = 0;

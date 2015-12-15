@@ -48,6 +48,7 @@ class Type : public ValidatableType {
   bool CanWriteToParcel() const override { return m_canWriteToParcel; }
 
   const ValidatableType* ArrayType() const override { return m_array_type.get(); }
+  const ValidatableType* NullableType() const override { return nullptr; }
 
   inline string Package() const { return m_package; }
   virtual string CreatorName() const;
@@ -92,6 +93,7 @@ class BasicArrayType : public Type {
                         Variable** cl) const override;
   void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                       Variable** cl) const override;
+  const ValidatableType* NullableType() const override { return this; }
 
  private:
   string m_writeArrayParcel;
@@ -126,6 +128,7 @@ class FileDescriptorArrayType : public Type {
                         Variable* parcel, Variable** cl) const override;
   void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                       Variable** cl) const override;
+  const ValidatableType* NullableType() const override { return this; }
 };
 
 class FileDescriptorType : public Type {
@@ -148,6 +151,7 @@ class BooleanArrayType : public Type {
                         Variable* parcel, Variable** cl) const override;
   void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                       Variable** cl) const override;
+  const ValidatableType* NullableType() const override { return this; }
 };
 
 class BooleanType : public Type {
@@ -170,6 +174,7 @@ class CharArrayType : public Type {
                         Variable* parcel, Variable** cl) const override;
   void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                       Variable** cl) const override;
+  const ValidatableType* NullableType() const override { return this; }
 };
 
 class CharType : public Type {
@@ -194,6 +199,7 @@ class StringArrayType : public Type {
                         Variable* parcel, Variable** cl) const override;
   void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                       Variable** cl) const override;
+  const ValidatableType* NullableType() const override { return this; }
 };
 
 class StringType : public Type {
@@ -206,6 +212,7 @@ class StringType : public Type {
                      int flags) const override;
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                         Variable** cl) const override;
+  const ValidatableType* NullableType() const override { return this; }
 };
 
 class CharSequenceType : public Type {
@@ -250,6 +257,7 @@ class IBinderArrayType : public Type {
                         Variable* parcel, Variable** cl) const override;
   void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                       Variable** cl) const override;
+  const ValidatableType* NullableType() const override { return this; }
 };
 
 class IBinderType : public Type {
@@ -300,6 +308,7 @@ class ParcelType : public Type {
                      int flags) const override;
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                         Variable** cl) const override;
+  const ValidatableType* NullableType() const override { return this; }
 };
 
 class ParcelableInterfaceType : public Type {
@@ -322,6 +331,7 @@ class MapType : public Type {
                         Variable** cl) const override;
   void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                       Variable** cl) const override;
+  const ValidatableType* NullableType() const override { return this; }
 };
 
 class ListType : public Type {
@@ -336,6 +346,7 @@ class ListType : public Type {
                         Variable** cl) const override;
   void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                       Variable** cl) const override;
+  const ValidatableType* NullableType() const override { return this; }
 };
 
 class UserDataArrayType : public Type {
@@ -352,6 +363,7 @@ class UserDataArrayType : public Type {
                         Variable* parcel, Variable** cl) const override;
   void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                       Variable** cl) const override;
+  const ValidatableType* NullableType() const override { return this; }
 };
 
 class UserDataType : public Type {
@@ -368,6 +380,7 @@ class UserDataType : public Type {
                         Variable** cl) const override;
   void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                       Variable** cl) const override;
+  const ValidatableType* NullableType() const override { return this; }
 };
 
 class InterfaceType : public Type {
@@ -410,6 +423,7 @@ class GenericListType : public Type {
                         Variable** cl) const override;
   void ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                       Variable** cl) const override;
+  const ValidatableType* NullableType() const override { return this; }
 
  private:
   const Type* m_contained_type;

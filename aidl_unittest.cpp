@@ -105,6 +105,12 @@ TEST_F(AidlTest, RejectsOnewayNonVoidReturn) {
   EXPECT_EQ(nullptr, Parse("a/IFoo.aidl", oneway_method, &java_types_));
 }
 
+TEST_F(AidlTest, RejectsNullablePrimitive) {
+  string oneway_method = "package a; interface IFoo { @nullable int f(); }";
+  EXPECT_EQ(nullptr, Parse("a/IFoo.aidl", oneway_method, &cpp_types_));
+  EXPECT_EQ(nullptr, Parse("a/IFoo.aidl", oneway_method, &java_types_));
+}
+
 TEST_F(AidlTest, AcceptsOneway) {
   string oneway_method = "package a; interface IFoo { oneway void f(int a); }";
   string oneway_interface =

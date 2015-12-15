@@ -26,6 +26,7 @@
 #include "aidl_test_client_parcelables.h"
 #include "aidl_test_client_service_exceptions.h"
 #include "aidl_test_client_primitives.h"
+#include "aidl_test_client_nullables.h"
 
 // libutils:
 using android::OK;
@@ -89,6 +90,8 @@ int main(int /* argc */, char * /* argv */ []) {
   if (!client_tests::ConfirmFileDescriptorArrays(service)) return 1;
 
   if (!client_tests::ConfirmServiceSpecificExceptions(service)) return 1;
+
+  if (!android::aidl::tests::client::ConfirmNullables(service)) return 1;
 
   return 0;
 }

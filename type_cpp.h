@@ -40,6 +40,7 @@ class Type : public ValidatableType {
        const std::string& read_method,
        const std::string& write_method,
        Type* array_type = nullptr,
+       Type* nullable_type = nullptr,
        const std::string& src_file_name = "",
        int line = -1);
   virtual ~Type() = default;
@@ -49,6 +50,7 @@ class Type : public ValidatableType {
   bool CanWriteToParcel() const override;
 
   const Type* ArrayType() const override { return array_type_.get(); }
+  const Type* NullableType() const override { return nullable_type_.get(); }
   std::string CppType() const { return cpp_type_; }
   const std::string& ReadFromParcelMethod() const {
     return parcel_read_method_;
@@ -80,9 +82,31 @@ class Type : public ValidatableType {
   const std::string parcel_write_method_;
 
   const std::unique_ptr<Type> array_type_;
+  const std::unique_ptr<Type> nullable_type_;
 
   DISALLOW_COPY_AND_ASSIGN(Type);
 };  // class Type
+
+class ArrayType : public Type {
+ public:
+  ArrayType(int kind,  // from ValidatableType
+            const std::string& package,
+            const std::string& aidl_type,
+            const std::vector<std::string>& header,
+            const std::string& cpp_type,
+            const std::string& read_method,
+            const std::string& write_method,
+            Type* array_type = nullptr,
+            Type* nullable_type = nullptr,
+            const std::string& src_file_name = "",
+            int line = -1)
+      : Type(kind, package, aidl_type, header, cpp_type, read_method,
+             write_method, array_type, nullable_type, src_file_name, line) {}
+
+  bool CanBeOutParameter() const override { return true; }
+
+  virtual ~ArrayType() = default;
+};
 
 class TypeNamespace : public ::android::aidl::LanguageTypeNamespace<Type> {
  public:
@@ -99,9 +123,9 @@ class TypeNamespace : public ::android::aidl::LanguageTypeNamespace<Type> {
                   const std::string& value_type_name) override;
 
   bool IsValidPackage(const std::string& package) const override;
-  bool IsValidArg(const AidlArgument& a,
-                  int arg_index,
-                  const std::string& filename) const override;
+  const ValidatableType* GetArgType(const AidlArgument& a,
+                             int arg_index,
+                             const std::string& filename) const override;
 
   const Type* VoidType() const { return void_type_; }
   const Type* StringType() const { return string_type_; }
