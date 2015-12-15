@@ -38,7 +38,7 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
 %token<integer> INTVALUE
 
 %token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' ';'
-%token IN OUT INOUT PACKAGE IMPORT PARCELABLE FROM CONST INT NULLABLE
+%token IN OUT INOUT PACKAGE IMPORT PARCELABLE CPP_HEADER CONST INT NULLABLE
 
 %type<parcelable_list> parcelable_decls
 %type<parcelable> parcelable_decl
@@ -69,8 +69,8 @@ document
 identifier
  : IDENTIFIER
   { $$ = $1; }
- | FROM
-  { $$ = new AidlToken("from", ""); }
+ | CPP_HEADER
+  { $$ = new AidlToken("cpp_header", ""); }
  | INT
   { $$ = new AidlToken("int", ""); };
 
@@ -115,7 +115,7 @@ parcelable_decl
  : PARCELABLE qualified_name ';' {
     $$ = new AidlParcelable($2, @2.begin.line, ps->Package());
   }
- | PARCELABLE qualified_name FROM C_STR ';' {
+ | PARCELABLE qualified_name CPP_HEADER C_STR ';' {
     $$ = new AidlParcelable($2, @2.begin.line, ps->Package(), $4->GetText());
   }
  | PARCELABLE ';' {

@@ -16,4 +16,4 @@
 
 package android.aidl.tests;
 
-parcelable SimpleParcelable from "tests/simple_parcelable.h";
+parcelable SimpleParcelable cpp_header "tests/simple_parcelable.h";
