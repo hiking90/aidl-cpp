@@ -27,7 +27,8 @@ namespace aidl {
 namespace tests {
 namespace client {
 
-bool ConfirmParcelables(const sp<ITestService>& s);
+bool ConfirmSimpleParcelables(const sp<ITestService>& s);
+bool ConfirmPersistableBundles(const sp<ITestService>& s);
 
 }  // namespace client
 }  // namespace tests

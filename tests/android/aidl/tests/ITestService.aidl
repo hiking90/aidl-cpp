@@ -18,6 +18,7 @@ package android.aidl.tests;
 
 import android.aidl.tests.INamedCallback;
 import android.aidl.tests.SimpleParcelable;
+import android.os.PersistableBundle;
 
 interface ITestService {
   // Test that constants are accessible
@@ -33,8 +34,9 @@ interface ITestService {
   double RepeatDouble(double token);
   String RepeatString(String token);
 
-  SimpleParcelable RepeatParcelable(in SimpleParcelable input,
-                                    out SimpleParcelable repeat);
+  SimpleParcelable RepeatSimpleParcelable(in SimpleParcelable input,
+                                          out SimpleParcelable repeat);
+  PersistableBundle RepeatPersistableBundle(in PersistableBundle input);
 
   // Test that arrays work as parameters and return types.
   boolean[] ReverseBoolean(in boolean[] input, out boolean[] repeated);
@@ -46,8 +48,10 @@ interface ITestService {
   double[]  ReverseDouble (in double[]  input, out double[]  repeated);
   String[]  ReverseString (in String[]  input, out String[]  repeated);
 
-  SimpleParcelable[]  ReverseParcelables (in SimpleParcelable[]  input,
-                                          out SimpleParcelable[]  repeated);
+  SimpleParcelable[]  ReverseSimpleParcelables(in SimpleParcelable[] input,
+                                               out SimpleParcelable[] repeated);
+  PersistableBundle[] ReversePersistableBundles(
+      in PersistableBundle[] input, out PersistableBundle[] repeated);
 
   // Test that clients can send and receive Binders.
   INamedCallback GetOtherTestService(String name);

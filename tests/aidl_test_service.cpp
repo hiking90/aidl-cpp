@@ -59,10 +59,11 @@ using android::ProcessState;
 using android::binder::Status;
 
 // Generated code:
-using android::aidl::tests::BnTestService;
 using android::aidl::tests::BnNamedCallback;
+using android::aidl::tests::BnTestService;
 using android::aidl::tests::INamedCallback;
 using android::aidl::tests::SimpleParcelable;
+using android::os::PersistableBundle;
 
 // Standard library
 using std::map;
@@ -78,7 +79,7 @@ class BinderCallback : public LooperCallback {
   BinderCallback() {}
   ~BinderCallback() override {}
 
-  int handleEvent(int /* fd */, int /* events */, void* /* data */ ) override {
+  int handleEvent(int /* fd */, int /* events */, void* /* data */) override {
     IPCThreadState::self()->handlePolledCommands();
     return 1;  // Continue receiving callbacks.
   }
@@ -134,7 +135,7 @@ class NativeService : public BnTestService {
           token.size());
   }
 
-  template<typename T>
+  template <typename T>
   void LogRepeatedToken(const T& token) {
     std::ostringstream token_str;
     token_str << token;
@@ -176,25 +177,30 @@ class NativeService : public BnTestService {
     *_aidl_return = token;
     return Status::ok();
   }
-  Status RepeatString(
-      const String16& token, String16* _aidl_return) override {
+  Status RepeatString(const String16& token, String16* _aidl_return) override {
     LogRepeatedStringToken(token);
     *_aidl_return = token;
     return Status::ok();
   }
 
-  Status RepeatParcelable(const SimpleParcelable& input,
-                          SimpleParcelable* repeat,
-                          SimpleParcelable* _aidl_return) override {
+  Status RepeatSimpleParcelable(const SimpleParcelable& input,
+                                SimpleParcelable* repeat,
+                                SimpleParcelable* _aidl_return) override {
     ALOGI("Repeated a SimpleParcelable %s", input.toString().c_str());
     *repeat = input;
     *_aidl_return = input;
     return Status::ok();
   }
 
-  template<typename T>
-  Status ReverseArray(const vector<T>& input,
-                      vector<T>* repeated,
+  Status RepeatPersistableBundle(const PersistableBundle& input,
+                                 PersistableBundle* _aidl_return) override {
+    ALOGI("Repeated a PersistableBundle");
+    *_aidl_return = input;
+    return Status::ok();
+  }
+
+  template <typename T>
+  Status ReverseArray(const vector<T>& input, vector<T>* repeated,
                       vector<T>* _aidl_return) {
     ALOGI("Reversing array of length %zu", input.size());
     *repeated = input;
@@ -256,9 +262,16 @@ class NativeService : public BnTestService {
                        vector<String16>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
-  Status ReverseParcelables(const vector<SimpleParcelable>& input,
-                            vector<SimpleParcelable>* repeated,
-                            vector<SimpleParcelable>* _aidl_return) override {
+  Status ReverseSimpleParcelables(
+      const vector<SimpleParcelable>& input,
+      vector<SimpleParcelable>* repeated,
+      vector<SimpleParcelable>* _aidl_return) override {
+    return ReverseArray(input, repeated, _aidl_return);
+  }
+  Status ReversePersistableBundles(
+      const vector<PersistableBundle>& input,
+      vector<PersistableBundle>* repeated,
+      vector<PersistableBundle>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
 
