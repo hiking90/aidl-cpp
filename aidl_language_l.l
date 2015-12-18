@@ -18,7 +18,7 @@
 
 identifier  [_a-zA-Z][_a-zA-Z0-9]*
 whitespace  ([ \t\r]+)
-intvalue    (0|[1-9][0-9]*)
+intvalue    [-+]?(0|[1-9][0-9]*)
 
 %%
 %{

@@ -150,11 +150,20 @@ public class TestServiceClient extends Activity {
                 }
             }
             {
-                int query = ITestService.TEST_CONSTANT;
-                int response = service.RepeatInt(query);
-                if (query != response) {
-                    mLog.logAndThrow("Repeat with " + query +
-                                     " responded " + response);
+                int query[] = {ITestService.TEST_CONSTANT,
+                               ITestService.TEST_CONSTANT2,
+                               ITestService.TEST_CONSTANT3,
+                               ITestService.TEST_CONSTANT4,
+                               ITestService.TEST_CONSTANT5,
+                               ITestService.TEST_CONSTANT6,
+                               ITestService.TEST_CONSTANT7,
+                               ITestService.TEST_CONSTANT8};
+                for (int i = 0; i < query.length; i++) {
+                    int response = service.RepeatInt(query[i]);
+                    if (query[i] != response) {
+                        mLog.logAndThrow("Repeat with " + query[i] +
+                                " responded " + response);
+                    }
                 }
             }
             {
