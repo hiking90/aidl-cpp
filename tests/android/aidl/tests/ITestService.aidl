@@ -23,6 +23,13 @@ import android.os.PersistableBundle;
 interface ITestService {
   // Test that constants are accessible
   const int TEST_CONSTANT = 42;
+  const int TEST_CONSTANT2 = -42;
+  const int TEST_CONSTANT3 = +42;
+  const int TEST_CONSTANT4 = +4;
+  const int TEST_CONSTANT5 = -4;
+  const int TEST_CONSTANT6 = -0;
+  const int TEST_CONSTANT7 = +0;
+  const int TEST_CONSTANT8 = 0;
 
   // Test that primitives work as parameters and return types.
   boolean RepeatBoolean(boolean token);
