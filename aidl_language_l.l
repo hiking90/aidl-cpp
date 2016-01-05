@@ -34,10 +34,10 @@ intvalue    [-+]?(0|[1-9][0-9]*)
 <COPYING>\n+          { extra_text += yytext; yylloc->lines(yyleng); }
 
 \/\*                  { extra_text += yytext; BEGIN(LONG_COMMENT); }
-<LONG_COMMENT>\n+     { extra_text += yytext; yylloc->lines(yyleng); }
-<LONG_COMMENT>[^*\n]* { extra_text += yytext; }
-<LONG_COMMENT>\*+[^/] { extra_text += yytext; }
 <LONG_COMMENT>\*+\/   { extra_text += yytext; yylloc->step(); BEGIN(INITIAL);  }
+<LONG_COMMENT>\*+     { extra_text += yytext; }
+<LONG_COMMENT>\n+     { extra_text += yytext; yylloc->lines(yyleng); }
+<LONG_COMMENT>[^*\n]+ { extra_text += yytext; }
 
 \"[^\"]*\"            { yylval->token = new AidlToken(yytext, extra_text);
                         return yy::parser::token::C_STR; }
