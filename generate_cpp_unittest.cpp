@@ -173,7 +173,7 @@ _aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
 if (((_aidl_ret_status) != (::android::OK))) {
 goto _aidl_error;
 }
-_aidl_ret_status = _aidl_data.writeStrongBinder(IFooType::asBinder(f));
+_aidl_ret_status = _aidl_data.writeStrongBinder(::foo::IFooType::asBinder(f));
 if (((_aidl_ret_status) != (::android::OK))) {
 goto _aidl_error;
 }
@@ -449,7 +449,7 @@ break;
 if (!_aidl_status.isOk()) {
 break;
 }
-_aidl_ret_status = _aidl_reply->writeStrongBinder(IFooType::asBinder(_aidl_return));
+_aidl_ret_status = _aidl_reply->writeStrongBinder(::foo::IFooType::asBinder(_aidl_return));
 if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }

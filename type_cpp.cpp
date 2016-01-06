@@ -142,17 +142,22 @@ class BinderType : public Type {
              {GetCppHeader(interface)}, GetCppName(interface),
              "readStrongBinder", "writeStrongBinder",
              kNoArrayType, kNoNullableType, src_file_name,
-             interface.GetLine()) {}
+             interface.GetLine()),
+        write_cast_(GetRawCppName(interface) + "::asBinder") {}
   virtual ~BinderType() = default;
 
   string WriteCast(const string& val) const override {
-    return Name() + "::asBinder(" + val + ")";
+    return write_cast_ + "(" + val + ")";
   }
 
  private:
   static string GetCppName(const AidlInterface& interface) {
+    return "::android::sp<" + GetRawCppName(interface) + ">";
+  }
+
+  static string GetRawCppName(const AidlInterface& interface) {
     vector<string> name = interface.GetSplitPackage();
-    string ret = "::android::sp<";
+    string ret;
 
     name.push_back(interface.GetName());
 
@@ -160,7 +165,7 @@ class BinderType : public Type {
       ret += "::" + term;
     }
 
-    return ret + ">";
+    return ret;
   }
 
   static string GetCppHeader(const AidlInterface& interface) {
@@ -168,6 +173,8 @@ class BinderType : public Type {
     name.push_back(interface.GetName());
     return Join(name, '/') + ".h";
   }
+
+  std::string write_cast_;
 };
 
 class NullableParcelableArrayType : public ArrayType {
