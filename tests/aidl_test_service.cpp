@@ -103,7 +103,7 @@ class NativeService : public BnTestService {
   NativeService() {}
   virtual ~NativeService() = default;
 
-  int Run() {
+  int Run(const android::sp<NativeService>& service) {
     sp<Looper> looper(Looper::prepare(0 /* opts */));
 
     int binder_fd = -1;
@@ -120,7 +120,7 @@ class NativeService : public BnTestService {
       return -1;
     }
 
-    defaultServiceManager()->addService(getInterfaceDescriptor(), this);
+    defaultServiceManager()->addService(getInterfaceDescriptor(), service);
 
     ALOGI("Entering loop");
     while (true) {
@@ -379,6 +379,7 @@ class NativeService : public BnTestService {
 }  // namespace android
 
 int main(int /* argc */, char* /* argv */ []) {
-  android::generated::NativeService service;
-  return service.Run();
+  android::sp<android::generated::NativeService> service =
+      new android::generated::NativeService;
+  return service->Run(service);
 }
