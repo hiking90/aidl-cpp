@@ -103,33 +103,6 @@ class NativeService : public BnTestService {
   NativeService() {}
   virtual ~NativeService() = default;
 
-  int Run(const android::sp<NativeService>& service) {
-    sp<Looper> looper(Looper::prepare(0 /* opts */));
-
-    int binder_fd = -1;
-    ProcessState::self()->setThreadPoolMaxThreadCount(0);
-    IPCThreadState::self()->disableBackgroundScheduling(true);
-    IPCThreadState::self()->setupPolling(&binder_fd);
-    ALOGI("Got binder FD %d", binder_fd);
-    if (binder_fd < 0) return -1;
-
-    sp<BinderCallback> cb(new BinderCallback);
-    if (looper->addFd(binder_fd, Looper::POLL_CALLBACK, Looper::EVENT_INPUT, cb,
-                      nullptr) != 1) {
-      ALOGE("Failed to add binder FD to Looper");
-      return -1;
-    }
-
-    defaultServiceManager()->addService(getInterfaceDescriptor(), service);
-
-    ALOGI("Entering loop");
-    while (true) {
-      const int result = looper->pollAll(-1 /* timeoutMillis */);
-      ALOGI("Looper returned %d", result);
-    }
-    return 0;
-  }
-
   void LogRepeatedStringToken(const String16& token) {
     ALOGI("Repeating '%s' of length=%zu", android::String8(token).string(),
           token.size());
@@ -375,11 +348,40 @@ class NativeService : public BnTestService {
 };
 
 }  // namespace
+
+int Run() {
+  android::sp<android::generated::NativeService> service =
+      new android::generated::NativeService;
+  sp<Looper> looper(Looper::prepare(0 /* opts */));
+
+  int binder_fd = -1;
+  ProcessState::self()->setThreadPoolMaxThreadCount(0);
+  IPCThreadState::self()->disableBackgroundScheduling(true);
+  IPCThreadState::self()->setupPolling(&binder_fd);
+  ALOGI("Got binder FD %d", binder_fd);
+  if (binder_fd < 0) return -1;
+
+  sp<BinderCallback> cb(new BinderCallback);
+  if (looper->addFd(binder_fd, Looper::POLL_CALLBACK, Looper::EVENT_INPUT, cb,
+                    nullptr) != 1) {
+    ALOGE("Failed to add binder FD to Looper");
+    return -1;
+  }
+
+  defaultServiceManager()->addService(service->getInterfaceDescriptor(),
+                                      service);
+
+  ALOGI("Entering loop");
+  while (true) {
+    const int result = looper->pollAll(-1 /* timeoutMillis */);
+    ALOGI("Looper returned %d", result);
+  }
+  return 0;
+}
+
 }  // namespace generated
 }  // namespace android
 
 int main(int /* argc */, char* /* argv */ []) {
-  android::sp<android::generated::NativeService> service =
-      new android::generated::NativeService;
-  return service->Run(service);
+  return android::generated::Run();
 }
