@@ -48,8 +48,8 @@ LOCAL_STATIC_LIBRARIES := $(aidl_static_libraries)
 LOCAL_SRC_FILES := \
     aidl.cpp \
     aidl_language.cpp \
-    aidl_language_l.l \
-    aidl_language_y.y \
+    aidl_language_l.ll \
+    aidl_language_y.yy \
     ast_cpp.cpp \
     ast_java.cpp \
     code_writer.cpp \

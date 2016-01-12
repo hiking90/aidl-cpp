@@ -8,7 +8,7 @@
 
 #include <android-base/strings.h>
 
-#include "aidl_language_y.hpp"
+#include "aidl_language_y.h"
 #include "logging.h"
 
 #ifdef _WIN32
