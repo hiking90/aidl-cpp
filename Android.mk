@@ -139,7 +139,7 @@ LOCAL_CFLAGS := $(aidl_integration_test_cflags)
 LOCAL_SHARED_LIBRARIES := $(aidl_integration_test_shared_libs) libbase
 LOCAL_AIDL_INCLUDES := \
     system/tools/aidl/tests/ \
-    frameworks/base/core/java
+    frameworks/native/aidl/binder
 LOCAL_SRC_FILES := \
     tests/android/aidl/tests/ITestService.aidl \
     tests/android/aidl/tests/INamedCallback.aidl \
@@ -195,7 +195,9 @@ LOCAL_SRC_FILES := \
     tests/android/aidl/tests/INamedCallback.aidl \
     tests/java_app/src/android/aidl/tests/SimpleParcelable.java \
     tests/java_app/src/android/aidl/tests/TestServiceClient.java
-LOCAL_AIDL_INCLUDES := system/tools/aidl/tests/
+LOCAL_AIDL_INCLUDES := \
+    system/tools/aidl/tests/ \
+    frameworks/native/aidl/binder
 include $(BUILD_PACKAGE)
 
 endif  # not defined BRILLO
