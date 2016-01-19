@@ -49,6 +49,7 @@
 #  define O_BINARY  0
 #endif
 
+using android::base::Join;
 using android::base::Split;
 using std::cerr;
 using std::endl;
@@ -251,47 +252,86 @@ int check_types(const string& filename,
   return err;
 }
 
-void generate_dep_file(const std::string& dep_file_name,
-                       const std::string& input_file_name,
-                       const std::string& output_file_name,
-                       const std::vector<std::unique_ptr<AidlImport>>& imports,
-                       const IoDelegate& io_delegate) {
-  CodeWriterPtr writer = io_delegate.GetCodeWriter(dep_file_name);
-  if (!writer) {
-    cerr << "Could not open " << dep_file_name << endl;
-    return;
-  }
-
-
-  writer->Write("%s: \\\n", output_file_name.c_str());
-  writer->Write("  %s %s\n", input_file_name.c_str(),
-                imports.empty() ? "" : "\\");
-
-  bool first = true;
-  for (const auto& import : imports) {
-    if (! first) {
-      writer->Write(" \\\n");
-    }
-    first = false;
-
-    if (! import->GetFilename().empty()) {
-      writer->Write("  %s", import->GetFilename().c_str());
-    }
-  }
-
-  writer->Write(first ? "\n" : "\n\n");
+void write_common_dep_file(const string& output_file,
+                           const vector<string>& aidl_sources,
+                           CodeWriter* writer) {
+  // Encode that the output file depends on aidl input files.
+  writer->Write("%s : \\\n", output_file.c_str());
+  writer->Write("  %s", Join(aidl_sources, " \\\n  ").c_str());
+  writer->Write("\n\n");
 
   // Output "<input_aidl_file>: " so make won't fail if the input .aidl file
   // has been deleted, moved or renamed in incremental build.
-  writer->Write("%s :\n", input_file_name.c_str());
+  for (const auto& src : aidl_sources) {
+    writer->Write("%s :\n", src.c_str());
+  }
+}
 
-  // Output "<imported_file>: " so make won't fail if the imported file has
-  // been deleted, moved or renamed in incremental build.
+bool write_java_dep_file(const JavaOptions& options,
+                         const vector<unique_ptr<AidlImport>>& imports,
+                         const IoDelegate& io_delegate) {
+  string dep_file_name = options.DependencyFilePath();
+  if (dep_file_name.empty()) {
+    return true;  // nothing to do
+  }
+  CodeWriterPtr writer = io_delegate.GetCodeWriter(dep_file_name);
+  if (!writer) {
+    LOG(ERROR) << "Could not open dependency file: " << dep_file_name;
+    return false;
+  }
+
+  vector<string> source_aidl = {options.input_file_name_};
   for (const auto& import : imports) {
-    if (! import->GetFilename().empty()) {
-      writer->Write("%s :\n", import->GetFilename().c_str());
+    if (!import->GetFilename().empty()) {
+      source_aidl.push_back(import->GetFilename());
     }
   }
+
+  write_common_dep_file(options.output_file_name_, source_aidl, writer.get());
+
+  return true;
+}
+
+bool write_cpp_dep_file(const CppOptions& options,
+                        const AidlInterface& interface,
+                        const vector<unique_ptr<AidlImport>>& imports,
+                        const IoDelegate& io_delegate) {
+  using ::android::aidl::cpp::HeaderFile;
+  using ::android::aidl::cpp::ClassNames;
+
+  string dep_file_name = options.DependencyFilePath();
+  if (dep_file_name.empty()) {
+    return true;  // nothing to do
+  }
+  CodeWriterPtr writer = io_delegate.GetCodeWriter(dep_file_name);
+  if (!writer) {
+    LOG(ERROR) << "Could not open dependency file: " << dep_file_name;
+    return false;
+  }
+
+  vector<string> source_aidl = {options.InputFileName()};
+  for (const auto& import : imports) {
+    if (!import->GetFilename().empty()) {
+      source_aidl.push_back(import->GetFilename());
+    }
+  }
+
+  vector<string> headers;
+  for (ClassNames c : {ClassNames::CLIENT,
+                       ClassNames::SERVER,
+                       ClassNames::INTERFACE}) {
+    headers.push_back(options.OutputHeaderDir() + '/' +
+                      HeaderFile(interface, c, false /* use_os_sep */));
+  }
+
+  write_common_dep_file(options.OutputCppFilePath(), source_aidl, writer.get());
+  writer->Write("\n");
+
+  // Generated headers also depend on the source aidl files.
+  writer->Write("%s : \\\n    %s\n", Join(headers, " \\\n    ").c_str(),
+                Join(source_aidl, " \\\n    ").c_str());
+
+  return true;
 }
 
 string generate_outputFileName(const JavaOptions& options,
@@ -619,10 +659,8 @@ int compile_aidl_to_cpp(const CppOptions& options,
     return 1;
   }
 
-  string dep_file_name = options.DependencyFilePath();
-  if (!dep_file_name.empty()) {
-    generate_dep_file(dep_file_name, options.InputFileName(),
-                      options.OutputCppFilePath(), imports, io_delegate);
+  if (!write_cpp_dep_file(options, *interface, imports, io_delegate)) {
+    return 1;
   }
 
   return (cpp::GenerateCpp(options, *types, *interface, io_delegate)) ? 0 : 1;
@@ -663,11 +701,8 @@ int compile_aidl_to_java(const JavaOptions& options,
     return 1;
   }
 
-  // if we were asked to, generate a make dependency file
-  string dep_file_name = options.DependencyFilePath();
-  if (!dep_file_name.empty()) {
-    generate_dep_file(dep_file_name, options.input_file_name_,
-                      options.output_file_name_, imports, io_delegate);
+  if (!write_java_dep_file(options, imports, io_delegate)) {
+    return 1;
   }
 
   return generate_java(output_file_name, options.input_file_name_.c_str(),

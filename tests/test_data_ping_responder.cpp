@@ -49,12 +49,18 @@ const char kGenClientHeaderPath[] = "some/path/android/os/BpPingResponder.h";
 const char kGenServerHeaderPath[] = "some/path/android/os/BnPingResponder.h";
 
 const char kExpectedCppDepsOutput[] =
-R"(some/path/to/output.cpp: \
+R"(some/path/to/output.cpp : \
   android/os/IPingResponder.aidl \
   ./bar/Unused.aidl
 
 android/os/IPingResponder.aidl :
 ./bar/Unused.aidl :
+
+some/path/android/os/BpPingResponder.h \
+    some/path/android/os/BnPingResponder.h \
+    some/path/android/os/IPingResponder.h : \
+    android/os/IPingResponder.aidl \
+    ./bar/Unused.aidl
 )";
 
 const char kExpectedCppOutput[] =

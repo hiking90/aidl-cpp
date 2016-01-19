@@ -205,8 +205,6 @@ bool DeclareLocalVariable(const TypeNamespace& types, const AidlArgument& a,
   return true;
 }
 
-enum class ClassNames { BASE, CLIENT, SERVER, INTERFACE };
-
 string ClassName(const AidlInterface& interface, ClassNames type) {
   string c_name = interface.GetName();
 
@@ -227,24 +225,6 @@ string ClassName(const AidlInterface& interface, ClassNames type) {
       break;
   }
   return c_name;
-}
-
-string HeaderFile(const AidlInterface& interface,
-                  ClassNames class_type,
-                  bool use_os_sep = true) {
-  string file_path = interface.GetPackage();
-  for (char& c: file_path) {
-    if (c == '.') {
-      c = (use_os_sep) ? OS_PATH_SEPARATOR : '/';
-    }
-  }
-  if (!file_path.empty()) {
-    file_path += (use_os_sep) ? OS_PATH_SEPARATOR : '/';
-  }
-  file_path += ClassName(interface, class_type);
-  file_path += ".h";
-
-  return file_path;
 }
 
 string BuildHeaderGuard(const AidlInterface& interface,
@@ -759,6 +739,24 @@ bool WriteHeader(const CppOptions& options,
 }  // namespace internals
 
 using namespace internals;
+
+string HeaderFile(const AidlInterface& interface,
+                  ClassNames class_type,
+                  bool use_os_sep) {
+  string file_path = interface.GetPackage();
+  for (char& c: file_path) {
+    if (c == '.') {
+      c = (use_os_sep) ? OS_PATH_SEPARATOR : '/';
+    }
+  }
+  if (!file_path.empty()) {
+    file_path += (use_os_sep) ? OS_PATH_SEPARATOR : '/';
+  }
+  file_path += ClassName(interface, class_type);
+  file_path += ".h";
+
+  return file_path;
+}
 
 bool GenerateCpp(const CppOptions& options,
                  const TypeNamespace& types,
