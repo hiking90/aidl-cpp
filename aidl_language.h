@@ -1,5 +1,5 @@
 #ifndef AIDL_AIDL_LANGUAGE_H_
-#define AIDL_AIDL_LANGUAGE_H_ 
+#define AIDL_AIDL_LANGUAGE_H_
 #include <memory>
 #include <string>
 #include <vector>

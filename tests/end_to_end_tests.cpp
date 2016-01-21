@@ -41,9 +41,11 @@ class EndToEndTest : public ::testing::Test {
   virtual void SetUp() {
   }
 
-  void AddStubAidls(const char** parcelables, const char** interfaces) {
+  void AddStubAidls(const char** parcelables, const char** interfaces,
+                    const char* cpp_header=nullptr) {
     for ( ; *parcelables; ++parcelables) {
-      io_delegate_.AddStubParcelable(*parcelables);
+      io_delegate_.AddStubParcelable(
+          *parcelables, (cpp_header) ? cpp_header : "");
     }
     for ( ; *interfaces; ++interfaces) {
       io_delegate_.AddStubInterface(*interfaces);
@@ -104,7 +106,7 @@ TEST_F(EndToEndTest, IPingResponderCpp) {
 
   // Set up input paths.
   io_delegate_.SetFileContents(input_path, kInterfaceDefinition);
-  AddStubAidls(kImportedParcelables, kImportedInterfaces);
+  AddStubAidls(kImportedParcelables, kImportedInterfaces, kCppParcelableHeader);
 
   // Check that we parse and generate code correctly.
   EXPECT_EQ(android::aidl::compile_aidl_to_cpp(*options, io_delegate_), 0);

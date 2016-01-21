@@ -34,6 +34,8 @@ interface IPingResponder {
 
 const char kCppOutputPath[] = "some/path/to/output.cpp";
 
+const char kCppParcelableHeader[] = "cpp-header-str";
+
 const char* kImportedParcelables[] = {
   "bar.Unused",
   nullptr,

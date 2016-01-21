@@ -422,6 +422,11 @@ void TypeNamespace::Init() {
 
 bool TypeNamespace::AddParcelableType(const AidlParcelable& p,
                                       const string& filename) {
+  if (p.GetCppHeader().empty()) {
+    LOG(ERROR) << "Parcelable " << p.GetCanonicalName()
+               << " has no C++ header defined.";
+    return false;
+  }
   Add(new ParcelableType(p, filename));
   return true;
 }

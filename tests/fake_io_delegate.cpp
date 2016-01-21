@@ -95,12 +95,28 @@ void FakeIoDelegate::SetFileContents(const string& filename,
   file_contents_[filename] = contents;
 }
 
-void FakeIoDelegate::AddStubParcelable(const string& canonical_name) {
-  AddStub(canonical_name, "package %s;\nparcelable %s;");
+void FakeIoDelegate::AddStubParcelable(const string& canonical_name,
+                                       const string& cpp_header) {
+  string package, class_name, rel_path;
+  SplitPackageClass(canonical_name, &rel_path, &package, &class_name);
+  string contents;
+  if (cpp_header.empty()) {
+    contents = StringPrintf("package %s;\nparcelable %s;",
+                            package.c_str(), class_name.c_str());
+  } else {
+    contents = StringPrintf("package %s;\nparcelable %s cpp_header \"%s\";",
+                            package.c_str(), class_name.c_str(),
+                            cpp_header.c_str());
+  }
+  SetFileContents(rel_path, contents);
 }
 
 void FakeIoDelegate::AddStubInterface(const string& canonical_name) {
-  AddStub(canonical_name, "package %s;\ninterface %s { }");
+  string package, class_name, rel_path;
+  SplitPackageClass(canonical_name, &rel_path, &package, &class_name);
+  string contents = StringPrintf("package %s;\ninterface %s { }",
+                                 package.c_str(), class_name.c_str());
+  SetFileContents(rel_path, contents);
 }
 
 void FakeIoDelegate::AddCompoundParcelable(const string& canonical_name,
@@ -135,15 +151,6 @@ bool FakeIoDelegate::PathWasRemoved(const std::string& path) {
     return true;
   }
   return false;
-}
-
-void FakeIoDelegate::AddStub(const string& canonical_name,
-                             const char* format_str) {
-  string package, class_name, rel_path;
-  SplitPackageClass(canonical_name, &rel_path, &package, &class_name);
-  SetFileContents(
-      rel_path,
-      StringPrintf(format_str, package.c_str(), class_name.c_str()));
 }
 
 string FakeIoDelegate::CleanPath(const string& path) const {

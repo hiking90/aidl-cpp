@@ -53,7 +53,8 @@ class FakeIoDelegate : public IoDelegate {
   // Methods added to facilitate testing.
   void SetFileContents(const std::string& filename,
                        const std::string& contents);
-  void AddStubParcelable(const std::string& canonical_name);
+  void AddStubParcelable(const std::string& canonical_name,
+                         const std::string& cpp_header);
   void AddStubInterface(const std::string& canonical_name);
   void AddCompoundParcelable(const std::string& canonical_name,
                              const std::vector<std::string>& subclasses);
@@ -65,7 +66,6 @@ class FakeIoDelegate : public IoDelegate {
   bool PathWasRemoved(const std::string& path);
 
  private:
-  void AddStub(const std::string& canonical_name, const char* format_str);
   // Remove leading "./" from |path|.
   std::string CleanPath(const std::string& path) const;
 

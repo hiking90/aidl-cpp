@@ -40,6 +40,7 @@ extern const char kCanonicalName[];
 extern const char kInterfaceDefinition[];
 
 extern const char kCppOutputPath[];
+extern const char kCppParcelableHeader[];
 extern const char* kImportedParcelables[];
 extern const char* kImportedInterfaces[];
 
