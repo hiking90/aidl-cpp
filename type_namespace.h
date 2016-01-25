@@ -114,7 +114,7 @@ class TypeNamespace {
       std::vector<std::string>* contained_type_names) const;
 
   // Get a pointer to an existing type.
-  virtual const ValidatableType* GetValidatableType(
+  virtual const ValidatableType* FindTypeByName(
       const std::string& name) const = 0;
 
  protected:
@@ -122,6 +122,9 @@ class TypeNamespace {
   virtual ~TypeNamespace() = default;
 
  private:
+  const ValidatableType* GetType(const AidlType& type,
+                                 std::string* error_msg) const;
+
   DISALLOW_COPY_AND_ASSIGN(TypeNamespace);
 };
 
@@ -135,7 +138,7 @@ class LanguageTypeNamespace : public TypeNamespace {
   // name, and then class name (dropping package qualifiers).
   const T* Find(const std::string& name) const;
 
-  const ValidatableType* GetValidatableType(
+  const ValidatableType* FindTypeByName(
       const std::string& name) const override { return Find(name); }
 
  protected:

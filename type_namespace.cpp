@@ -17,7 +17,6 @@
 #include "type_namespace.h"
 
 #include <algorithm>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -30,8 +29,6 @@
 using android::base::StringPrintf;
 using android::base::Split;
 using android::base::Trim;
-using std::cerr;
-using std::endl;
 using std::string;
 using std::vector;
 
@@ -164,122 +161,116 @@ bool TypeNamespace::CanonicalizeContainerType(
 }
 
 bool TypeNamespace::HasType(const string& type_name) const {
-  return GetValidatableType(type_name) != nullptr;
+  return FindTypeByName(type_name) != nullptr;
 }
 
 bool TypeNamespace::IsValidPackage(const string& /* package */) const {
   return true;
 }
 
-const ValidatableType* TypeNamespace::GetReturnType(const AidlType& raw_type,
-                           const string& filename) const {
-  const string error_prefix = StringPrintf(
-      "In file %s line %d return type %s:\n    ",
-      filename.c_str(), raw_type.GetLine(), raw_type.ToString().c_str());
+const ValidatableType* TypeNamespace::GetType(
+    const AidlType& aidl_type, std::string* error_msg) const {
+  const ValidatableType* type = FindTypeByName(aidl_type.GetName());
+  if (type == nullptr) {
+    *error_msg = "unknown type";
+    return nullptr;
+  }
 
-  const ValidatableType* return_type = GetValidatableType(raw_type.GetName());
+  if (aidl_type.GetName() == "void") {
+    if (aidl_type.IsArray()) {
+      *error_msg = "void type cannot be an array";
+      return nullptr;
+    }
+    if (aidl_type.IsNullable() || aidl_type.IsUtf8() ||
+        aidl_type.IsUtf8InCpp()) {
+      *error_msg = "void type cannot be annotated";
+      return nullptr;
+    }
+    // We have no more special handling for void.
+    return type;
+  }
+
+  if (!type->CanWriteToParcel()) {
+    *error_msg = "type cannot be marshalled";
+    return nullptr;
+  }
+
+  if (aidl_type.IsArray()) {
+    type = type->ArrayType();
+    if (!type) {
+      *error_msg = StringPrintf("type '%s' cannot be an array",
+                                aidl_type.GetName().c_str());
+      return nullptr;
+    }
+  }
+
+  if (aidl_type.IsNullable()) {
+    type = type->NullableType();
+    if (!type) {
+      *error_msg = StringPrintf("type '%s%s' cannot be marked as possibly null",
+                                aidl_type.GetName().c_str(),
+                                (aidl_type.IsArray()) ? "[]" : "");
+      return nullptr;
+    }
+  }
+
+  return type;
+}
+
+const ValidatableType* TypeNamespace::GetReturnType(
+    const AidlType& raw_type, const string& filename) const {
+  string error_msg;
+  const ValidatableType* return_type = GetType(raw_type, &error_msg);
   if (return_type == nullptr) {
-    cerr << error_prefix << "unknown return type" << endl;
-    return nullptr;
-  }
-
-  if (raw_type.GetName() != "void" && !return_type->CanWriteToParcel()) {
-    cerr << error_prefix << "return type cannot be marshalled" << endl;
-    return nullptr;
-  }
-
-  if (raw_type.IsArray()) {
-      return_type = return_type->ArrayType();
-  }
-
-  if (!return_type) {
-    cerr << error_prefix << "return type cannot be an array" << endl;
-    return nullptr;
-  }
-
-  if (raw_type.IsNullable()) {
-    return_type = return_type->NullableType();
-  }
-
-  if (!return_type) {
-    cerr << error_prefix << "return type cannot be nullable" << endl;
+    LOG(ERROR) << StringPrintf("In file %s line %d return type %s:\n    ",
+                               filename.c_str(), raw_type.GetLine(),
+                               raw_type.ToString().c_str())
+               << error_msg;
     return nullptr;
   }
 
   return return_type;
 }
 
-const ValidatableType* TypeNamespace::GetArgType(const AidlArgument& a,
-                           int arg_index,
-                           const string& filename) const {
+const ValidatableType* TypeNamespace::GetArgType(
+    const AidlArgument& a, int arg_index, const string& filename) const {
   string error_prefix = StringPrintf(
-      "In file %s line %d parameter %s (%d):\n    ",
+      "In file %s line %d parameter %s (argument %d):\n    ",
       filename.c_str(), a.GetLine(), a.GetName().c_str(), arg_index);
 
   // check the arg type
-  const ValidatableType* t = GetValidatableType(a.GetType().GetName());
+  string error_msg;
+  const ValidatableType* t = GetType(a.GetType(), &error_msg);
   if (t == nullptr) {
-    cerr << error_prefix << "unknown type " << a.GetType().GetName().c_str()
-         << endl;
-    return nullptr;
-  }
-
-  if (!t->CanWriteToParcel()) {
-    cerr << error_prefix
-         << StringPrintf("'%s' can't be marshalled.",
-                         a.GetType().ToString().c_str()) << endl;
-    return nullptr;
-  }
-
-  if (a.GetType().IsArray()) {
-    t = t->ArrayType();
-  }
-
-  if (!t) {
-    cerr << error_prefix << StringPrintf(
-        "'%s' cannot be an array.",
-        a.ToString().c_str()) << endl;
-    return nullptr;
-  }
-
-  if (a.GetType().IsNullable()) {
-    t = t->NullableType();
-  }
-
-  if (!t) {
-    cerr << error_prefix << StringPrintf(
-        "'%s' cannot be nullable.",
-        a.ToString().c_str()) << endl;
+    LOG(ERROR) << error_prefix << error_msg;
     return nullptr;
   }
 
   if (!a.DirectionWasSpecified() && t->CanBeOutParameter()) {
-    cerr << error_prefix << StringPrintf(
+    LOG(ERROR) << error_prefix << StringPrintf(
         "'%s' can be an out type, so you must declare it as in,"
         " out or inout.",
-        a.GetType().ToString().c_str()) << endl;
+        a.GetType().ToString().c_str());
     return nullptr;
   }
 
   if (a.GetDirection() != AidlArgument::IN_DIR &&
       !t->CanBeOutParameter()) {
-    cerr << error_prefix << StringPrintf(
+    LOG(ERROR) << error_prefix << StringPrintf(
         "'%s' can only be an in parameter.",
-        a.ToString().c_str()) << endl;
+        a.ToString().c_str());
     return nullptr;
   }
 
   // check that the name doesn't match a keyword
   if (is_java_keyword(a.GetName().c_str())) {
-    cerr << error_prefix << "Argument name is a Java or aidl keyword"
-         << endl;
+    LOG(ERROR) << error_prefix << "Argument name is a Java or aidl keyword";
     return nullptr;
   }
 
   // Reserve a namespace for internal use
   if (a.GetName().substr(0, 5)  == "_aidl") {
-    cerr << error_prefix << "Argument name cannot begin with '_aidl'"
-         << endl;
+    LOG(ERROR) << error_prefix << "Argument name cannot begin with '_aidl'";
     return nullptr;
   }
 

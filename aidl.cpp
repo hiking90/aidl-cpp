@@ -600,7 +600,7 @@ AidlError load_and_validate_aidl(
     err = AidlError::BAD_TYPE;
   }
 
-  interface->SetLanguageType(types->GetValidatableType(interface->GetCanonicalName()));
+  interface->SetLanguageType(types->FindTypeByName(interface->GetCanonicalName()));
 
   for (const auto& import : p.GetImports()) {
     // If we skipped an unresolved import above (see comment there) we'll have
