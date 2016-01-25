@@ -1,5 +1,6 @@
 #ifndef AIDL_AIDL_LANGUAGE_H_
 #define AIDL_AIDL_LANGUAGE_H_
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -45,6 +46,13 @@ class ValidatableType;
 
 class AidlType : public AidlNode {
  public:
+  enum Annotation : uint32_t {
+    AnnotationNone = 0,
+    AnnotationNullable = 1 << 0,
+    AnnotationUtf8 = 1 << 1,
+    AnnotationUtf8InCpp = 1 << 2,
+  };
+
   AidlType(const std::string& name, unsigned line,
            const std::string& comments, bool is_array);
   virtual ~AidlType() = default;
@@ -65,8 +73,16 @@ class AidlType : public AidlNode {
     return reinterpret_cast<const T*>(language_type_);
   }
 
-  void SetNullable() { nullable_ = true; }
-  bool IsNullable() const { return nullable_; }
+  void Annotate(AidlType::Annotation annotation) { annotations_ = annotation; }
+  bool IsNullable() const {
+    return annotations_ & AnnotationNullable;
+  }
+  bool IsUtf8() const {
+    return annotations_ & AnnotationUtf8;
+  }
+  bool IsUtf8InCpp() const {
+    return annotations_ & AnnotationUtf8InCpp;
+  }
 
  private:
   std::string name_;
@@ -74,7 +90,7 @@ class AidlType : public AidlNode {
   bool is_array_;
   std::string comments_;
   const android::aidl::ValidatableType* language_type_ = nullptr;
-  bool nullable_ = false;
+  Annotation annotations_ = AnnotationNone;
 
   DISALLOW_COPY_AND_ASSIGN(AidlType);
 };
@@ -283,7 +299,9 @@ class AidlInterface : public AidlNode {
   }
 
   template<typename T>
-  const T* GetLanguageType() const { return reinterpret_cast<const T*>(language_type_); }
+  const T* GetLanguageType() const {
+    return reinterpret_cast<const T*>(language_type_);
+  }
 
  private:
   std::string name_;

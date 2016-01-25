@@ -21,7 +21,10 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
     AidlToken* token;
     int integer;
     std::string *str;
+    AidlType::Annotation annotation;
+    AidlType::Annotation annotation_list;
     AidlType* type;
+    AidlType* unannotated_type;
     AidlArgument* arg;
     AidlArgument::Direction direction;
     std::vector<std::unique_ptr<AidlArgument>>* arg_list;
@@ -38,7 +41,8 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
 %token<integer> INTVALUE
 
 %token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' ';'
-%token IN OUT INOUT PACKAGE IMPORT PARCELABLE CPP_HEADER CONST INT NULLABLE
+%token IN OUT INOUT PACKAGE IMPORT PARCELABLE CPP_HEADER CONST INT
+%token ANNOTATION_NULLABLE ANNOTATION_UTF8 ANNOTATION_UTF8_CPP
 
 %type<parcelable_list> parcelable_decls
 %type<parcelable> parcelable_decl
@@ -46,7 +50,10 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
 %type<interface_obj> interface_decl
 %type<method> method_decl
 %type<constant> constant_decl
+%type<annotation> annotation
+%type<annotation_list>annotation_list
 %type<type> type
+%type<unannotated_type> unannotated_type
 %type<arg_list> arg_list
 %type<arg> arg
 %type<direction> direction
@@ -228,10 +235,9 @@ arg
     delete $2;
   };
 
-type
+unannotated_type
  : qualified_name {
-    $$ = new AidlType($1->GetDotName(), @1.begin.line, $1->GetComments(),
-                      false);
+    $$ = new AidlType($1->GetDotName(), @1.begin.line, $1->GetComments(), false);
     delete $1;
   }
  | qualified_name '[' ']' {
@@ -244,10 +250,15 @@ type
                       $1->GetComments(), false);
     delete $1;
     delete $3;
-  }
- | NULLABLE type {
+  };
+
+type
+ : annotation_list unannotated_type {
     $$ = $2;
-    $2->SetNullable();
+    $2->Annotate($1);
+  }
+ | unannotated_type {
+    $$ = $1;
   };
 
 generic_list
@@ -260,6 +271,20 @@ generic_list
     delete $1;
     delete $3;
   };
+
+annotation_list
+ : annotation_list annotation
+  { $$ = static_cast<AidlType::Annotation>($1 | $2); }
+ | annotation
+  { $$ = $1; };
+
+annotation
+ : ANNOTATION_NULLABLE
+  { $$ = AidlType::AnnotationNullable; }
+ | ANNOTATION_UTF8
+  { $$ = AidlType::AnnotationUtf8; }
+ | ANNOTATION_UTF8_CPP
+  { $$ = AidlType::AnnotationUtf8InCpp; };
 
 direction
  : IN

@@ -18,6 +18,7 @@
 #include <memory>
 #include <vector>
 
+#include <android-base/stringprintf.h>
 #include <gtest/gtest.h>
 
 #include "aidl.h"
@@ -28,6 +29,7 @@
 #include "type_namespace.h"
 
 using android::aidl::test::FakeIoDelegate;
+using android::base::StringPrintf;
 using std::string;
 using std::unique_ptr;
 using android::aidl::internals::parse_preprocessed_file;
@@ -109,6 +111,34 @@ TEST_F(AidlTest, RejectsNullablePrimitive) {
   string oneway_method = "package a; interface IFoo { @nullable int f(); }";
   EXPECT_EQ(nullptr, Parse("a/IFoo.aidl", oneway_method, &cpp_types_));
   EXPECT_EQ(nullptr, Parse("a/IFoo.aidl", oneway_method, &java_types_));
+}
+
+TEST_F(AidlTest, ParsesNullableAnnotation) {
+  for (auto is_nullable: {true, false}) {
+    auto parse_result = Parse(
+        "a/IFoo.aidl",
+        StringPrintf( "package a; interface IFoo {%s String f(); }",
+                     (is_nullable) ? "@nullable" : ""),
+        &cpp_types_);
+    ASSERT_NE(nullptr, parse_result);
+    ASSERT_FALSE(parse_result->GetMethods().empty());
+    EXPECT_EQ(parse_result->GetMethods()[0]->GetType().IsNullable(),
+              is_nullable);
+  }
+}
+
+TEST_F(AidlTest, ParsesUtf8Annotations) {
+  for (auto is_utf8: {true, false}) {
+    auto parse_result = Parse(
+        "a/IFoo.aidl",
+        StringPrintf( "package a; interface IFoo {%s String f(); }",
+                     (is_utf8) ? "@utf8" : ""),
+        &cpp_types_);
+    ASSERT_NE(nullptr, parse_result);
+    ASSERT_FALSE(parse_result->GetMethods().empty());
+    EXPECT_EQ(parse_result->GetMethods()[0]->GetType().IsUtf8(),
+              is_utf8);
+  }
 }
 
 TEST_F(AidlTest, AcceptsOneway) {
