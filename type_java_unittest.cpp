@@ -53,7 +53,8 @@ TEST_F(JavaTypeNamespaceTest, ContainerTypeCreation) {
   EXPECT_TRUE(types_.HasType("Foo"));
   EXPECT_FALSE(types_.HasType("List<Foo>"));
   // But after we add the list explicitly...
-  EXPECT_TRUE(types_.MaybeAddContainerType("List<Foo>"));
+  AidlType container_type("List<Foo>", 0, "", false /* not array */);
+  EXPECT_TRUE(types_.MaybeAddContainerType(container_type));
   // This should work.
   EXPECT_TRUE(types_.HasType("List<Foo>"));
 }

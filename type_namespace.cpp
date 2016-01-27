@@ -20,9 +20,6 @@
 #include <string>
 #include <vector>
 
-#include <android-base/stringprintf.h>
-#include <android-base/strings.h>
-
 #include "aidl_language.h"
 #include "logging.h"
 
@@ -81,146 +78,14 @@ string ValidatableType::HumanReadableKind() const {
   return "unknown";
 }
 
-bool TypeNamespace::MaybeAddContainerType(const std::string& type_name) {
-  if (!IsContainerType(type_name) || HasType(type_name)) {
-    return true;
-  }
-
-  vector<string> container_class;
-  vector<string> contained_type_names;
-  if (!CanonicalizeContainerType(type_name, &container_class,
-                                 &contained_type_names)) {
-    return false;
-  }
-
-  // We only support two types right now and this type is one of them.
-  switch (contained_type_names.size()) {
-    case 1:
-      return AddListType(contained_type_names[0]);
-    case 2:
-      return AddMapType(contained_type_names[0], contained_type_names[1]);
-    default:
-      break;  // Should never get here, will FATAL below.
-  }
-
-  LOG(FATAL) << "aidl internal error";
-  return false;
-}
-
-
-bool TypeNamespace::IsContainerType(const string& type_name) const {
-  const size_t opening_brace = type_name.find('<');
-  const size_t closing_brace = type_name.find('>');
-  if (opening_brace != string::npos || closing_brace != string::npos) {
-    return true;  // Neither < nor > appear in normal AIDL types.
-  }
-  return false;
-}
-
-bool TypeNamespace::CanonicalizeContainerType(
-    const string& raw_type_name,
-    vector<string>* container_class,
-    vector<string>* contained_type_names) const {
-  string name = Trim(raw_type_name);
-  const size_t opening_brace = name.find('<');
-  const size_t closing_brace = name.find('>');
-  if (opening_brace == string::npos || closing_brace == string::npos) {
-    return false;
-  }
-
-  if (opening_brace != name.rfind('<') ||
-      closing_brace != name.rfind('>') ||
-      closing_brace != name.length() - 1) {
-    // Nested/invalid templates are forbidden.
-    LOG(ERROR) << "Invalid template type '" << name << "'";
-    return false;
-  }
-
-  string container = Trim(name.substr(0, opening_brace));
-  string remainder = name.substr(opening_brace + 1,
-                                 (closing_brace - opening_brace) - 1);
-  vector<string> args = Split(remainder, ",");
-
-  // Map the container name to its canonical form for supported containers.
-  if ((container == "List" || container == "java.util.List") &&
-      args.size() == 1) {
-    *container_class = {"java", "util", "List"};
-    *contained_type_names = args;
-    return true;
-  }
-  if ((container == "Map" || container == "java.util.Map") &&
-      args.size() == 2) {
-    *container_class = {"java", "util", "Map"};
-    *contained_type_names = args;
-    return true;
-  }
-
-  LOG(ERROR) << "Unknown find container with name " << container
-             << " and " << args.size() << "contained types.";
-  return false;
-}
-
-bool TypeNamespace::HasType(const string& type_name) const {
-  return FindTypeByName(type_name) != nullptr;
-}
-
 bool TypeNamespace::IsValidPackage(const string& /* package */) const {
   return true;
-}
-
-const ValidatableType* TypeNamespace::GetType(
-    const AidlType& aidl_type, std::string* error_msg) const {
-  const ValidatableType* type = FindTypeByName(aidl_type.GetName());
-  if (type == nullptr) {
-    *error_msg = "unknown type";
-    return nullptr;
-  }
-
-  if (aidl_type.GetName() == "void") {
-    if (aidl_type.IsArray()) {
-      *error_msg = "void type cannot be an array";
-      return nullptr;
-    }
-    if (aidl_type.IsNullable() || aidl_type.IsUtf8() ||
-        aidl_type.IsUtf8InCpp()) {
-      *error_msg = "void type cannot be annotated";
-      return nullptr;
-    }
-    // We have no more special handling for void.
-    return type;
-  }
-
-  if (!type->CanWriteToParcel()) {
-    *error_msg = "type cannot be marshalled";
-    return nullptr;
-  }
-
-  if (aidl_type.IsArray()) {
-    type = type->ArrayType();
-    if (!type) {
-      *error_msg = StringPrintf("type '%s' cannot be an array",
-                                aidl_type.GetName().c_str());
-      return nullptr;
-    }
-  }
-
-  if (aidl_type.IsNullable()) {
-    type = type->NullableType();
-    if (!type) {
-      *error_msg = StringPrintf("type '%s%s' cannot be marked as possibly null",
-                                aidl_type.GetName().c_str(),
-                                (aidl_type.IsArray()) ? "[]" : "");
-      return nullptr;
-    }
-  }
-
-  return type;
 }
 
 const ValidatableType* TypeNamespace::GetReturnType(
     const AidlType& raw_type, const string& filename) const {
   string error_msg;
-  const ValidatableType* return_type = GetType(raw_type, &error_msg);
+  const ValidatableType* return_type = GetValidatableType(raw_type, &error_msg);
   if (return_type == nullptr) {
     LOG(ERROR) << StringPrintf("In file %s line %d return type %s:\n    ",
                                filename.c_str(), raw_type.GetLine(),
@@ -240,7 +105,7 @@ const ValidatableType* TypeNamespace::GetArgType(
 
   // check the arg type
   string error_msg;
-  const ValidatableType* t = GetType(a.GetType(), &error_msg);
+  const ValidatableType* t = GetValidatableType(a.GetType(), &error_msg);
   if (t == nullptr) {
     LOG(ERROR) << error_prefix << error_msg;
     return nullptr;

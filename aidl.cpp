@@ -194,7 +194,7 @@ int check_types(const string& filename,
   for (const auto& m : c->GetMethods()) {
     bool oneway = m->IsOneway() || c->IsOneway();
 
-    if (!types->MaybeAddContainerType(m->GetType().GetName())) {
+    if (!types->MaybeAddContainerType(m->GetType())) {
       err = 1;  // return type is invalid
     }
 
@@ -216,7 +216,7 @@ int check_types(const string& filename,
 
     int index = 1;
     for (const auto& arg : m->GetArguments()) {
-      if (!types->MaybeAddContainerType(arg->GetType().GetName())) {
+      if (!types->MaybeAddContainerType(arg->GetType())) {
         err = 1;
       }
 
@@ -562,7 +562,7 @@ AidlError load_and_validate_aidl(
   // parse the imports of the input file
   ImportResolver import_resolver{io_delegate, import_paths};
   for (auto& import : p.GetImports()) {
-    if (types->HasType(import->GetNeededClass())) {
+    if (types->HasImportType(*import)) {
       // There are places in the Android tree where an import doesn't resolve,
       // but we'll pick the type up through the preprocessed types.
       // This seems like an error, but legacy support demands we support it...
@@ -600,7 +600,7 @@ AidlError load_and_validate_aidl(
     err = AidlError::BAD_TYPE;
   }
 
-  interface->SetLanguageType(types->FindTypeByName(interface->GetCanonicalName()));
+  interface->SetLanguageType(types->GetInterfaceType(*interface));
 
   for (const auto& import : p.GetImports()) {
     // If we skipped an unresolved import above (see comment there) we'll have
