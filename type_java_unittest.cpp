@@ -36,27 +36,27 @@ class JavaTypeNamespaceTest : public ::testing::Test {
 };
 
 TEST_F(JavaTypeNamespaceTest, HasSomeBasicTypes) {
-  EXPECT_TRUE(types_.HasType("void"));
-  EXPECT_TRUE(types_.HasType("int"));
-  EXPECT_TRUE(types_.HasType("String"));
+  EXPECT_TRUE(types_.HasTypeByCanonicalName("void"));
+  EXPECT_TRUE(types_.HasTypeByCanonicalName("int"));
+  EXPECT_TRUE(types_.HasTypeByCanonicalName("java.lang.String"));
 }
 
 TEST_F(JavaTypeNamespaceTest, ContainerTypeCreation) {
   // We start with no knowledge of parcelables or lists of them.
-  EXPECT_FALSE(types_.HasType("Foo"));
-  EXPECT_FALSE(types_.HasType("List<Foo>"));
+  EXPECT_FALSE(types_.HasTypeByCanonicalName("Foo"));
+  EXPECT_FALSE(types_.HasTypeByCanonicalName("java.util.List<a.goog.Foo>"));
   unique_ptr<AidlParcelable> parcelable(
       new AidlParcelable(new AidlQualifiedName("Foo", ""), 0, {"a", "goog"}));
   // Add the parcelable type we care about.
   EXPECT_TRUE(types_.AddParcelableType(*parcelable.get(), __FILE__));
   // Now we can find the parcelable type, but not the List of them.
-  EXPECT_TRUE(types_.HasType("Foo"));
-  EXPECT_FALSE(types_.HasType("List<Foo>"));
+  EXPECT_TRUE(types_.HasTypeByCanonicalName("a.goog.Foo"));
+  EXPECT_FALSE(types_.HasTypeByCanonicalName("java.util.List<a.goog.Foo>"));
   // But after we add the list explicitly...
   AidlType container_type("List<Foo>", 0, "", false /* not array */);
   EXPECT_TRUE(types_.MaybeAddContainerType(container_type));
   // This should work.
-  EXPECT_TRUE(types_.HasType("List<Foo>"));
+  EXPECT_TRUE(types_.HasTypeByCanonicalName("java.util.List<a.goog.Foo>"));
 }
 
 }  // namespace java

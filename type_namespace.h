@@ -126,21 +126,22 @@ class LanguageTypeNamespace : public TypeNamespace {
 
   // Get a pointer to an existing type.  Searches first by fully-qualified
   // name, and then class name (dropping package qualifiers).
-  const T* Find(const std::string& name) const;
+  const T* Find(const AidlType& aidl_type) const;
 
-  const ValidatableType* FindTypeByName(
-      const std::string& name) const { return Find(name); }
-  bool HasType(const std::string& type_name) const {
-    return FindTypeByName(type_name) != nullptr;
+  // Find a type by its |name|.  If |name| refers to a container type (e.g.
+  // List<String>) you must turn it into a canonical name first (e.g.
+  // java.util.List<java.lang.String>).
+  const T* FindTypeByCanonicalName(const std::string& name) const;
+  bool HasTypeByCanonicalName(const std::string& type_name) const {
+    return FindTypeByCanonicalName(type_name) != nullptr;
   }
   bool HasImportType(const AidlImport& import) const override {
-    return HasType(import.GetNeededClass());
+    return HasTypeByCanonicalName(import.GetNeededClass());
   }
   const ValidatableType* GetInterfaceType(
       const AidlInterface& interface) const override {
-    return FindTypeByName(interface.GetCanonicalName());
+    return FindTypeByCanonicalName(interface.GetCanonicalName());
   }
-
 
   bool MaybeAddContainerType(const AidlType& aidl_type) override;
   // We dynamically create container types as we discover them in the parse
@@ -172,7 +173,7 @@ class LanguageTypeNamespace : public TypeNamespace {
 
 template<typename T>
 bool LanguageTypeNamespace<T>::Add(const T* type) {
-  const T* existing = Find(type->QualifiedName());
+  const T* existing = FindTypeByCanonicalName(type->QualifiedName());
   if (!existing) {
     types_.emplace_back(type);
     return true;
@@ -199,13 +200,13 @@ bool LanguageTypeNamespace<T>::Add(const T* type) {
 }
 
 template<typename T>
-const T* LanguageTypeNamespace<T>::Find(const std::string& raw_name) const {
+const T* LanguageTypeNamespace<T>::Find(const AidlType& aidl_type) const {
   using std::string;
   using std::vector;
   using android::base::Join;
   using android::base::Trim;
 
-  string name = Trim(raw_name);
+  string name = Trim(aidl_type.GetName());
   if (IsContainerType(name)) {
     vector<string> container_class;
     vector<string> contained_type_names;
@@ -213,17 +214,19 @@ const T* LanguageTypeNamespace<T>::Find(const std::string& raw_name) const {
                                    &contained_type_names)) {
       return nullptr;
     }
-    for (string& contained_type_name : contained_type_names) {
-      const T* contained_type = Find(contained_type_name);
-      if (!contained_type) {
-        return nullptr;
-      }
-      contained_type_name = contained_type->QualifiedName();
-    }
     name = Join(container_class, '.') +
            "<" + Join(contained_type_names, ',') + ">";
   }
+  // Here, we know that if we have a container
+  return FindTypeByCanonicalName(name);
+}
 
+template<typename T>
+const T* LanguageTypeNamespace<T>::FindTypeByCanonicalName(
+    const std::string& raw_name) const {
+  using android::base::Trim;
+
+  std::string name = Trim(raw_name);
   const T* ret = nullptr;
   for (const auto& type : types_) {
     // Always prefer a exact match if possible.
@@ -244,8 +247,10 @@ const T* LanguageTypeNamespace<T>::Find(const std::string& raw_name) const {
 template<typename T>
 bool LanguageTypeNamespace<T>::MaybeAddContainerType(
     const AidlType& aidl_type) {
+  using android::base::Join;
+
   std::string type_name = aidl_type.GetName();
-  if (!IsContainerType(type_name) || HasType(type_name)) {
+  if (!IsContainerType(type_name)) {
     return true;
   }
 
@@ -255,6 +260,13 @@ bool LanguageTypeNamespace<T>::MaybeAddContainerType(
                                  &contained_type_names)) {
     return false;
   }
+
+  const std::string canonical_name = Join(container_class, ".") +
+      "<" + Join(contained_type_names, ",") + ">";
+  if (HasTypeByCanonicalName(canonical_name)) {
+    return true;
+  }
+
 
   // We only support two types right now and this type is one of them.
   switch (contained_type_names.size()) {
@@ -310,6 +322,15 @@ bool LanguageTypeNamespace<T>::CanonicalizeContainerType(
   std::string remainder = name.substr(opening_brace + 1,
                                  (closing_brace - opening_brace) - 1);
   std::vector<std::string> args = Split(remainder, ",");
+  for (auto& type_name: args) {
+    // Here, we are relying on FindTypeByCanonicalName to do its best
+    // when given a non-canonical name.
+    const T* arg_type = FindTypeByCanonicalName(type_name);
+    if (!arg_type) {
+      return false;
+    }
+    type_name = arg_type->QualifiedName();
+  }
 
   // Map the container name to its canonical form for supported containers.
   if ((container == "List" || container == "java.util.List") &&
@@ -335,7 +356,7 @@ const ValidatableType* LanguageTypeNamespace<T>::GetValidatableType(
     const AidlType& aidl_type, std::string* error_msg) const {
   using android::base::StringPrintf;
 
-  const ValidatableType* type = FindTypeByName(aidl_type.GetName());
+  const ValidatableType* type = Find(aidl_type);
   if (type == nullptr) {
     *error_msg = "unknown type";
     return nullptr;

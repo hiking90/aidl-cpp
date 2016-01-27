@@ -702,9 +702,8 @@ void InterfaceType::WriteToParcel(StatementBlock* addTo, Variable* v,
 void InterfaceType::CreateFromParcel(StatementBlock* addTo, Variable* v,
                                      Variable* parcel, Variable**) const {
   // v = Interface.asInterface(parcel.readStrongBinder());
-  string stub_type = v->type->QualifiedName() + ".Stub";
   addTo->Add(new Assignment(
-      v, new MethodCall(m_types->Find(stub_type), "asInterface", 1,
+      v, new MethodCall(stub_, "asInterface", 1,
                         new MethodCall(parcel, "readStrongBinder"))));
 }
 
@@ -856,17 +855,6 @@ void JavaTypeNamespace::Init() {
   FALSE_VALUE = new LiteralExpression("false");
 }
 
-const Type* JavaTypeNamespace::Find(const char* package,
-                                    const char* name) const {
-  string s;
-  if (package != nullptr && *package != '\0') {
-    s += package;
-    s += '.';
-  }
-  s += name;
-  return Find(s);
-}
-
 bool JavaTypeNamespace::AddParcelableType(const AidlParcelable& p,
                                           const std::string& filename) {
   Type* type =
@@ -897,7 +885,7 @@ bool JavaTypeNamespace::AddBinderType(const AidlInterface& b,
 }
 
 bool JavaTypeNamespace::AddListType(const std::string& contained_type_name) {
-  const Type* contained_type = Find(contained_type_name);
+  const Type* contained_type = FindTypeByCanonicalName(contained_type_name);
   if (!contained_type) {
     return false;
   }

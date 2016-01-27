@@ -444,10 +444,6 @@ class JavaTypeNamespace : public LanguageTypeNamespace<Type> {
   bool AddMapType(const std::string& key_type_name,
                   const std::string& value_type_name) override;
 
-  using LanguageTypeNamespace<Type>::Find;
-  // helper alias for Find(name);
-  const Type* Find(const char* package, const char* name) const;
-
   const Type* BoolType() const { return m_bool_type; }
   const Type* IntType() const { return m_int_type; }
   const Type* StringType() const { return m_string_type; }

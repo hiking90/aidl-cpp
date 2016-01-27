@@ -154,21 +154,19 @@ TEST_F(AidlTest, AcceptsOneway) {
 TEST_F(AidlTest, ParsesPreprocessedFile) {
   string simple_content = "parcelable a.Foo;\ninterface b.IBar;";
   io_delegate_.SetFileContents("path", simple_content);
-  EXPECT_FALSE(java_types_.HasType("a.Foo"));
+  EXPECT_FALSE(java_types_.HasTypeByCanonicalName("a.Foo"));
   EXPECT_TRUE(parse_preprocessed_file(io_delegate_, "path", &java_types_));
-  EXPECT_TRUE(java_types_.HasType("Foo"));
-  EXPECT_TRUE(java_types_.HasType("a.Foo"));
-  EXPECT_TRUE(java_types_.HasType("b.IBar"));
+  EXPECT_TRUE(java_types_.HasTypeByCanonicalName("a.Foo"));
+  EXPECT_TRUE(java_types_.HasTypeByCanonicalName("b.IBar"));
 }
 
 TEST_F(AidlTest, ParsesPreprocessedFileWithWhitespace) {
   string simple_content = "parcelable    a.Foo;\n  interface b.IBar  ;\t";
   io_delegate_.SetFileContents("path", simple_content);
-  EXPECT_FALSE(java_types_.HasType("a.Foo"));
+  EXPECT_FALSE(java_types_.HasTypeByCanonicalName("a.Foo"));
   EXPECT_TRUE(parse_preprocessed_file(io_delegate_, "path", &java_types_));
-  EXPECT_TRUE(java_types_.HasType("Foo"));
-  EXPECT_TRUE(java_types_.HasType("a.Foo"));
-  EXPECT_TRUE(java_types_.HasType("b.IBar"));
+  EXPECT_TRUE(java_types_.HasTypeByCanonicalName("a.Foo"));
+  EXPECT_TRUE(java_types_.HasTypeByCanonicalName("b.IBar"));
 }
 
 TEST_F(AidlTest, PreferImportToPreprocessed) {
@@ -182,10 +180,11 @@ TEST_F(AidlTest, PreferImportToPreprocessed) {
       &java_types_);
   EXPECT_NE(nullptr, parse_result);
   // We expect to know about both kinds of IBar
-  EXPECT_TRUE(java_types_.HasType("one.IBar"));
-  EXPECT_TRUE(java_types_.HasType("another.IBar"));
+  EXPECT_TRUE(java_types_.HasTypeByCanonicalName("one.IBar"));
+  EXPECT_TRUE(java_types_.HasTypeByCanonicalName("another.IBar"));
   // But if we request just "IBar" we should get our imported one.
-  const java::Type* type = java_types_.Find("IBar");
+  AidlType ambiguous_type("IBar", 0, "", false /* not an array */);
+  const java::Type* type = java_types_.Find(ambiguous_type);
   ASSERT_TRUE(type);
   EXPECT_EQ("one.IBar", type->QualifiedName());
 }
@@ -255,7 +254,7 @@ TEST_F(AidlTest, UnderstandsNativeParcelables) {
   // C++ understands C++ specific stuff
   auto cpp_parse_result = Parse(input_path, input, &cpp_types_);
   EXPECT_NE(nullptr, cpp_parse_result);
-  auto cpp_type = cpp_types_.Find("Bar");
+  auto cpp_type = cpp_types_.FindTypeByCanonicalName("p.Bar");
   ASSERT_NE(nullptr, cpp_type);
   EXPECT_EQ("::p::Bar", cpp_type->CppType());
   set<string> headers;
@@ -266,7 +265,7 @@ TEST_F(AidlTest, UnderstandsNativeParcelables) {
   // Java ignores C++ specific stuff
   auto java_parse_result = Parse(input_path, input, &java_types_);
   EXPECT_NE(nullptr, java_parse_result);
-  auto java_type = java_types_.Find("Bar");
+  auto java_type = java_types_.FindTypeByCanonicalName("p.Bar");
   ASSERT_NE(nullptr, java_type);
   EXPECT_EQ("p.Bar", java_type->InstantiableName());
 }

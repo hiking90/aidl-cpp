@@ -275,7 +275,7 @@ class NullableStringListType : public Type {
 class StringListType : public Type {
  public:
   StringListType()
-      : Type(ValidatableType::KIND_BUILT_IN, "java.util", "List<String>",
+      : Type(ValidatableType::KIND_BUILT_IN, "java.util", "List<java.lang.String>",
              {"utils/String16.h", "vector"},
              "::std::vector<::android::String16>",
              "readString16Vector", "writeString16Vector",
@@ -372,13 +372,13 @@ void TypeNamespace::Init() {
       "readCharVector", "writeCharVector"));
 
   Type* nullable_string_array_type =
-      new ArrayType(ValidatableType::KIND_BUILT_IN, kNoPackage, "String[]",
+      new ArrayType(ValidatableType::KIND_BUILT_IN, "java.lang", "String[]",
                     {"utils/String16.h", "vector"},
                     "::std::unique_ptr<::std::vector<::std::unique_ptr<::android::String16>>>",
                     "readString16Vector", "writeString16Vector");
 
   Type* string_array_type = new ArrayType(ValidatableType::KIND_BUILT_IN,
-                                          kNoPackage, "String[]",
+                                          "java.lang", "String[]",
                                           {"utils/String16.h", "vector"},
                                           "::std::vector<::android::String16>",
                                           "readString16Vector",
@@ -386,11 +386,11 @@ void TypeNamespace::Init() {
                                           nullable_string_array_type);
 
   Type* nullable_string_type =
-      new Type(ValidatableType::KIND_BUILT_IN, kNoPackage, "String",
+      new Type(ValidatableType::KIND_BUILT_IN, "java.lang", "String",
                {"utils/String16.h"}, "::std::unique_ptr<::android::String16>",
                "readString16", "writeString16");
 
-  string_type_ = new Type(ValidatableType::KIND_BUILT_IN, kNoPackage, "String",
+  string_type_ = new Type(ValidatableType::KIND_BUILT_IN, "java.lang", "String",
                           {"utils/String16.h"}, "::android::String16",
                           "readString16", "writeString16",
                           string_array_type, nullable_string_type);
@@ -438,7 +438,7 @@ bool TypeNamespace::AddBinderType(const AidlInterface& b,
 }
 
 bool TypeNamespace::AddListType(const std::string& type_name) {
-  const Type* contained_type = Find(type_name);
+  const Type* contained_type = FindTypeByCanonicalName(type_name);
   if (!contained_type) {
     LOG(ERROR) << "Cannot create List<" << type_name << "> because contained "
                   "type cannot be found or is invalid.";

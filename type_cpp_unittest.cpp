@@ -33,18 +33,19 @@ class CppTypeNamespaceTest : public ::testing::Test {
 };
 
 TEST_F(CppTypeNamespaceTest, HasSomeBasicTypes) {
-  EXPECT_TRUE(types_.HasType("byte"));
-  EXPECT_TRUE(types_.HasType("int"));
-  EXPECT_TRUE(types_.HasType("long"));
-  EXPECT_TRUE(types_.HasType("float"));
-  EXPECT_TRUE(types_.HasType("double"));
-  EXPECT_TRUE(types_.HasType("boolean"));
-  EXPECT_TRUE(types_.HasType("char"));
-  EXPECT_TRUE(types_.HasType("String"));
+  EXPECT_TRUE(types_.HasTypeByCanonicalName("byte"));
+  EXPECT_TRUE(types_.HasTypeByCanonicalName("int"));
+  EXPECT_TRUE(types_.HasTypeByCanonicalName("long"));
+  EXPECT_TRUE(types_.HasTypeByCanonicalName("float"));
+  EXPECT_TRUE(types_.HasTypeByCanonicalName("double"));
+  EXPECT_TRUE(types_.HasTypeByCanonicalName("boolean"));
+  EXPECT_TRUE(types_.HasTypeByCanonicalName("char"));
+  EXPECT_TRUE(types_.HasTypeByCanonicalName("String"));
 }
 
 TEST_F(CppTypeNamespaceTest, SupportsListString) {
-  EXPECT_TRUE(types_.HasType("List<String>"));
+  EXPECT_TRUE(
+      types_.HasTypeByCanonicalName("java.util.List<java.lang.String>"));
 }
 
 }  // namespace cpp
