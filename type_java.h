@@ -201,7 +201,8 @@ class StringArrayType : public Type {
 
 class StringType : public Type {
  public:
-  StringType(const JavaTypeNamespace* types);
+  StringType(const JavaTypeNamespace* types, const std::string& package,
+             const std::string& class_name);
 
   std::string JavaType() const override { return "java.lang.String"; }
   std::string CreatorName() const override;

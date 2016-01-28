@@ -32,6 +32,19 @@ using std::vector;
 namespace android {
 namespace aidl {
 
+// Since packages cannot contain '-' normally, we cannot be asked
+// to create a type that conflicts with these strings.
+const char kAidlReservedTypePackage[] = "aidl-internal";
+const char kUtf8StringClass[] = "Utf8String";
+const char kUtf8InCppStringClass[] = "Utf8InCppString";
+
+// These *must* match the package and class names above.
+const char kUtf8StringCanonicalName[] = "aidl-internal.Utf8String";
+const char kUtf8InCppStringCanonicalName[] = "aidl-internal.Utf8InCppString";
+
+const char kUtf8Annotation[] = "@utf8";
+const char kUtf8InCppAnnotation[] = "@utfInCpp";
+
 namespace {
 
 bool is_java_keyword(const char* str) {

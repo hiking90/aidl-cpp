@@ -30,6 +30,20 @@
 namespace android {
 namespace aidl {
 
+// Special reserved type names.
+extern const char kAidlReservedTypePackage[];
+extern const char kUtf8StringClass[];  // UTF8 wire format string
+extern const char kUtf8InCppStringClass[];  // UTF16 wire format, UTF8 in C++
+
+// Helpful aliases defined to be <kAidlReservedTypePackage>.<class name>
+extern const char kUtf8StringCanonicalName[];
+extern const char kUtf8InCppStringCanonicalName[];
+
+// Note that these aren't the strings recognized by the parser, we just keep
+// here for the sake of logging a common string constant.
+extern const char kUtf8Annotation[];
+extern const char kUtf8InCppAnnotation[];
+
 class ValidatableType {
  public:
   enum {
@@ -157,7 +171,7 @@ class LanguageTypeNamespace : public TypeNamespace {
  private:
   // Returns true iff the name can be canonicalized to a container type.
   virtual bool CanonicalizeContainerType(
-      const std::string& raw_type_name,
+      const AidlType& aidl_type,
       std::vector<std::string>* container_class,
       std::vector<std::string>* contained_type_names) const;
 
@@ -211,14 +225,14 @@ const T* LanguageTypeNamespace<T>::Find(const AidlType& aidl_type) const {
   if (IsContainerType(name)) {
     vector<string> container_class;
     vector<string> contained_type_names;
-    if (!CanonicalizeContainerType(name, &container_class,
+    if (!CanonicalizeContainerType(aidl_type, &container_class,
                                    &contained_type_names)) {
       return nullptr;
     }
     name = Join(container_class, '.') +
            "<" + Join(contained_type_names, ',') + ">";
   }
-  // Here, we know that if we have a container
+  // Here, we know that we have the canonical name for this container.
   return FindTypeByCanonicalName(name);
 }
 
@@ -257,7 +271,7 @@ bool LanguageTypeNamespace<T>::MaybeAddContainerType(
 
   std::vector<std::string> container_class;
   std::vector<std::string> contained_type_names;
-  if (!CanonicalizeContainerType(type_name, &container_class,
+  if (!CanonicalizeContainerType(aidl_type, &container_class,
                                  &contained_type_names)) {
     return false;
   }
@@ -297,13 +311,13 @@ bool LanguageTypeNamespace<T>::IsContainerType(
 
 template<typename T>
 bool LanguageTypeNamespace<T>::CanonicalizeContainerType(
-    const std::string& raw_type_name,
+    const AidlType& aidl_type,
     std::vector<std::string>* container_class,
     std::vector<std::string>* contained_type_names) const {
   using android::base::Trim;
   using android::base::Split;
 
-  std::string name = Trim(raw_type_name);
+  std::string name = Trim(aidl_type.GetName());
   const size_t opening_brace = name.find('<');
   const size_t closing_brace = name.find('>');
   if (opening_brace == std::string::npos ||
@@ -324,13 +338,22 @@ bool LanguageTypeNamespace<T>::CanonicalizeContainerType(
                                  (closing_brace - opening_brace) - 1);
   std::vector<std::string> args = Split(remainder, ",");
   for (auto& type_name: args) {
-    // Here, we are relying on FindTypeByCanonicalName to do its best
-    // when given a non-canonical name.
+    // Here, we are relying on FindTypeByCanonicalName to do its best when
+    // given a non-canonical name for non-compound type (i.e. not another
+    // container).
     const T* arg_type = FindTypeByCanonicalName(type_name);
     if (!arg_type) {
       return false;
     }
+
+    // Now get the canonical names for these contained types, remapping them if
+    // necessary.
     type_name = arg_type->CanonicalName();
+    if (aidl_type.IsUtf8() && type_name == "java.lang.String") {
+      type_name = kUtf8StringCanonicalName;
+    } else if (aidl_type.IsUtf8InCpp() && type_name == "java.lang.String") {
+      type_name = kUtf8InCppStringCanonicalName;
+    }
   }
 
   // Map the container name to its canonical form for supported containers.
@@ -375,6 +398,43 @@ const ValidatableType* LanguageTypeNamespace<T>::GetValidatableType(
     }
     // We have no more special handling for void.
     return type;
+  }
+
+  // No type may be annotated with both these annotations.
+  if (aidl_type.IsUtf8() && aidl_type.IsUtf8InCpp()) {
+    *error_msg = StringPrintf("Type cannot be marked as both %s and %s.",
+                              kUtf8Annotation, kUtf8InCppAnnotation);
+    return nullptr;
+  }
+
+  // Strings inside containers get remapped to appropriate utf8 versions when
+  // we convert the container name to its canonical form and the look up the
+  // type.  However, for non-compound types (i.e. those not in a container) we
+  // must patch them up here.
+  if (!IsContainerType(type->CanonicalName()) &&
+      (aidl_type.IsUtf8() || aidl_type.IsUtf8InCpp())) {
+    const char* annotation_literal =
+        (aidl_type.IsUtf8()) ? kUtf8Annotation : kUtf8InCppAnnotation;
+    if (aidl_type.GetName() != "String" &&
+        aidl_type.GetName() != "java.lang.String") {
+      *error_msg = StringPrintf("type '%s' may not be annotated as %s.",
+                                aidl_type.GetName().c_str(),
+                                annotation_literal);
+      return nullptr;
+    }
+
+    if (aidl_type.IsUtf8()) {
+      type = FindTypeByCanonicalName(kUtf8StringCanonicalName);
+    } else {  // aidl_type.IsUtf8InCpp()
+      type = FindTypeByCanonicalName(kUtf8InCppStringCanonicalName);
+    }
+
+    if (type == nullptr) {
+      *error_msg = StringPrintf(
+          "%s is unsupported when generating code for this language.",
+          annotation_literal);
+      return nullptr;
+    }
   }
 
   if (!type->CanWriteToParcel()) {

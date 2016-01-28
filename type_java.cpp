@@ -258,10 +258,12 @@ void CharArrayType::ReadFromParcel(StatementBlock* addTo, Variable* v,
 
 // ================================================================
 
-StringType::StringType(const JavaTypeNamespace* types)
-    : Type(types, "java.lang", "String", ValidatableType::KIND_BUILT_IN,
-           true, false) {
-    m_array_type.reset(new StringArrayType(types));
+StringType::StringType(const JavaTypeNamespace* types,
+                       const std::string& package,
+                       const std::string& class_name)
+    : Type(types, package, class_name,
+           ValidatableType::KIND_BUILT_IN, true, false) {
+  m_array_type.reset(new StringArrayType(types));
 }
 
 string StringType::CreatorName() const {
@@ -798,8 +800,10 @@ void JavaTypeNamespace::Init() {
                     "writeDoubleArray", "createDoubleArray",
                     "readDoubleArray"));
 
-  m_string_type = new class StringType(this);
+  m_string_type = new class StringType(this, "java.lang", "String");
   Add(m_string_type);
+  Add(new class StringType(this, ::android::aidl::kAidlReservedTypePackage,
+                           ::android::aidl::kUtf8InCppStringClass));
 
   Add(new Type(this, "java.lang", "Object", ValidatableType::KIND_BUILT_IN,
                false, false));
