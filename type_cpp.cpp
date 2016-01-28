@@ -373,7 +373,7 @@ void TypeNamespace::Init() {
 
   Type* nullable_string_array_type =
       new ArrayType(ValidatableType::KIND_BUILT_IN, "java.lang", "String[]",
-                    {"utils/String16.h", "vector"},
+                    {"utils/String16.h", "memory", "vector"},
                     "::std::unique_ptr<::std::vector<::std::unique_ptr<::android::String16>>>",
                     "readString16Vector", "writeString16Vector");
 
@@ -387,7 +387,7 @@ void TypeNamespace::Init() {
 
   Type* nullable_string_type =
       new Type(ValidatableType::KIND_BUILT_IN, "java.lang", "String",
-               {"utils/String16.h"}, "::std::unique_ptr<::android::String16>",
+               {"memory", "utils/String16.h"}, "::std::unique_ptr<::android::String16>",
                "readString16", "writeString16");
 
   string_type_ = new Type(ValidatableType::KIND_BUILT_IN, "java.lang", "String",
