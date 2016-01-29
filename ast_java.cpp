@@ -19,6 +19,9 @@
 #include "code_writer.h"
 #include "type_java.h"
 
+using std::vector;
+using std::string;
+
 namespace android {
 namespace aidl {
 namespace java {

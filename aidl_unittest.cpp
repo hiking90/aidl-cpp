@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include <string>
 #include <memory>
+#include <set>
+#include <string>
 #include <vector>
 
 #include <android-base/stringprintf.h>
@@ -30,8 +31,10 @@
 
 using android::aidl::test::FakeIoDelegate;
 using android::base::StringPrintf;
+using std::set;
 using std::string;
 using std::unique_ptr;
+using std::vector;
 using android::aidl::internals::parse_preprocessed_file;
 
 namespace android {

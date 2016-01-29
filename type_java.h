@@ -29,19 +29,16 @@ namespace java {
 
 class JavaTypeNamespace;
 
-using std::string;
-using std::vector;
-
 class Type : public ValidatableType {
  public:
   // WriteToParcel flags
   enum { PARCELABLE_WRITE_RETURN_VALUE = 0x0001 };
 
-  Type(const JavaTypeNamespace* types, const string& name, int kind,
+  Type(const JavaTypeNamespace* types, const std::string& name, int kind,
        bool canWriteToParcel, bool canBeOut);
-  Type(const JavaTypeNamespace* types, const string& package,
-       const string& name, int kind, bool canWriteToParcel, bool canBeOut,
-       const string& declFile = "", int declLine = -1);
+  Type(const JavaTypeNamespace* types, const std::string& package,
+       const std::string& name, int kind, bool canWriteToParcel, bool canBeOut,
+       const std::string& declFile = "", int declLine = -1);
   virtual ~Type() = default;
 
   bool CanBeOutParameter() const override { return m_canBeOut; }
@@ -50,9 +47,9 @@ class Type : public ValidatableType {
   const ValidatableType* ArrayType() const override { return m_array_type.get(); }
   const ValidatableType* NullableType() const override { return nullptr; }
 
-  inline string Package() const { return m_package; }
-  virtual string CreatorName() const;
-  virtual string InstantiableName() const;
+  inline std::string Package() const { return m_package; }
+  virtual std::string CreatorName() const;
+  virtual std::string InstantiableName() const;
 
   virtual void WriteToParcel(StatementBlock* addTo, Variable* v,
                              Variable* parcel, int flags) const;
@@ -72,20 +69,20 @@ class Type : public ValidatableType {
   Type();
   Type(const Type&);
 
-  string m_package;
-  string m_name;
-  string m_qualifiedName;
-  string m_declFile;
+  std::string m_package;
+  std::string m_name;
+  std::string m_qualifiedName;
+  std::string m_declFile;
   bool m_canWriteToParcel;
   bool m_canBeOut;
 };
 
 class BasicArrayType : public Type {
  public:
-  BasicArrayType(const JavaTypeNamespace* types, const string& name,
-                 const string& writeArrayParcel,
-                 const string& createArrayParcel,
-                 const string& readArrayParcel);
+  BasicArrayType(const JavaTypeNamespace* types, const std::string& name,
+                 const std::string& writeArrayParcel,
+                 const std::string& createArrayParcel,
+                 const std::string& readArrayParcel);
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -96,17 +93,19 @@ class BasicArrayType : public Type {
   const ValidatableType* NullableType() const override { return this; }
 
  private:
-  string m_writeArrayParcel;
-  string m_createArrayParcel;
-  string m_readArrayParcel;
+  std::string m_writeArrayParcel;
+  std::string m_createArrayParcel;
+  std::string m_readArrayParcel;
 };
 
 class BasicType : public Type {
  public:
-  BasicType(const JavaTypeNamespace* types, const string& name,
-            const string& marshallParcel, const string& unmarshallParcel,
-            const string& writeArrayParcel, const string& createArrayParcel,
-            const string& readArrayParcel);
+  BasicType(const JavaTypeNamespace* types, const std::string& name,
+            const std::string& marshallParcel,
+            const std::string& unmarshallParcel,
+            const std::string& writeArrayParcel,
+            const std::string& createArrayParcel,
+            const std::string& readArrayParcel);
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -114,8 +113,8 @@ class BasicType : public Type {
                         Variable** cl) const override;
 
  private:
-  string m_marshallParcel;
-  string m_unmarshallParcel;
+  std::string m_marshallParcel;
+  std::string m_unmarshallParcel;
 };
 
 class FileDescriptorArrayType : public Type {
@@ -191,7 +190,7 @@ class StringArrayType : public Type {
  public:
   StringArrayType(const JavaTypeNamespace* types);
 
-  string CreatorName() const override;
+  std::string CreatorName() const override;
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -206,7 +205,7 @@ class StringType : public Type {
  public:
   StringType(const JavaTypeNamespace* types);
 
-  string CreatorName() const override;
+  std::string CreatorName() const override;
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -219,7 +218,7 @@ class CharSequenceType : public Type {
  public:
   CharSequenceType(const JavaTypeNamespace* types);
 
-  string CreatorName() const override;
+  std::string CreatorName() const override;
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -338,7 +337,7 @@ class ListType : public Type {
  public:
   ListType(const JavaTypeNamespace* types);
 
-  string InstantiableName() const override;
+  std::string InstantiableName() const override;
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -351,11 +350,12 @@ class ListType : public Type {
 
 class UserDataArrayType : public Type {
  public:
-  UserDataArrayType(const JavaTypeNamespace* types, const string& package,
-                    const string& name, bool builtIn, bool canWriteToParcel,
-                    const string& declFile = "", int declLine = -1);
+  UserDataArrayType(const JavaTypeNamespace* types, const std::string& package,
+                    const std::string& name, bool builtIn,
+                    bool canWriteToParcel, const std::string& declFile = "",
+                    int declLine = -1);
 
-  string CreatorName() const override;
+  std::string CreatorName() const override;
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -368,11 +368,11 @@ class UserDataArrayType : public Type {
 
 class UserDataType : public Type {
  public:
-  UserDataType(const JavaTypeNamespace* types, const string& package,
-               const string& name, bool builtIn, bool canWriteToParcel,
-               const string& declFile = "", int declLine = -1);
+  UserDataType(const JavaTypeNamespace* types, const std::string& package,
+               const std::string& name, bool builtIn, bool canWriteToParcel,
+               const std::string& declFile = "", int declLine = -1);
 
-  string CreatorName() const override;
+  std::string CreatorName() const override;
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -385,9 +385,9 @@ class UserDataType : public Type {
 
 class InterfaceType : public Type {
  public:
-  InterfaceType(const JavaTypeNamespace* types, const string& package,
-                const string& name, bool builtIn, bool oneway,
-                const string& declFile, int declLine, const Type* stub,
+  InterfaceType(const JavaTypeNamespace* types, const std::string& package,
+                const std::string& name, bool builtIn, bool oneway,
+                const std::string& declFile, int declLine, const Type* stub,
                 const Type* proxy);
 
   bool OneWay() const;
@@ -414,8 +414,8 @@ class GenericListType : public Type {
  public:
   GenericListType(const JavaTypeNamespace* types, const Type* arg);
 
-  string CreatorName() const override;
-  string InstantiableName() const override;
+  std::string CreatorName() const override;
+  std::string InstantiableName() const override;
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;
@@ -437,9 +437,9 @@ class JavaTypeNamespace : public LanguageTypeNamespace<Type> {
 
   void Init() override;
   bool AddParcelableType(const AidlParcelable& p,
-                         const string& filename) override;
+                         const std::string& filename) override;
   bool AddBinderType(const AidlInterface& b,
-                     const string& filename) override;
+                     const std::string& filename) override;
   bool AddListType(const std::string& contained_type_name) override;
   bool AddMapType(const std::string& key_type_name,
                   const std::string& value_type_name) override;

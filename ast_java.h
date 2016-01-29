@@ -19,13 +19,8 @@
 
 #include <stdarg.h>
 #include <stdio.h>
-#include <set>
 #include <string>
 #include <vector>
-
-using std::set;
-using std::string;
-using std::vector;
 
 enum {
   PACKAGE_PRIVATE = 0x00000000,
@@ -71,30 +66,30 @@ struct Expression {
 };
 
 struct LiteralExpression : public Expression {
-  string value;
+  std::string value;
 
-  LiteralExpression(const string& value);
+  LiteralExpression(const std::string& value);
   virtual ~LiteralExpression() = default;
   void Write(CodeWriter* to) const override;
 };
 
 // TODO: also escape the contents.  not needed for now
 struct StringLiteralExpression : public Expression {
-  string value;
+  std::string value;
 
-  StringLiteralExpression(const string& value);
+  StringLiteralExpression(const std::string& value);
   virtual ~StringLiteralExpression() = default;
   void Write(CodeWriter* to) const override;
 };
 
 struct Variable : public Expression {
   const Type* type = nullptr;
-  string name;
+  std::string name;
   int dimension = 0;
 
   Variable() = default;
-  Variable(const Type* type, const string& name);
-  Variable(const Type* type, const string& name, int dimension);
+  Variable(const Type* type, const std::string& name);
+  Variable(const Type* type, const std::string& name, int dimension);
   virtual ~Variable() = default;
 
   void WriteDeclaration(CodeWriter* to) const;
@@ -104,20 +99,20 @@ struct Variable : public Expression {
 struct FieldVariable : public Expression {
   Expression* object;
   const Type* clazz;
-  string name;
+  std::string name;
 
-  FieldVariable(Expression* object, const string& name);
-  FieldVariable(const Type* clazz, const string& name);
+  FieldVariable(Expression* object, const std::string& name);
+  FieldVariable(const Type* clazz, const std::string& name);
   virtual ~FieldVariable() = default;
 
   void Write(CodeWriter* to) const;
 };
 
 struct Field : public ClassElement {
-  string comment;
+  std::string comment;
   int modifiers = 0;
   Variable* variable = nullptr;
-  string value;
+  std::string value;
 
   Field() = default;
   Field(int modifiers, Variable* variable);
@@ -132,7 +127,7 @@ struct Statement {
 };
 
 struct StatementBlock : public Statement {
-  vector<Statement*> statements;
+  std::vector<Statement*> statements;
 
   StatementBlock() = default;
   virtual ~StatementBlock() = default;
@@ -164,16 +159,16 @@ struct Assignment : public Expression {
 struct MethodCall : public Expression {
   Expression* obj = nullptr;
   const Type* clazz = nullptr;
-  string name;
-  vector<Expression*> arguments;
-  vector<string> exceptions;
+  std::string name;
+  std::vector<Expression*> arguments;
+  std::vector<std::string> exceptions;
 
-  MethodCall(const string& name);
-  MethodCall(const string& name, int argc, ...);
-  MethodCall(Expression* obj, const string& name);
-  MethodCall(const Type* clazz, const string& name);
-  MethodCall(Expression* obj, const string& name, int argc, ...);
-  MethodCall(const Type* clazz, const string& name, int argc, ...);
+  MethodCall(const std::string& name);
+  MethodCall(const std::string& name, int argc, ...);
+  MethodCall(Expression* obj, const std::string& name);
+  MethodCall(const Type* clazz, const std::string& name);
+  MethodCall(Expression* obj, const std::string& name, int argc, ...);
+  MethodCall(const Type* clazz, const std::string& name, int argc, ...);
   virtual ~MethodCall() = default;
   void Write(CodeWriter* to) const override;
 
@@ -183,17 +178,17 @@ struct MethodCall : public Expression {
 
 struct Comparison : public Expression {
   Expression* lvalue;
-  string op;
+  std::string op;
   Expression* rvalue;
 
-  Comparison(Expression* lvalue, const string& op, Expression* rvalue);
+  Comparison(Expression* lvalue, const std::string& op, Expression* rvalue);
   virtual ~Comparison() = default;
   void Write(CodeWriter* to) const override;
 };
 
 struct NewExpression : public Expression {
   const Type* type;
-  vector<Expression*> arguments;
+  std::vector<Expression*> arguments;
 
   NewExpression(const Type* type);
   NewExpression(const Type* type, int argc, ...);
@@ -290,18 +285,18 @@ struct FinallyStatement : public Statement {
 };
 
 struct Case {
-  vector<string> cases;
+  std::vector<std::string> cases;
   StatementBlock* statements = new StatementBlock;
 
   Case() = default;
-  Case(const string& c);
+  Case(const std::string& c);
   virtual ~Case() = default;
   virtual void Write(CodeWriter* to) const;
 };
 
 struct SwitchStatement : public Statement {
   Expression* expression;
-  vector<Case*> cases;
+  std::vector<Case*> cases;
 
   SwitchStatement(Expression* expression);
   virtual ~SwitchStatement() = default;
@@ -315,13 +310,13 @@ struct Break : public Statement {
 };
 
 struct Method : public ClassElement {
-  string comment;
+  std::string comment;
   int modifiers = 0;
   const Type* returnType = nullptr;  // nullptr means constructor
   size_t returnTypeDimension = 0;
-  string name;
-  vector<Variable*> parameters;
-  vector<const Type*> exceptions;
+  std::string name;
+  std::vector<Variable*> parameters;
+  std::vector<const Type*> exceptions;
   StatementBlock* statements = nullptr;
 
   Method() = default;
@@ -331,7 +326,7 @@ struct Method : public ClassElement {
 };
 
 struct Constant : public ClassElement {
-  string name;
+  std::string name;
   int value;
 
   Constant() = default;
@@ -343,13 +338,13 @@ struct Constant : public ClassElement {
 struct Class : public ClassElement {
   enum { CLASS, INTERFACE };
 
-  string comment;
+  std::string comment;
   int modifiers = 0;
   int what = CLASS;  // CLASS or INTERFACE
   const Type* type = nullptr;
   const Type* extends = nullptr;
-  vector<const Type*> interfaces;
-  vector<ClassElement*> elements;
+  std::vector<const Type*> interfaces;
+  std::vector<ClassElement*> elements;
 
   Class() = default;
   virtual ~Class() = default;
@@ -358,10 +353,10 @@ struct Class : public ClassElement {
 };
 
 struct Document {
-  string comment;
-  string package;
-  string originalSrc;
-  vector<Class*> classes;
+  std::string comment;
+  std::string package;
+  std::string originalSrc;
+  std::vector<Class*> classes;
 
   Document() = default;
   virtual ~Document() = default;

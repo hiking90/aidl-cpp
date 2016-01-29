@@ -23,6 +23,7 @@
 #include "aidl_language.h"
 #include "logging.h"
 
+using std::string;
 using android::base::Split;
 using android::base::Join;
 using android::base::Trim;

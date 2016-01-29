@@ -25,6 +25,8 @@
 
 #include "type_java.h"
 
+using std::string;
+
 namespace android {
 namespace aidl {
 namespace java {
