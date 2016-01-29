@@ -169,6 +169,7 @@ LOCAL_SRC_FILES := \
     tests/aidl_test_client_parcelables.cpp \
     tests/aidl_test_client_nullables.cpp \
     tests/aidl_test_client_primitives.cpp \
+    tests/aidl_test_client_utf8_strings.cpp \
     tests/aidl_test_client_service_exceptions.cpp
 include $(BUILD_EXECUTABLE)
 

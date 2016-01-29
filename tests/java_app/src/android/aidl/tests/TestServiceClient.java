@@ -657,6 +657,52 @@ public class TestServiceClient extends Activity {
         mLog.log("...application exceptions work");
     }
 
+    private void checkUtf8Strings(ITestService service)
+            throws TestFailException {
+        mLog.log("Checking that service can work with UTF8 strings...");
+        // Note that Java's underlying encoding is UTF16.
+        final List<String> utf8_queries = Arrays.asList(
+              "typical string",
+              "",
+              "\0\0\0",
+              // Java doesn't handle unicode code points above U+FFFF well.
+              new String(Character.toChars(0x1F701)) + "\u03A9");
+        try {
+            for (String query : utf8_queries) {
+                String response = service.RepeatUtf8CppString(query);
+                if (!query.equals(response)) {
+                    mLog.logAndThrow("Repeat request with '" + query + "'" +
+                                     " of length " + query.length() +
+                                     " responded with '" + response + "'" +
+                                     " of length " + response.length());
+                }
+            }
+            {
+                String[] input = (String[])utf8_queries.toArray();
+                String echoed[] = new String[input.length];
+                String[] reversed = service.ReverseUtf8CppString(input, echoed);
+                if (!Arrays.equals(input, echoed)) {
+                    mLog.logAndThrow("Failed to echo utf8 input array back.");
+                }
+                if (input.length != reversed.length) {
+                    mLog.logAndThrow("Reversed utf8 array is the wrong size.");
+                }
+                for (int i = 0; i < input.length; ++i) {
+                    int j = reversed.length - (1 + i);
+                    if (!input[i].equals(reversed[j])) {
+                        mLog.logAndThrow(
+                                "input[" + i + "] = " + input[i] +
+                                " but reversed value = " + reversed[j]);
+                    }
+                }
+            }
+        } catch (RemoteException ex) {
+            mLog.log(ex.toString());
+            mLog.logAndThrow("Service failed to handle utf8 strings.");
+        }
+        mLog.log("...UTF8 annotations work.");
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -673,6 +719,7 @@ public class TestServiceClient extends Activity {
           checkPersistableBundles(service);
           checkFileDescriptorPassing(service);
           checkServiceSpecificExceptions(service);
+          checkUtf8Strings(service);
           mLog.log(mSuccessSentinel);
         } catch (TestFailException e) {
             mLog.log(mFailureSentinel);

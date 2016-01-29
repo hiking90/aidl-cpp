@@ -67,11 +67,10 @@ using android::os::PersistableBundle;
 
 // Standard library
 using std::map;
+using std::string;
 using std::unique_ptr;
 using std::vector;
 
-namespace android {
-namespace generated {
 namespace {
 
 class BinderCallback : public LooperCallback {
@@ -343,15 +342,38 @@ class NativeService : public BnTestService {
     return RepeatNullable(input, _aidl_return);
   }
 
+  Status RepeatUtf8CppString(const string& token,
+                             string* _aidl_return) override {
+    ALOGI("Repeating utf8 string '%s' of length=%zu", token.c_str(), token.size());
+    *_aidl_return = token;
+    return Status::ok();
+  }
+
+  Status RepeatNullableUtf8CppString(
+      const unique_ptr<string>& token,
+      unique_ptr<string>* _aidl_return) override {
+    if (!token) {
+      ALOGI("Received null @utf8InCpp string");
+      return Status::ok();
+    }
+    ALOGI("Repeating utf8 string '%s' of length=%zu",
+          token->c_str(), token->size());
+    _aidl_return->reset(new string(*token));
+    return Status::ok();
+  }
+
+  Status ReverseUtf8CppString(const vector<string>& input,
+                              vector<string>* repeated,
+                              vector<string>* _aidl_return) {
+    return ReverseArray(input, repeated, _aidl_return);
+  }
+
  private:
   map<String16, sp<INamedCallback>> service_map_;
 };
 
-}  // namespace
-
 int Run() {
-  android::sp<android::generated::NativeService> service =
-      new android::generated::NativeService;
+  android::sp<NativeService> service = new NativeService;
   sp<Looper> looper(Looper::prepare(0 /* opts */));
 
   int binder_fd = -1;
@@ -379,9 +401,8 @@ int Run() {
   return 0;
 }
 
-}  // namespace generated
-}  // namespace android
+}  // namespace
 
 int main(int /* argc */, char* /* argv */ []) {
-  return android::generated::Run();
+  return Run();
 }

@@ -82,6 +82,10 @@ bool ConfirmPrimitiveRepeat(const sp<ITestService>& s) {
       String16("Deliver us from evil."),
       String16(),
       String16("\0\0", 2),
+      // This is actually two unicode code points:
+      //   U+10437: The 'small letter yee' character in the deseret alphabet
+      //   U+20AC: A euro sign
+      String16("\xD8\x01\xDC\x37\x20\xAC"),
   };
   for (const auto& input : inputs) {
     String16 reply;

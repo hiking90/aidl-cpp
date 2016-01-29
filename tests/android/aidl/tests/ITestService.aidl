@@ -82,4 +82,18 @@ interface ITestService {
   @nullable String RepeatNullableString(in @nullable String input);
   @nullable List<String> RepeatNullableStringList(in @nullable List<String> input);
   @nullable SimpleParcelable RepeatNullableParcelable(in @nullable SimpleParcelable input);
+
+  // Test utf8 decoding from utf16 wire format
+  @utf8InCpp String RepeatUtf8CppString(@utf8InCpp String token);
+  @nullable @utf8InCpp String RepeatNullableUtf8CppString(
+      @nullable @utf8InCpp String token);
+
+  @utf8InCpp String[]  ReverseUtf8CppString (in @utf8InCpp String[] input,
+                                             out @utf8InCpp String[] repeated);
+
+  /* This type is not implemented yet.
+  @utf8InCpp List<String> ReverseUtf8CppStringList(
+      in @utf8InCpp List<String> input,
+      out List<String> repeated);
+  */
 }

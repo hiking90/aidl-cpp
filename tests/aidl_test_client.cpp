@@ -16,6 +16,7 @@
 
 #include <iostream>
 
+#include <android-base/logging.h>
 #include <binder/IServiceManager.h>
 #include <utils/String16.h>
 #include <utils/StrongPointer.h>
@@ -23,10 +24,11 @@
 #include "android/aidl/tests/ITestService.h"
 
 #include "aidl_test_client_file_descriptors.h"
-#include "aidl_test_client_parcelables.h"
-#include "aidl_test_client_service_exceptions.h"
-#include "aidl_test_client_primitives.h"
 #include "aidl_test_client_nullables.h"
+#include "aidl_test_client_parcelables.h"
+#include "aidl_test_client_primitives.h"
+#include "aidl_test_client_service_exceptions.h"
+#include "aidl_test_client_utf8_strings.h"
 
 // libutils:
 using android::OK;
@@ -68,7 +70,8 @@ bool GetService(sp<ITestService>* service) {
 }  // namespace android
 
 /* Runs all the test cases in aidl_test_client_*.cpp files. */
-int main(int /* argc */, char * /* argv */ []) {
+int main(int /* argc */, char * argv []) {
+  android::base::InitLogging(argv, android::base::StderrLogger);
   sp<ITestService> service;
   namespace client_tests = android::aidl::tests::client;
 
@@ -93,7 +96,11 @@ int main(int /* argc */, char * /* argv */ []) {
 
   if (!client_tests::ConfirmServiceSpecificExceptions(service)) return 1;
 
-  if (!android::aidl::tests::client::ConfirmNullables(service)) return 1;
+  if (!client_tests::ConfirmNullables(service)) return 1;
+
+  if (!client_tests::ConfirmUtf8InCppStringRepeat(service)) return 1;
+
+  if (!client_tests::ConfirmUtf8InCppStringArrayReverse(service)) return 1;
 
   return 0;
 }
