@@ -49,38 +49,37 @@ Type::Type(const JavaTypeNamespace* types, const string& package,
            bool canBeOut, const string& declFile, int declLine)
     : ValidatableType(kind, package, name, declFile, declLine),
       m_types(types),
-      m_package(package),
-      m_name(name),
+      m_javaType((package.empty()) ? name : package + "." + name),
       m_canWriteToParcel(canWriteToParcel),
       m_canBeOut(canBeOut) {
 }
 
 string Type::CreatorName() const { return ""; }
 
-string Type::InstantiableName() const { return QualifiedName(); }
+string Type::InstantiableName() const { return JavaType(); }
 
 void Type::WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                          int flags) const {
   fprintf(stderr, "aidl:internal error %s:%d qualifiedName=%sn", __FILE__,
-          __LINE__, m_qualifiedName.c_str());
-  addTo->Add(new LiteralExpression("/* WriteToParcel error " + m_qualifiedName +
+          __LINE__, m_javaType.c_str());
+  addTo->Add(new LiteralExpression("/* WriteToParcel error " + m_javaType +
                                    " */"));
 }
 
 void Type::CreateFromParcel(StatementBlock* addTo, Variable* v,
                             Variable* parcel, Variable**) const {
   fprintf(stderr, "aidl:internal error %s:%d qualifiedName=%s\n", __FILE__,
-          __LINE__, m_qualifiedName.c_str());
+          __LINE__, m_javaType.c_str());
   addTo->Add(new LiteralExpression("/* CreateFromParcel error " +
-                                   m_qualifiedName + " */"));
+                                   m_javaType + " */"));
 }
 
 void Type::ReadFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                           Variable**) const {
   fprintf(stderr, "aidl:internal error %s:%d qualifiedName=%s\n", __FILE__,
-          __LINE__, m_qualifiedName.c_str());
+          __LINE__, m_javaType.c_str());
   addTo->Add(new LiteralExpression("/* ReadFromParcel error " +
-                                   m_qualifiedName + " */"));
+                                   m_javaType + " */"));
 }
 
 Expression* Type::BuildWriteToParcelFlags(int flags) const {
@@ -584,7 +583,7 @@ UserDataType::UserDataType(const JavaTypeNamespace* types,
 }
 
 string UserDataType::CreatorName() const {
-  return QualifiedName() + ".CREATOR";
+  return JavaType() + ".CREATOR";
 }
 
 void UserDataType::WriteToParcel(StatementBlock* addTo, Variable* v,
@@ -653,7 +652,7 @@ UserDataArrayType::UserDataArrayType(const JavaTypeNamespace* types,
            canWriteToParcel, true, declFile, declLine) {}
 
 string UserDataArrayType::CreatorName() const {
-  return QualifiedName() + ".CREATOR";
+  return JavaType() + ".CREATOR";
 }
 
 void UserDataArrayType::WriteToParcel(StatementBlock* addTo, Variable* v,
@@ -664,14 +663,14 @@ void UserDataArrayType::WriteToParcel(StatementBlock* addTo, Variable* v,
 
 void UserDataArrayType::CreateFromParcel(StatementBlock* addTo, Variable* v,
                                          Variable* parcel, Variable**) const {
-  string creator = v->type->QualifiedName() + ".CREATOR";
+  string creator = v->type->JavaType() + ".CREATOR";
   addTo->Add(new Assignment(v, new MethodCall(parcel, "createTypedArray", 1,
                                               new LiteralExpression(creator))));
 }
 
 void UserDataArrayType::ReadFromParcel(StatementBlock* addTo, Variable* v,
                                        Variable* parcel, Variable**) const {
-  string creator = v->type->QualifiedName() + ".CREATOR";
+  string creator = v->type->JavaType() + ".CREATOR";
   addTo->Add(new MethodCall(parcel, "readTypedArray", 2, v,
                             new LiteralExpression(creator)));
 }
@@ -712,7 +711,7 @@ void InterfaceType::CreateFromParcel(StatementBlock* addTo, Variable* v,
 
 GenericListType::GenericListType(const JavaTypeNamespace* types,
                                  const Type* contained_type)
-    : Type(types, "java.util", "List<" + contained_type->QualifiedName() + ">",
+    : Type(types, "java.util", "List<" + contained_type->JavaType() + ">",
            ValidatableType::KIND_BUILT_IN, true, true),
       m_contained_type(contained_type),
       m_creator(contained_type->CreatorName()) {}
@@ -722,7 +721,7 @@ string GenericListType::CreatorName() const {
 }
 
 string GenericListType::InstantiableName() const {
-  return "java.util.ArrayList<" + m_contained_type->QualifiedName() + ">";
+  return "java.util.ArrayList<" + m_contained_type->JavaType() + ">";
 }
 
 void GenericListType::WriteToParcel(StatementBlock* addTo, Variable* v,

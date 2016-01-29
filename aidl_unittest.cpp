@@ -189,7 +189,7 @@ TEST_F(AidlTest, PreferImportToPreprocessed) {
   AidlType ambiguous_type("IBar", 0, "", false /* not an array */);
   const java::Type* type = java_types_.Find(ambiguous_type);
   ASSERT_TRUE(type);
-  EXPECT_EQ("one.IBar", type->QualifiedName());
+  EXPECT_EQ("one.IBar", type->CanonicalName());
 }
 
 TEST_F(AidlTest, WritePreprocessedFile) {

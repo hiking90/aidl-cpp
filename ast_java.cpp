@@ -71,7 +71,7 @@ void Field::Write(CodeWriter* to) const {
     to->Write("%s\n", this->comment.c_str());
   }
   WriteModifiers(to, this->modifiers, SCOPE_MASK | STATIC | FINAL | OVERRIDE);
-  to->Write("%s %s", this->variable->type->QualifiedName().c_str(),
+  to->Write("%s %s", this->variable->type->JavaType().c_str(),
             this->variable->name.c_str());
   if (this->value.length() != 0) {
     to->Write(" = %s", this->value.c_str());
@@ -102,7 +102,7 @@ void Variable::WriteDeclaration(CodeWriter* to) const {
   for (int i = 0; i < this->dimension; i++) {
     dim += "[]";
   }
-  to->Write("%s%s %s", this->type->QualifiedName().c_str(), dim.c_str(),
+  to->Write("%s%s %s", this->type->JavaType().c_str(), dim.c_str(),
             this->name.c_str());
 }
 
@@ -118,7 +118,7 @@ void FieldVariable::Write(CodeWriter* to) const {
   if (this->object != NULL) {
     this->object->Write(to);
   } else if (this->clazz != NULL) {
-    to->Write("%s", this->clazz->QualifiedName().c_str());
+    to->Write("%s", this->clazz->JavaType().c_str());
   }
   to->Write(".%s", name.c_str());
 }
@@ -157,7 +157,7 @@ void Assignment::Write(CodeWriter* to) const {
   this->lvalue->Write(to);
   to->Write(" = ");
   if (this->cast != NULL) {
-    to->Write("(%s)", this->cast->QualifiedName().c_str());
+    to->Write("(%s)", this->cast->JavaType().c_str());
   }
   this->rvalue->Write(to);
 }
@@ -203,7 +203,7 @@ void MethodCall::Write(CodeWriter* to) const {
     this->obj->Write(to);
     to->Write(".");
   } else if (this->clazz != NULL) {
-    to->Write("%s.", this->clazz->QualifiedName().c_str());
+    to->Write("%s.", this->clazz->JavaType().c_str());
   }
   to->Write("%s(", this->name.c_str());
   WriteArgumentList(to, this->arguments);
@@ -247,7 +247,7 @@ NewArrayExpression::NewArrayExpression(const Type* t, Expression* s)
     : type(t), size(s) {}
 
 void NewArrayExpression::Write(CodeWriter* to) const {
-  to->Write("new %s[", this->type->QualifiedName().c_str());
+  to->Write("new %s[", this->type->JavaType().c_str());
   size->Write(to);
   to->Write("]");
 }
@@ -268,7 +268,7 @@ void Ternary::Write(CodeWriter* to) const {
 Cast::Cast(const Type* t, Expression* e) : type(t), expression(e) {}
 
 void Cast::Write(CodeWriter* to) const {
-  to->Write("((%s)", this->type->QualifiedName().c_str());
+  to->Write("((%s)", this->type->JavaType().c_str());
   expression->Write(to);
   to->Write(")");
 }
@@ -284,7 +284,7 @@ void VariableDeclaration::Write(CodeWriter* to) const {
   if (this->rvalue != NULL) {
     to->Write(" = ");
     if (this->cast != NULL) {
-      to->Write("(%s)", this->cast->QualifiedName().c_str());
+      to->Write("(%s)", this->cast->JavaType().c_str());
     }
     this->rvalue->Write(to);
   }
@@ -384,7 +384,7 @@ void Method::Write(CodeWriter* to) const {
     for (i = 0; i < this->returnTypeDimension; i++) {
       dim += "[]";
     }
-    to->Write("%s%s ", this->returnType->QualifiedName().c_str(), dim.c_str());
+    to->Write("%s%s ", this->returnType->JavaType().c_str(), dim.c_str());
   }
 
   to->Write("%s(", this->name.c_str());
@@ -406,7 +406,7 @@ void Method::Write(CodeWriter* to) const {
     } else {
       to->Write(", ");
     }
-    to->Write("%s", this->exceptions[i]->QualifiedName().c_str());
+    to->Write("%s", this->exceptions[i]->JavaType().c_str());
   }
 
   if (this->statements == NULL) {
@@ -437,7 +437,7 @@ void Class::Write(CodeWriter* to) const {
     to->Write("interface ");
   }
 
-  string name = this->type->Name();
+  string name = this->type->JavaType();
   size_t pos = name.rfind('.');
   if (pos != string::npos) {
     name = name.c_str() + pos + 1;
@@ -446,7 +446,7 @@ void Class::Write(CodeWriter* to) const {
   to->Write("%s", name.c_str());
 
   if (this->extends != NULL) {
-    to->Write(" extends %s", this->extends->QualifiedName().c_str());
+    to->Write(" extends %s", this->extends->JavaType().c_str());
   }
 
   N = this->interfaces.size();
@@ -457,7 +457,7 @@ void Class::Write(CodeWriter* to) const {
       to->Write(" extends");
     }
     for (i = 0; i < N; i++) {
-      to->Write(" %s", this->interfaces[i]->QualifiedName().c_str());
+      to->Write(" %s", this->interfaces[i]->JavaType().c_str());
     }
   }
 

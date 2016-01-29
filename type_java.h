@@ -47,7 +47,7 @@ class Type : public ValidatableType {
   const ValidatableType* ArrayType() const override { return m_array_type.get(); }
   const ValidatableType* NullableType() const override { return nullptr; }
 
-  inline std::string Package() const { return m_package; }
+  virtual std::string JavaType() const { return m_javaType; }
   virtual std::string CreatorName() const;
   virtual std::string InstantiableName() const;
 
@@ -69,9 +69,7 @@ class Type : public ValidatableType {
   Type();
   Type(const Type&);
 
-  std::string m_package;
-  std::string m_name;
-  std::string m_qualifiedName;
+  std::string m_javaType;
   std::string m_declFile;
   bool m_canWriteToParcel;
   bool m_canBeOut;
@@ -205,6 +203,7 @@ class StringType : public Type {
  public:
   StringType(const JavaTypeNamespace* types);
 
+  std::string JavaType() const override { return "java.lang.String"; }
   std::string CreatorName() const override;
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,

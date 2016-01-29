@@ -51,10 +51,11 @@ class ValidatableType {
   virtual const ValidatableType* ArrayType() const = 0;
   virtual const ValidatableType* NullableType() const = 0;
 
-  // Name() returns the short name of an object (without package qualifiers).
-  virtual std::string Name() const { return type_name_; }
-  // QualifiedName() returns the canonical AIDL type, with packages.
-  virtual std::string QualifiedName() const { return canonical_name_; }
+  // ShortName() is the class name without a package.
+  std::string ShortName() const { return type_name_; }
+  // CanonicalName() returns the canonical AIDL type, with packages.
+  std::string CanonicalName() const { return canonical_name_; }
+
   int Kind() const { return kind_; }
   std::string HumanReadableKind() const;
   std::string DeclFile() const { return origin_file_; }
@@ -173,7 +174,7 @@ class LanguageTypeNamespace : public TypeNamespace {
 
 template<typename T>
 bool LanguageTypeNamespace<T>::Add(const T* type) {
-  const T* existing = FindTypeByCanonicalName(type->QualifiedName());
+  const T* existing = FindTypeByCanonicalName(type->CanonicalName());
   if (!existing) {
     types_.emplace_back(type);
     return true;
@@ -182,13 +183,13 @@ bool LanguageTypeNamespace<T>::Add(const T* type) {
   if (existing->Kind() == ValidatableType::KIND_BUILT_IN) {
     LOG(ERROR) << type->DeclFile() << ":" << type->DeclLine()
                << " attempt to redefine built in class "
-               << type->QualifiedName();
+               << type->CanonicalName();
     return false;
   }
 
   if (type->Kind() != existing->Kind()) {
     LOG(ERROR) << type->DeclFile() << ":" << type->DeclLine()
-               << " attempt to redefine " << type->QualifiedName()
+               << " attempt to redefine " << type->CanonicalName()
                << " as " << type->HumanReadableKind();
     LOG(ERROR) << existing->DeclFile() << ":" << existing->DeclLine()
                << " previously defined here as "
@@ -231,12 +232,12 @@ const T* LanguageTypeNamespace<T>::FindTypeByCanonicalName(
   for (const auto& type : types_) {
     // Always prefer a exact match if possible.
     // This works for primitives and class names qualified with a package.
-    if (type->QualifiedName() == name) {
+    if (type->CanonicalName() == name) {
       ret = type.get();
       break;
     }
     // We allow authors to drop packages when refering to a class name.
-    if (type->Name() == name) {
+    if (type->ShortName() == name) {
       ret = type.get();
     }
   }
@@ -329,7 +330,7 @@ bool LanguageTypeNamespace<T>::CanonicalizeContainerType(
     if (!arg_type) {
       return false;
     }
-    type_name = arg_type->QualifiedName();
+    type_name = arg_type->CanonicalName();
   }
 
   // Map the container name to its canonical form for supported containers.

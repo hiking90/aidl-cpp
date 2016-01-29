@@ -65,7 +65,7 @@ StubClass::StubClass(const Type* type, const InterfaceType* interfaceType,
   Field* descriptor =
       new Field(STATIC | FINAL | PRIVATE,
                 new Variable(types->StringType(), "DESCRIPTOR"));
-  descriptor->value = "\"" + interfaceType->QualifiedName() + "\"";
+  descriptor->value = "\"" + interfaceType->JavaType() + "\"";
   this->elements.push_back(descriptor);
 
   // ctor
@@ -125,7 +125,7 @@ void StubClass::make_as_interface(const InterfaceType* interfaceType,
 
   Method* m = new Method;
   m->comment = "/**\n * Cast an IBinder object into an ";
-  m->comment += interfaceType->QualifiedName();
+  m->comment += interfaceType->JavaType();
   m->comment += " interface,\n";
   m->comment += " * generating a proxy if needed.\n */";
   m->modifiers = PUBLIC | STATIC;
@@ -158,7 +158,7 @@ void StubClass::make_as_interface(const InterfaceType* interfaceType,
   Comparison* iinNotNull = new Comparison(iin, "!=", NULL_VALUE);
   Comparison* instOfCheck =
       new Comparison(iin, " instanceof ",
-                     new LiteralExpression(interfaceType->QualifiedName()));
+                     new LiteralExpression(interfaceType->JavaType()));
   IfStatement* instOfStatement = new IfStatement();
   instOfStatement->expression = new Comparison(iinNotNull, "&&", instOfCheck);
   instOfStatement->statements = new StatementBlock;
