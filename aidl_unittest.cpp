@@ -136,7 +136,7 @@ TEST_F(AidlTest, ParsesUtf8Annotations) {
         "a/IFoo.aidl",
         StringPrintf( "package a; interface IFoo {%s String f(); }",
                      (is_utf8) ? "@utf8InCpp" : ""),
-        &java_types_);
+        &cpp_types_);
     ASSERT_NE(nullptr, parse_result);
     ASSERT_FALSE(parse_result->GetMethods().empty());
     EXPECT_EQ(parse_result->GetMethods()[0]->GetType().IsUtf8InCpp(),

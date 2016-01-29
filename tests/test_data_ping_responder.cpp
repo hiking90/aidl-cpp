@@ -28,7 +28,16 @@ package android.os;
 import bar.Unused;
 
 interface IPingResponder {
-  int Ping(int token);
+  String Ping(String input);
+
+  @nullable
+  String NullablePing(@nullable String input);
+
+  @utf8InCpp
+  String Utf8Ping(@utf8InCpp String input);
+
+  @utf8InCpp @nullable
+  String NullableUtf8Ping(@utf8InCpp @nullable String input);
 }
 )";
 
@@ -89,7 +98,7 @@ BpPingResponder::BpPingResponder(const ::android::sp<::android::IBinder>& _aidl_
     : BpInterface<IPingResponder>(_aidl_impl){
 }
 
-::android::binder::Status BpPingResponder::Ping(int32_t token, int32_t* _aidl_return) {
+::android::binder::Status BpPingResponder::Ping(const ::android::String16& input, ::android::String16* _aidl_return) {
 ::android::Parcel _aidl_data;
 ::android::Parcel _aidl_reply;
 ::android::status_t _aidl_ret_status = ::android::OK;
@@ -98,7 +107,7 @@ _aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
 if (((_aidl_ret_status) != (::android::OK))) {
 goto _aidl_error;
 }
-_aidl_ret_status = _aidl_data.writeInt32(token);
+_aidl_ret_status = _aidl_data.writeString16(input);
 if (((_aidl_ret_status) != (::android::OK))) {
 goto _aidl_error;
 }
@@ -113,7 +122,106 @@ goto _aidl_error;
 if (!_aidl_status.isOk()) {
 return _aidl_status;
 }
-_aidl_ret_status = _aidl_reply.readInt32(_aidl_return);
+_aidl_ret_status = _aidl_reply.readString16(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+_aidl_error:
+_aidl_status.setFromStatusT(_aidl_ret_status);
+return _aidl_status;
+}
+
+::android::binder::Status BpPingResponder::NullablePing(const ::std::unique_ptr<::android::String16>& input, ::std::unique_ptr<::android::String16>* _aidl_return) {
+::android::Parcel _aidl_data;
+::android::Parcel _aidl_reply;
+::android::status_t _aidl_ret_status = ::android::OK;
+::android::binder::Status _aidl_status;
+_aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+_aidl_ret_status = _aidl_data.writeString16(input);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+_aidl_ret_status = remote()->transact(IPingResponder::NULLABLEPING, _aidl_data, &_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+_aidl_ret_status = _aidl_status.readFromParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+if (!_aidl_status.isOk()) {
+return _aidl_status;
+}
+_aidl_ret_status = _aidl_reply.readString16(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+_aidl_error:
+_aidl_status.setFromStatusT(_aidl_ret_status);
+return _aidl_status;
+}
+
+::android::binder::Status BpPingResponder::Utf8Ping(const ::std::string& input, ::std::string* _aidl_return) {
+::android::Parcel _aidl_data;
+::android::Parcel _aidl_reply;
+::android::status_t _aidl_ret_status = ::android::OK;
+::android::binder::Status _aidl_status;
+_aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+_aidl_ret_status = _aidl_data.writeUtf8AsUtf16(input);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+_aidl_ret_status = remote()->transact(IPingResponder::UTF8PING, _aidl_data, &_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+_aidl_ret_status = _aidl_status.readFromParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+if (!_aidl_status.isOk()) {
+return _aidl_status;
+}
+_aidl_ret_status = _aidl_reply.readUtf8FromUtf16(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+_aidl_error:
+_aidl_status.setFromStatusT(_aidl_ret_status);
+return _aidl_status;
+}
+
+::android::binder::Status BpPingResponder::NullableUtf8Ping(const ::std::unique_ptr<::std::string>& input, ::std::unique_ptr<::std::string>* _aidl_return) {
+::android::Parcel _aidl_data;
+::android::Parcel _aidl_reply;
+::android::status_t _aidl_ret_status = ::android::OK;
+::android::binder::Status _aidl_status;
+_aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+_aidl_ret_status = _aidl_data.writeUtf8AsUtf16(input);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+_aidl_ret_status = remote()->transact(IPingResponder::NULLABLEUTF8PING, _aidl_data, &_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+_aidl_ret_status = _aidl_status.readFromParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+if (!_aidl_status.isOk()) {
+return _aidl_status;
+}
+_aidl_ret_status = _aidl_reply.readUtf8FromUtf16(_aidl_return);
 if (((_aidl_ret_status) != (::android::OK))) {
 goto _aidl_error;
 }
@@ -137,17 +245,17 @@ namespace os {
 switch (_aidl_code) {
 case Call::PING:
 {
-int32_t in_token;
-int32_t _aidl_return;
+::android::String16 in_input;
+::android::String16 _aidl_return;
 if (!(_aidl_data.checkInterface(this))) {
 _aidl_ret_status = ::android::BAD_TYPE;
 break;
 }
-_aidl_ret_status = _aidl_data.readInt32(&in_token);
+_aidl_ret_status = _aidl_data.readString16(&in_input);
 if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
-::android::binder::Status _aidl_status(Ping(in_token, &_aidl_return));
+::android::binder::Status _aidl_status(Ping(in_input, &_aidl_return));
 _aidl_ret_status = _aidl_status.writeToParcel(_aidl_reply);
 if (((_aidl_ret_status) != (::android::OK))) {
 break;
@@ -155,7 +263,85 @@ break;
 if (!_aidl_status.isOk()) {
 break;
 }
-_aidl_ret_status = _aidl_reply->writeInt32(_aidl_return);
+_aidl_ret_status = _aidl_reply->writeString16(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
+break;
+}
+}
+break;
+case Call::NULLABLEPING:
+{
+::std::unique_ptr<::android::String16> in_input;
+::std::unique_ptr<::android::String16> _aidl_return;
+if (!(_aidl_data.checkInterface(this))) {
+_aidl_ret_status = ::android::BAD_TYPE;
+break;
+}
+_aidl_ret_status = _aidl_data.readString16(&in_input);
+if (((_aidl_ret_status) != (::android::OK))) {
+break;
+}
+::android::binder::Status _aidl_status(NullablePing(in_input, &_aidl_return));
+_aidl_ret_status = _aidl_status.writeToParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+break;
+}
+if (!_aidl_status.isOk()) {
+break;
+}
+_aidl_ret_status = _aidl_reply->writeString16(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
+break;
+}
+}
+break;
+case Call::UTF8PING:
+{
+::std::string in_input;
+::std::string _aidl_return;
+if (!(_aidl_data.checkInterface(this))) {
+_aidl_ret_status = ::android::BAD_TYPE;
+break;
+}
+_aidl_ret_status = _aidl_data.readUtf8FromUtf16(&in_input);
+if (((_aidl_ret_status) != (::android::OK))) {
+break;
+}
+::android::binder::Status _aidl_status(Utf8Ping(in_input, &_aidl_return));
+_aidl_ret_status = _aidl_status.writeToParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+break;
+}
+if (!_aidl_status.isOk()) {
+break;
+}
+_aidl_ret_status = _aidl_reply->writeUtf8AsUtf16(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
+break;
+}
+}
+break;
+case Call::NULLABLEUTF8PING:
+{
+::std::unique_ptr<::std::string> in_input;
+::std::unique_ptr<::std::string> _aidl_return;
+if (!(_aidl_data.checkInterface(this))) {
+_aidl_ret_status = ::android::BAD_TYPE;
+break;
+}
+_aidl_ret_status = _aidl_data.readUtf8FromUtf16(&in_input);
+if (((_aidl_ret_status) != (::android::OK))) {
+break;
+}
+::android::binder::Status _aidl_status(NullableUtf8Ping(in_input, &_aidl_return));
+_aidl_ret_status = _aidl_status.writeToParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+break;
+}
+if (!_aidl_status.isOk()) {
+break;
+}
+_aidl_ret_status = _aidl_reply->writeUtf8AsUtf16(_aidl_return);
 if (((_aidl_ret_status) != (::android::OK))) {
 break;
 }
@@ -185,7 +371,9 @@ R"(#ifndef AIDL_GENERATED_ANDROID_OS_I_PING_RESPONDER_H_
 #include <binder/IBinder.h>
 #include <binder/IInterface.h>
 #include <binder/Status.h>
-#include <cstdint>
+#include <memory>
+#include <string>
+#include <utils/String16.h>
 #include <utils/StrongPointer.h>
 
 namespace android {
@@ -195,9 +383,15 @@ namespace os {
 class IPingResponder : public ::android::IInterface {
 public:
 DECLARE_META_INTERFACE(PingResponder);
-virtual ::android::binder::Status Ping(int32_t token, int32_t* _aidl_return) = 0;
+virtual ::android::binder::Status Ping(const ::android::String16& input, ::android::String16* _aidl_return) = 0;
+virtual ::android::binder::Status NullablePing(const ::std::unique_ptr<::android::String16>& input, ::std::unique_ptr<::android::String16>* _aidl_return) = 0;
+virtual ::android::binder::Status Utf8Ping(const ::std::string& input, ::std::string* _aidl_return) = 0;
+virtual ::android::binder::Status NullableUtf8Ping(const ::std::unique_ptr<::std::string>& input, ::std::unique_ptr<::std::string>* _aidl_return) = 0;
 enum Call {
   PING = ::android::IBinder::FIRST_CALL_TRANSACTION + 0,
+  NULLABLEPING = ::android::IBinder::FIRST_CALL_TRANSACTION + 1,
+  UTF8PING = ::android::IBinder::FIRST_CALL_TRANSACTION + 2,
+  NULLABLEUTF8PING = ::android::IBinder::FIRST_CALL_TRANSACTION + 3,
 };
 };  // class IPingResponder
 
@@ -224,7 +418,10 @@ class BpPingResponder : public ::android::BpInterface<IPingResponder> {
 public:
 explicit BpPingResponder(const ::android::sp<::android::IBinder>& _aidl_impl);
 virtual ~BpPingResponder() = default;
-::android::binder::Status Ping(int32_t token, int32_t* _aidl_return) override;
+::android::binder::Status Ping(const ::android::String16& input, ::android::String16* _aidl_return) override;
+::android::binder::Status NullablePing(const ::std::unique_ptr<::android::String16>& input, ::std::unique_ptr<::android::String16>* _aidl_return) override;
+::android::binder::Status Utf8Ping(const ::std::string& input, ::std::string* _aidl_return) override;
+::android::binder::Status NullableUtf8Ping(const ::std::unique_ptr<::std::string>& input, ::std::unique_ptr<::std::string>* _aidl_return) override;
 };  // class BpPingResponder
 
 }  // namespace os

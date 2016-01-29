@@ -396,6 +396,35 @@ void TypeNamespace::Init() {
                           string_array_type, nullable_string_type);
   Add(string_type_);
 
+  using ::android::aidl::kAidlReservedTypePackage;
+  using ::android::aidl::kUtf8InCppStringClass;
+
+  // This type is a Utf16 string in the parcel, but deserializes to
+  // a std::string in Utf8 format when we use it in C++.
+  Type* nullable_cpp_utf8_string_array = new ArrayType(
+      ValidatableType::KIND_BUILT_IN,
+      kAidlReservedTypePackage, StringPrintf("%s[]", kUtf8InCppStringClass),
+      {"memory", "string", "vector"},
+      "::std::unique_ptr<::std::vector<::std::unique_ptr<::std::string>>>",
+      "readUtf8VectorFromUtf16Vector", "writeUtf8VectorAsUtf16Vector");
+  Type* cpp_utf8_string_array = new ArrayType(
+      ValidatableType::KIND_BUILT_IN,
+      kAidlReservedTypePackage, StringPrintf("%s[]", kUtf8InCppStringClass),
+      {"string", "vector"},
+      "::std::vector<::std::string>",
+      "readUtf8VectorFromUtf16Vector", "writeUtf8VectorAsUtf16Vector",
+      kNoArrayType, nullable_cpp_utf8_string_array);
+  Type* nullable_cpp_utf8_string_type = new Type(
+      ValidatableType::KIND_BUILT_IN,
+      kAidlReservedTypePackage, kUtf8InCppStringClass,
+      {"string", "memory"}, "::std::unique_ptr<::std::string>",
+      "readUtf8FromUtf16", "writeUtf8AsUtf16");
+  Add(new Type(
+      ValidatableType::KIND_BUILT_IN,
+      kAidlReservedTypePackage, kUtf8InCppStringClass,
+      {"string"}, "::std::string", "readUtf8FromUtf16", "writeUtf8AsUtf16",
+      cpp_utf8_string_array, nullable_cpp_utf8_string_type));
+
   ibinder_type_ = new Type(ValidatableType::KIND_BUILT_IN, "android.os",
                            "IBinder", {"binder/IBinder.h"},
                            "::android::sp<::android::IBinder>", "readStrongBinder",
