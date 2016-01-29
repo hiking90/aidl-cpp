@@ -486,26 +486,32 @@ static string escape_backslashes(const string& str) {
   return result;
 }
 
-void Document::Write(CodeWriter* to) const {
-  size_t N, i;
+Document::Document(const std::string& comment,
+                   const std::string& package,
+                   const std::string& original_src,
+                   std::unique_ptr<Class> clazz)
+    : comment_(comment),
+      package_(package),
+      original_src_(original_src),
+      clazz_(std::move(clazz)) {
+}
 
-  if (this->comment.length() != 0) {
-    to->Write("%s\n", this->comment.c_str());
+void Document::Write(CodeWriter* to) const {
+  if (!comment_.empty()) {
+    to->Write("%s\n", comment_.c_str());
   }
   to->Write(
       "/*\n"
       " * This file is auto-generated.  DO NOT MODIFY.\n"
       " * Original file: %s\n"
       " */\n",
-      escape_backslashes(this->originalSrc).c_str());
-  if (this->package.length() != 0) {
-    to->Write("package %s;\n", this->package.c_str());
+      escape_backslashes(original_src_).c_str());
+  if (!package_.empty()) {
+    to->Write("package %s;\n", package_.c_str());
   }
 
-  N = this->classes.size();
-  for (i = 0; i < N; i++) {
-    Class* c = this->classes[i];
-    c->Write(to);
+  if (clazz_) {
+    clazz_->Write(to);
   }
 }
 

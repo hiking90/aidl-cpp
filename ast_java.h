@@ -17,6 +17,7 @@
 #ifndef AIDL_AST_JAVA_H_
 #define AIDL_AST_JAVA_H_
 
+#include <memory>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string>
@@ -352,16 +353,20 @@ struct Class : public ClassElement {
   void Write(CodeWriter* to) const override;
 };
 
-struct Document {
-  std::string comment;
-  std::string package;
-  std::string originalSrc;
-  std::vector<Class*> classes;
-
-  Document() = default;
+class Document {
+ public:
+  Document(const std::string& comment,
+           const std::string& package,
+           const std::string& original_src,
+           std::unique_ptr<Class> clazz);
   virtual ~Document() = default;
-
   virtual void Write(CodeWriter* to) const;
+
+ private:
+  std::string comment_;
+  std::string package_;
+  std::string original_src_;
+  std::unique_ptr<Class> clazz_;
 };
 
 }  // namespace java

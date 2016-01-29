@@ -16,6 +16,7 @@
 
 #include "generate_java.h"
 
+#include <memory>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +26,7 @@
 #include "code_writer.h"
 #include "type_java.h"
 
+using std::unique_ptr;
 using ::android::aidl::java::Variable;
 using std::string;
 using android::base::StringPrintf;
@@ -57,12 +59,11 @@ int generate_java(const string& filename, const string& originalSrc,
                   const IoDelegate& io_delegate) {
   Class* cl = generate_binder_interface_class(iface, types);
 
-  Document* document = new Document;
-      document->comment = "";
-      if (!iface->GetPackage().empty())
-        document->package = iface->GetPackage();
-      document->originalSrc = originalSrc;
-      document->classes.push_back(cl);
+  Document* document = new Document(
+      "" /* no comment */,
+      (!iface->GetPackage().empty()) ? iface->GetPackage() : "",
+      originalSrc,
+      unique_ptr<Class>(cl));
 
   CodeWriterPtr code_writer = io_delegate.GetCodeWriter(filename);
   document->Write(code_writer.get());
