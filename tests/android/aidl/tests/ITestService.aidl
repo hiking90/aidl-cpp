@@ -91,9 +91,7 @@ interface ITestService {
   @utf8InCpp String[]  ReverseUtf8CppString (in @utf8InCpp String[] input,
                                              out @utf8InCpp String[] repeated);
 
-  /* This type is not implemented yet.
-  @utf8InCpp List<String> ReverseUtf8CppStringList(
-      in @utf8InCpp List<String> input,
-      out List<String> repeated);
-  */
+  @nullable @utf8InCpp List<String> ReverseUtf8CppStringList(
+      in @nullable @utf8InCpp List<String> input,
+      out @nullable @utf8InCpp List<String> repeated);
 }

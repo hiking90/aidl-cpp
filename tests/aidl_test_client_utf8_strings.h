@@ -31,6 +31,8 @@ bool ConfirmUtf8InCppStringRepeat(
     const android::sp<android::aidl::tests::ITestService>& s);
 bool ConfirmUtf8InCppStringArrayReverse(
     const android::sp<android::aidl::tests::ITestService>& s);
+bool ConfirmUtf8InCppStringListReverse(
+    const android::sp<android::aidl::tests::ITestService>& s);
 
 }  // namespace client
 }  // namespace tests

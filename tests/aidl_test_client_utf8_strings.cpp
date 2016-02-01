@@ -110,6 +110,57 @@ bool ConfirmUtf8InCppStringArrayReverse(const sp<ITestService>& s) {
   return true;
 }
 
+bool ConfirmUtf8InCppStringListReverse(const sp<ITestService>& s) {
+  LOG(INFO) << "Confirming reversing a list of utf8 strings works";
+  unique_ptr<vector<unique_ptr<string>>> input, reversed, repeated;
+  Status status = s->ReverseUtf8CppStringList(input, &reversed, &repeated);
+  if (!status.isOk() || reversed || repeated) {
+    LOG(ERROR) << "Reversing null list of utf8 strings failed.";
+    return false;
+  }
+
+  input.reset(new vector<unique_ptr<string>>);
+  input->emplace_back(new string("Deliver us from evil."));
+  input->emplace_back(nullptr);
+  input->emplace_back(new string("\xF0\x90\x90\xB7\xE2\x82\xAC"));
+
+  status = s->ReverseUtf8CppStringList(input, &repeated, &reversed);
+  if (!status.isOk() || !reversed || !repeated) {
+    LOG(ERROR) << "Reversing list of utf8 strings failed.";
+    return false;
+  }
+  if (reversed->size() != input->size() || repeated->size() != input->size()) {
+    LOG(ERROR) << "Bad output sizes.";
+    return false;
+  }
+
+  for (size_t i = 0; i < input->size(); ++i) {
+    const string* input_str = (*input)[i].get();
+    const string* repeated_str = (*repeated)[i].get();
+    const string* reversed_str = (*reversed)[(reversed->size() - 1) - i].get();
+    if (!input_str) {
+      if(repeated_str || reversed_str) {
+        LOG(ERROR) << "Expected null values, but got non-null.";
+        return false;
+      }
+      // 3 nullptrs to strings.  No need to compare values.
+      continue;
+    }
+    if (!repeated_str || !reversed_str) {
+      LOG(ERROR) << "Expected non-null values, but got null.";
+      return false;
+    }
+    if (*input_str != *repeated_str || *input_str != *reversed_str) {
+      LOG(ERROR) << "Expected '" << *input_str << "' but got "
+                 << "repeated='" << *repeated_str << "' and "
+                 << "reversed='" << *reversed_str;
+      return false;
+    }
+  }
+  return true;
+}
+
+
 }  // namespace client
 }  // namespace tests
 }  // namespace aidl

@@ -368,6 +368,30 @@ class NativeService : public BnTestService {
     return ReverseArray(input, repeated, _aidl_return);
   }
 
+  Status ReverseUtf8CppStringList(
+      const unique_ptr<vector<unique_ptr<::string>>>& input,
+      unique_ptr<vector<unique_ptr<string>>>* repeated,
+      unique_ptr<vector<unique_ptr<string>>>* _aidl_return) {
+    if (!input) {
+      ALOGI("Received null list of utf8 strings");
+      return Status::ok();
+    }
+    _aidl_return->reset(new vector<unique_ptr<string>>);
+    repeated->reset(new vector<unique_ptr<string>>);
+
+    for (const auto& item : *input) {
+      (*repeated)->emplace_back(nullptr);
+      (*_aidl_return)->emplace_back(nullptr);
+      if (item) {
+        (*repeated)->back().reset(new string(*item));
+        (*_aidl_return)->back().reset(new string(*item));
+      }
+    }
+    std::reverse((*_aidl_return)->begin(), (*_aidl_return)->end());
+
+    return Status::ok();
+  }
+
  private:
   map<String16, sp<INamedCallback>> service_map_;
 };

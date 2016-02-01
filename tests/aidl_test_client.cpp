@@ -102,5 +102,7 @@ int main(int /* argc */, char * argv []) {
 
   if (!client_tests::ConfirmUtf8InCppStringArrayReverse(service)) return 1;
 
+  if (!client_tests::ConfirmUtf8InCppStringListReverse(service)) return 1;
+
   return 0;
 }
