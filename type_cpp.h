@@ -128,7 +128,6 @@ class TypeNamespace : public ::android::aidl::LanguageTypeNamespace<Type> {
                              const std::string& filename) const override;
 
   const Type* VoidType() const { return void_type_; }
-  const Type* StringType() const { return string_type_; }
   const Type* IBinderType() const { return ibinder_type_; }
 
  private:

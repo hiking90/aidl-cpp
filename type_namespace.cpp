@@ -42,6 +42,8 @@ const char kUtf8InCppStringClass[] = "Utf8InCppString";
 const char kUtf8StringCanonicalName[] = "aidl-internal.Utf8String";
 const char kUtf8InCppStringCanonicalName[] = "aidl-internal.Utf8InCppString";
 
+const char kStringCanonicalName[] = "java.lang.String";
+
 const char kUtf8Annotation[] = "@utf8";
 const char kUtf8InCppAnnotation[] = "@utfInCpp";
 

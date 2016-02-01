@@ -416,6 +416,9 @@ class GenericListType : public Type {
 
   std::string CreatorName() const override;
   std::string InstantiableName() const override;
+  std::string JavaType() const override {
+    return "java.util.List<" + m_contained_type->JavaType() + ">";
+  }
 
   void WriteToParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                      int flags) const override;

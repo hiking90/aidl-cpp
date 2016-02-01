@@ -713,7 +713,7 @@ void InterfaceType::CreateFromParcel(StatementBlock* addTo, Variable* v,
 
 GenericListType::GenericListType(const JavaTypeNamespace* types,
                                  const Type* contained_type)
-    : Type(types, "java.util", "List<" + contained_type->JavaType() + ">",
+    : Type(types, "java.util", "List<" + contained_type->CanonicalName() + ">",
            ValidatableType::KIND_BUILT_IN, true, true),
       m_contained_type(contained_type),
       m_creator(contained_type->CreatorName()) {}

@@ -261,8 +261,9 @@ class ParcelableType : public Type {
 class NullableStringListType : public Type {
  public:
   NullableStringListType()
-      : Type(ValidatableType::KIND_BUILT_IN, "java.util", "List<String>",
-             {"utils/String16.h", "vector"},
+      : Type(ValidatableType::KIND_BUILT_IN,
+             "java.util", "List<" + string(kStringCanonicalName) + ">",
+             {"utils/String16.h", "memory", "vector"},
              "::std::unique_ptr<::std::vector<std::unique_ptr<::android::String16>>>",
              "readString16Vector", "writeString16Vector") {}
   virtual ~NullableStringListType() = default;
@@ -275,7 +276,8 @@ class NullableStringListType : public Type {
 class StringListType : public Type {
  public:
   StringListType()
-      : Type(ValidatableType::KIND_BUILT_IN, "java.util", "List<java.lang.String>",
+      : Type(ValidatableType::KIND_BUILT_IN,
+             "java.util", "List<" + string(kStringCanonicalName) + ">",
              {"utils/String16.h", "vector"},
              "::std::vector<::android::String16>",
              "readString16Vector", "writeString16Vector",
@@ -286,6 +288,37 @@ class StringListType : public Type {
  private:
   DISALLOW_COPY_AND_ASSIGN(StringListType);
 };  // class StringListType
+
+class NullableUtf8InCppStringListType : public Type {
+ public:
+  NullableUtf8InCppStringListType()
+      : Type(ValidatableType::KIND_BUILT_IN,
+             "java.util", "List<" + string(kUtf8InCppStringCanonicalName) + ">",
+             {"memory", "string", "vector"},
+             "::std::unique_ptr<::std::vector<std::unique_ptr<::std::string>>>",
+             "readUtf8VectorFromUtf16Vector", "writeUtf8VectorAsUtf16Vector") {}
+  virtual ~NullableUtf8InCppStringListType() = default;
+  bool CanBeOutParameter() const override { return true; }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(NullableUtf8InCppStringListType);
+};  // class NullableUtf8InCppStringListType
+
+class Utf8InCppStringListType : public Type {
+ public:
+  Utf8InCppStringListType()
+      : Type(ValidatableType::KIND_BUILT_IN,
+             "java.util", "List<" + string(kUtf8InCppStringCanonicalName) + ">",
+             {"string", "vector"},
+             "::std::vector<::std::string>",
+             "readUtf8VectorFromUtf16Vector", "writeUtf8VectorAsUtf16Vector",
+             kNoArrayType, new NullableUtf8InCppStringListType()) {}
+  virtual ~Utf8InCppStringListType() = default;
+  bool CanBeOutParameter() const override { return true; }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(Utf8InCppStringListType);
+};  // class Utf8InCppStringListType
 
 class NullableBinderListType : public Type {
  public:
@@ -433,6 +466,7 @@ void TypeNamespace::Init() {
 
   Add(new BinderListType());
   Add(new StringListType());
+  Add(new Utf8InCppStringListType());
 
   Type* fd_vector_type = new ArrayType(
       ValidatableType::KIND_BUILT_IN, kNoPackage, "FileDescriptor[]",
@@ -480,7 +514,9 @@ bool TypeNamespace::AddListType(const std::string& type_name) {
     return false;
   }
 
-  if (contained_type == StringType() || contained_type == IBinderType()) {
+  if (contained_type->CanonicalName() == kStringCanonicalName ||
+      contained_type->CanonicalName() == kUtf8InCppStringCanonicalName ||
+      contained_type == IBinderType()) {
     return true;
   }
 

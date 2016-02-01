@@ -39,6 +39,9 @@ extern const char kUtf8InCppStringClass[];  // UTF16 wire format, UTF8 in C++
 extern const char kUtf8StringCanonicalName[];
 extern const char kUtf8InCppStringCanonicalName[];
 
+// We sometimes special case this class.
+extern const char kStringCanonicalName[];
+
 // Note that these aren't the strings recognized by the parser, we just keep
 // here for the sake of logging a common string constant.
 extern const char kUtf8Annotation[];
