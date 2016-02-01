@@ -128,6 +128,7 @@ endif # No TARGET_BUILD_APPS or TARGET_BUILD_PDK
 #
 aidl_integration_test_cflags := $(aidl_cflags) -Wunused-parameter
 aidl_integration_test_shared_libs := \
+    libbase \
     libbinder \
     liblog \
     libutils
@@ -136,7 +137,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libaidl-integration-test
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES
 LOCAL_CFLAGS := $(aidl_integration_test_cflags)
-LOCAL_SHARED_LIBRARIES := $(aidl_integration_test_shared_libs) libbase
+LOCAL_SHARED_LIBRARIES := $(aidl_integration_test_shared_libs)
 LOCAL_AIDL_INCLUDES := \
     system/tools/aidl/tests/ \
     frameworks/native/aidl/binder

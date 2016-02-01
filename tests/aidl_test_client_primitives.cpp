@@ -24,6 +24,8 @@
 
 #include "android/aidl/tests/INamedCallback.h"
 
+#include "test_helpers.h"
+
 // libutils:
 using android::sp;
 using android::String16;
@@ -45,20 +47,6 @@ namespace android {
 namespace aidl {
 namespace tests {
 namespace client {
-
-template <typename T>
-bool RepeatPrimitive(const sp<ITestService>& service,
-                     Status(ITestService::*func)(T, T*),
-                     const T input) {
-  T reply;
-  Status status = (*service.*func)(input, &reply);
-  if (!status.isOk() || input != reply) {
-    cerr << "Failed to repeat primitive. status=" << status.toString8()
-         << "." << endl;
-    return false;
-  }
-  return true;
-}
 
 bool ConfirmPrimitiveRepeat(const sp<ITestService>& s) {
   cout << "Confirming passing and returning primitives works." << endl;
@@ -104,34 +92,6 @@ bool ConfirmPrimitiveRepeat(const sp<ITestService>& s) {
            << "\". Got status=" << status.toString8() << endl;
       return false;
     }
-  }
-  return true;
-}
-
-template <typename T>
-bool ReverseArray(const sp<ITestService>& service,
-                  Status(ITestService::*func)(const vector<T>&,
-                                              vector<T>*,
-                                              vector<T>*),
-                  vector<T> input) {
-  vector<T> actual_reversed;
-  vector<T> actual_repeated;
-  Status status = (*service.*func)(input, &actual_repeated, &actual_reversed);
-  if (!status.isOk()) {
-    cerr << "Failed to repeat array. status=" << status.toString8() << "."
-         << endl;
-    return false;
-  }
-  if (input != actual_repeated) {
-    cerr << "Repeated version of array did not match" << endl;
-    cerr << "input.size()=" << input.size()
-         << " repeated.size()=" << actual_repeated.size() << endl;
-    return false;
-  }
-  std::reverse(input.begin(), input.end());
-  if (input != actual_reversed) {
-    cerr << "Reversed version of array did not match" << endl;
-    return false;
   }
   return true;
 }
