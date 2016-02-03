@@ -28,11 +28,11 @@ namespace aidl {
 namespace tests {
 namespace client {
 
-template <typename T>
+template <typename T, typename U>
 bool RepeatPrimitive(
     const android::sp<android::aidl::tests::ITestService>& service,
     android::binder::Status(android::aidl::tests::ITestService::*func)(T, T*),
-    const T input) {
+    U input) {
   T reply;
   android::binder::Status status = (*service.*func)(input, &reply);
   if (!status.isOk() || input != reply) {

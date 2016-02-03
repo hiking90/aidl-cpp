@@ -72,22 +72,21 @@ void ClassDecl::AddPrivate(std::unique_ptr<Declaration> member) {
   private_members_.push_back(std::move(member));
 }
 
-ConstDecl::ConstDecl(const std::string& name, int value)
-    : name_(name),
-      value_(value) {}
-
-void ConstDecl::Write(CodeWriter* to) const {
-  to->Write("static constexpr int32_t %s = %d;\n", name_.c_str(), value_);
-}
-
 Enum::EnumField::EnumField(const string& k, const string& v)
     : key(k),
       value(v) {}
 
-Enum::Enum(const string& name) : enum_name_(name) {}
+Enum::Enum(const string& name, const string& base_type)
+    : enum_name_(name), underlying_type_(base_type) {}
+
+Enum::Enum(const string& name) : Enum(name, "") {}
 
 void Enum::Write(CodeWriter* to) const {
-  to->Write("enum %s {\n", enum_name_.c_str());
+  if (underlying_type_.empty()) {
+    to->Write("enum %s {\n", enum_name_.c_str());
+  } else {
+    to->Write("enum %s : %s {\n", enum_name_.c_str(), underlying_type_.c_str());
+  }
   for (const auto& field : fields_) {
     if (field.value.empty()) {
       to->Write("  %s,\n", field.key.c_str());

@@ -676,10 +676,13 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
       "DECLARE_META_INTERFACE",
       ArgList{vector<string>{ClassName(interface, ClassNames::BASE)}}}});
 
+  unique_ptr<Enum> constant_enum{new Enum{"", "int32_t"}};
   for (const auto& constant : interface.GetConstants()) {
-    unique_ptr<ConstDecl> declaration{
-        new ConstDecl(constant->GetName(), constant->GetValue())};
-    if_class->AddPublic(std::move(declaration));
+    constant_enum->AddValue(
+        constant->GetName(), std::to_string(constant->GetValue()));
+  }
+  if (constant_enum->HasValues()) {
+    if_class->AddPublic(std::move(constant_enum));
   }
 
   unique_ptr<Enum> call_enum{new Enum{"Call"}};

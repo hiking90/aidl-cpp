@@ -73,25 +73,13 @@ class ClassDecl : public Declaration {
   DISALLOW_COPY_AND_ASSIGN(ClassDecl);
 };  // class ClassDecl
 
-class ConstDecl : public Declaration {
- public:
-  ConstDecl(const std::string& name, int value);
-  virtual ~ConstDecl() = default;
-
-  void Write(CodeWriter* to) const override;
-
- private:
-  std::string name_;
-  int value_;
-
-  DISALLOW_COPY_AND_ASSIGN(ConstDecl);
-};  // class ConstDecl
-
 class Enum : public Declaration {
  public:
+  Enum(const std::string& name, const std::string& base_type);
   explicit Enum(const std::string& name);
   virtual ~Enum() = default;
 
+  bool HasValues() const { return !fields_.empty(); }
   void Write(CodeWriter* to) const override;
 
   void AddValue(const std::string& key, const std::string& value);
@@ -104,6 +92,7 @@ class Enum : public Declaration {
   };
 
   std::string enum_name_;
+  std::string underlying_type_;
   std::vector<EnumField> fields_;
 
   DISALLOW_COPY_AND_ASSIGN(Enum);

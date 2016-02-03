@@ -607,7 +607,9 @@ namespace os {
 class IComplexTypeInterface : public ::android::IInterface {
 public:
 DECLARE_META_INTERFACE(ComplexTypeInterface);
-static constexpr int32_t MY_CONSTANT = 3;
+enum  : int32_t {
+  MY_CONSTANT = 3,
+};
 virtual ::android::binder::Status Send(const ::std::unique_ptr<::std::vector<int32_t>>& goes_in, ::std::vector<double>* goes_in_and_out, ::std::vector<bool>* goes_out, ::std::vector<int32_t>* _aidl_return) = 0;
 virtual ::android::binder::Status Piff(int32_t times) = 0;
 virtual ::android::binder::Status TakesABinder(const ::android::sp<::foo::IFooType>& f, ::android::sp<::foo::IFooType>* _aidl_return) = 0;
