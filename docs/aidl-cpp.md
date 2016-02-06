@@ -27,6 +27,7 @@ This document describes how C++ generation works with attention to:
 
  - build interface
  - cross-language type mapping
+ - implementing a generated interface
  - C++ parcelables
  - cross-language error reporting
  - cross-language null reference handling
@@ -103,6 +104,74 @@ side.  For instance, Map is cast to Map<String,Object> and then the object
 values dynamically inspected and serialized as type/value pairs.  Support
 exists for sending arbitrary Java serializables, Android Bundles, etc.
 
+### Implementing a generated interface
+
+Given an interface declaration like:
+
+```
+package foo;
+
+import bar.IAnotherInterface;
+
+interface IFoo {
+  IAnotherInterface DoSomething(int count, out List<String> output);
+}
+```
+
+`aidl-cpp` will generate a C++ interface:
+
+```
+namespace foo {
+
+// Some headers have been omitted for clarity.
+#include <android/String16.h>
+#include <cstdint>
+#include <vector>
+#include <bar/IAnotherInterface.h>
+
+// Some class members have been omitted for clarity.
+class IFoo : public android::IInterface {
+ public:
+  virtual android::binder::Status DoSomething(
+      int32_t count,
+      std::vector<android::String16>* output,
+      android::sp<bar::IAnotherInterface>* returned_value) = 0;
+};
+```
+
+Note that `aidl-cpp` will import headers for types used in the interface.  For
+imported types (e.g. parcelables and interfaces), it will import a header
+corresponding to the package/class name of the import.  For instance,
+`import bar.IAnotherInterface` causes aidl-cpp to generate
+`#include <bar/IAnotherInterface.h>`.
+
+When writing a service that implements this interface, write:
+
+```
+#include "foo/BnFoo.h"
+
+namespace unrelated_namespace {
+
+class MyFoo : public foo::BnFoo {
+ public:
+  android::binder::Status DoSomething(
+      int32_t count,
+      std::vector<android::String16>* output,
+      android::sp<bar::IAnotherInterface>* returned_value) override {
+    for (int32_t i = 0; i < count; ++i) {
+      output->push_back(String16("..."));
+    }
+    *returned_value = new InstanceOfAnotherInterface;
+    return Status::ok();
+  }
+};  // class MyFoo
+
+}  // namespace unrelated_namespace
+```
+
+Note that the output values, `output` and `returned_value` are passed by
+pointer, and that this pointer is always valid.
+
 ### C++ Parcelables
 
 In Java, a parcelable should extend android.os.Parcelable and provide a static
@@ -164,6 +233,16 @@ back the caller.  Parameters marked with @nullable are passed by pointer,
 allowing native services to explicitly control whether they allow method
 overloading via null parameters.  Java stubs and proxies currently do nothing
 with the @nullable annotation.
+
+Consider an AIDL type `in @nullable List<String> bar`.  This type
+indicates that the remote caller may pass in a list of strings, and that both
+the list and any string in the list may be null.  This type will map to a C++
+type `unique_ptr<vector<unique_ptr<String16>>>* bar`.  In this case:
+
+  - `bar` is never null
+  - `*bar` might be null
+  - `(*bar)->empty()` could be true
+  - `(**bar)[0]` could be null (and so on)
 
 ### Exception Reporting
 
