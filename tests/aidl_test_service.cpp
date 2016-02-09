@@ -199,9 +199,9 @@ class NativeService : public BnTestService {
                         vector<bool>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
-  Status ReverseByte(const vector<int8_t>& input,
-                     vector<int8_t>* repeated,
-                     vector<int8_t>* _aidl_return) override {
+  Status ReverseByte(const vector<uint8_t>& input,
+                     vector<uint8_t>* repeated,
+                     vector<uint8_t>* _aidl_return) override {
     return ReverseArray(input, repeated, _aidl_return);
   }
   Status ReverseChar(const vector<char16_t>& input,

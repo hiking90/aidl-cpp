@@ -134,6 +134,38 @@ class PrimitiveType : public Type {
   DISALLOW_COPY_AND_ASSIGN(PrimitiveType);
 };  // class PrimitiveType
 
+class ByteType : public Type {
+ public:
+  ByteType() : ByteType(false, "byte", "int8_t", "readByte", "writeByte",
+     new ByteType(true, "byte[]", "::std::vector<uint8_t>", "readByteVector",
+         "writeByteVector", kNoArrayType,
+         new ByteType(true, "byte[]",
+             "::std::unique_ptr<::std::vector<uint8_t>>",
+             "readByteVector", "writeByteVector", kNoArrayType,
+             kNoNullableType)), kNoNullableType) {}
+
+  virtual ~ByteType() = default;
+  bool IsCppPrimitive() const override { return true; }
+  bool CanBeOutParameter() const override { return is_array_; }
+
+ protected:
+  ByteType(bool is_array,
+           const std::string& name,
+           const std::string& cpp_type,
+           const std::string& read_method,
+           const std::string& write_method,
+           Type* array_type,
+           Type* nullable_type)
+      : Type(ValidatableType::KIND_BUILT_IN, kNoPackage, name, {"cstdint"},
+             cpp_type, read_method, write_method, array_type, nullable_type),
+        is_array_(is_array) {}
+
+ private:
+  bool is_array_ = false;
+
+  DISALLOW_COPY_AND_ASSIGN(ByteType);
+};  // class PrimitiveType
+
 class BinderType : public Type {
  public:
   BinderType(const AidlInterface& interface, const std::string& src_file_name)
@@ -374,10 +406,7 @@ Type::Type(int kind,
 bool Type::CanWriteToParcel() const { return true; }
 
 void TypeNamespace::Init() {
-  Add(new PrimitiveType(
-      ValidatableType::KIND_BUILT_IN, kNoPackage, "byte",
-      "cstdint", "int8_t", "readByte", "writeByte",
-      "readByteVector", "writeByteVector"));
+  Add(new ByteType());
   Add(new PrimitiveType(
       ValidatableType::KIND_BUILT_IN, kNoPackage, "int",
       "cstdint", "int32_t", "readInt32", "writeInt32",

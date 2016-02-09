@@ -106,7 +106,7 @@ bool ConfirmReverseArrays(const sp<ITestService>& s) {
   if (!ReverseArray(s, &ITestService::ReverseBoolean,
                     {true, false, false}) ||
       !ReverseArray(s, &ITestService::ReverseByte,
-                    {int8_t{-128}, int8_t{0}, int8_t{127}}) ||
+                    {uint8_t{255}, uint8_t{0}, uint8_t{127}}) ||
       !ReverseArray(s, &ITestService::ReverseChar,
                     {char16_t{'A'}, char16_t{'B'}, char16_t{'C'}}) ||
       !ReverseArray(s, &ITestService::ReverseInt,
