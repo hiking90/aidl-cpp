@@ -83,7 +83,8 @@ virtual ~BpComplexTypeInterface() = default;
 
 }  // namespace android
 
-#endif  // AIDL_GENERATED_ANDROID_OS_BP_COMPLEX_TYPE_INTERFACE_H_)";
+#endif  // AIDL_GENERATED_ANDROID_OS_BP_COMPLEX_TYPE_INTERFACE_H_
+)";
 
 const char kExpectedComplexTypeClientSourceOutput[] =
 R"(#include <android/os/BpComplexTypeInterface.h>
@@ -362,7 +363,8 @@ public:
 
 }  // namespace android
 
-#endif  // AIDL_GENERATED_ANDROID_OS_BN_COMPLEX_TYPE_INTERFACE_H_)";
+#endif  // AIDL_GENERATED_ANDROID_OS_BN_COMPLEX_TYPE_INTERFACE_H_
+)";
 
 const char kExpectedComplexTypeServerSourceOutput[] =
 R"(#include <android/os/BnComplexTypeInterface.h>
@@ -606,7 +608,7 @@ namespace os {
 
 class IComplexTypeInterface : public ::android::IInterface {
 public:
-DECLARE_META_INTERFACE(ComplexTypeInterface);
+DECLARE_META_INTERFACE(ComplexTypeInterface)
 enum  : int32_t {
   MY_CONSTANT = 3,
 };
@@ -632,7 +634,8 @@ enum Call {
 
 }  // namespace android
 
-#endif  // AIDL_GENERATED_ANDROID_OS_I_COMPLEX_TYPE_INTERFACE_H_)";
+#endif  // AIDL_GENERATED_ANDROID_OS_I_COMPLEX_TYPE_INTERFACE_H_
+)";
 
 const char kExpectedComplexTypeInterfaceSourceOutput[] =
 R"(#include <android/os/IComplexTypeInterface.h>
@@ -642,7 +645,7 @@ namespace android {
 
 namespace os {
 
-IMPLEMENT_META_INTERFACE(ComplexTypeInterface, "android.os.IComplexTypeInterface");
+IMPLEMENT_META_INTERFACE(ComplexTypeInterface, "android.os.IComplexTypeInterface")
 
 }  // namespace os
 

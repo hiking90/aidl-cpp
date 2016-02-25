@@ -157,6 +157,16 @@ void ConstructorDecl::Write(CodeWriter* to) const {
   to->Write(";\n");
 }
 
+MacroDecl::MacroDecl(const std::string& name, ArgList&& arg_list)
+    : name_(name),
+      arguments_(std::move(arg_list)) {}
+
+void MacroDecl::Write(CodeWriter* to) const {
+  to->Write("%s", name_.c_str());
+  arguments_.Write(to);
+  to->Write("\n");
+}
+
 MethodDecl::MethodDecl(const std::string& return_type,
                        const std::string& name,
                        ArgList&& arg_list)
@@ -429,7 +439,7 @@ void CppHeader::Write(CodeWriter* to) const {
   Document::Write(to);
   to->Write("\n");
 
-  to->Write("#endif  // %s", include_guard_.c_str());
+  to->Write("#endif  // %s\n", include_guard_.c_str());
 }
 
 CppSource::CppSource(const std::vector<std::string>& include_list,

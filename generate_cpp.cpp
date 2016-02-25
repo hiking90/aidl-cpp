@@ -572,7 +572,7 @@ unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& /* types */,
     fq_name = interface.GetPackage() + "." + fq_name;
   }
 
-  unique_ptr<ConstructorDecl> meta_if{new ConstructorDecl{
+  unique_ptr<MacroDecl> meta_if{new MacroDecl{
       "IMPLEMENT_META_INTERFACE",
       ArgList{vector<string>{ClassName(interface, ClassNames::BASE),
                              '"' + fq_name + '"'}}}};
@@ -672,7 +672,7 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
   unique_ptr<ClassDecl> if_class{
       new ClassDecl{ClassName(interface, ClassNames::INTERFACE),
                     "::android::IInterface"}};
-  if_class->AddPublic(unique_ptr<Declaration>{new ConstructorDecl{
+  if_class->AddPublic(unique_ptr<Declaration>{new MacroDecl{
       "DECLARE_META_INTERFACE",
       ArgList{vector<string>{ClassName(interface, ClassNames::BASE)}}}});
 

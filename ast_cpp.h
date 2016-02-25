@@ -141,6 +141,20 @@ class ConstructorDecl : public Declaration {
   DISALLOW_COPY_AND_ASSIGN(ConstructorDecl);
 };  // class ConstructorDecl
 
+class MacroDecl : public Declaration {
+ public:
+  MacroDecl(const std::string& name, ArgList&& arg_list);
+  virtual ~MacroDecl() = default;
+
+  void Write(CodeWriter* to) const override;
+
+ private:
+  const std::string name_;
+  const ArgList arguments_;
+
+  DISALLOW_COPY_AND_ASSIGN(MacroDecl);
+};  // class MacroDecl
+
 class MethodDecl : public Declaration {
  public:
   enum Modifiers {
