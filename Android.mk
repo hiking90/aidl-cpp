@@ -25,7 +25,7 @@ ifdef BRILLO
 endif
 
 # This tool is prebuilt if we're doing an app-only build.
-ifeq ($(TARGET_BUILD_APPS)$(filter true,$(TARGET_BUILD_PDK)),)
+ifeq ($(TARGET_BUILD_APPS),)
 
 # Logic shared between aidl and its unittests
 include $(CLEAR_VARS)
