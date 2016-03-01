@@ -125,7 +125,8 @@ class TypeNamespace : public ::android::aidl::LanguageTypeNamespace<Type> {
   bool IsValidPackage(const std::string& package) const override;
   const ValidatableType* GetArgType(const AidlArgument& a,
                              int arg_index,
-                             const std::string& filename) const override;
+                             const std::string& filename,
+                             const AidlInterface& interface) const override;
 
   const Type* VoidType() const { return void_type_; }
   const Type* IBinderType() const { return ibinder_type_; }

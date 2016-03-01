@@ -579,7 +579,8 @@ bool TypeNamespace::IsValidPackage(const string& package) const {
 
 const ValidatableType* TypeNamespace::GetArgType(const AidlArgument& a,
     int arg_index,
-    const std::string& filename) const {
+    const std::string& filename,
+    const AidlInterface& interface) const {
   const string error_prefix = StringPrintf(
       "In file %s line %d parameter %s (%d):\n    ",
       filename.c_str(), a.GetLine(), a.GetName().c_str(), arg_index);
@@ -591,7 +592,8 @@ const ValidatableType* TypeNamespace::GetArgType(const AidlArgument& a,
     return nullptr;
   }
 
-  return ::android::aidl::TypeNamespace::GetArgType(a, arg_index, filename);
+  return ::android::aidl::TypeNamespace::GetArgType(a, arg_index, filename,
+                                                    interface);
 }
 
 }  // namespace cpp
