@@ -137,32 +137,37 @@ parcelable_decl
   };
 
 interface_decl
- : INTERFACE identifier '{' members '}' {
-    $$ = new AidlInterface($2->GetText(), @2.begin.line, $1->GetComments(),
-                           false, $4, ps->Package());
-    delete $1;
-    delete $2;
-  }
- | ONEWAY INTERFACE identifier '{' members '}' {
-    $$ = new AidlInterface($3->GetText(), @3.begin.line, $1->GetComments(),
-                           true, $5, ps->Package());
-    delete $1;
+ : annotation_list INTERFACE identifier '{' members '}' {
+    $$ = new AidlInterface($3->GetText(), @2.begin.line, $2->GetComments(),
+                           false, $5, ps->Package());
+    $$->Annotate($1);
     delete $2;
     delete $3;
   }
- | INTERFACE error '{' members '}' {
-    fprintf(stderr, "%s:%d: syntax error in interface declaration.  Expected type name, saw \"%s\"\n",
-            ps->FileName().c_str(), @2.begin.line, $2->GetText().c_str());
-    $$ = NULL;
-    delete $1;
+ | annotation_list ONEWAY INTERFACE identifier '{' members '}' {
+    $$ = new AidlInterface($4->GetText(), @4.begin.line, $2->GetComments(),
+                           true, $6, ps->Package());
+    $$->Annotate($1);
     delete $2;
+    delete $3;
+    delete $4;
   }
- | INTERFACE error '}' {
-    fprintf(stderr, "%s:%d: syntax error in interface declaration.  Expected type name, saw \"%s\"\n",
-            ps->FileName().c_str(), @2.begin.line, $2->GetText().c_str());
+ | annotation_list INTERFACE error '{' members '}' {
+    fprintf(stderr, "%s:%d: syntax error in interface declaration.  Expected "
+                    "type name, saw \"%s\"\n",
+            ps->FileName().c_str(), @3.begin.line, $3->GetText().c_str());
     $$ = NULL;
-    delete $1;
     delete $2;
+    delete $3;
+    delete $5;
+  }
+ | annotation_list INTERFACE error '}' {
+    fprintf(stderr, "%s:%d: syntax error in interface declaration.  Expected "
+                    "type name, saw \"%s\"\n",
+            ps->FileName().c_str(), @3.begin.line, $3->GetText().c_str());
+    $$ = NULL;
+    delete $2;
+    delete $3;
   };
 
 members
@@ -256,9 +261,6 @@ type
  : annotation_list unannotated_type {
     $$ = $2;
     $2->Annotate($1);
-  }
- | unannotated_type {
-    $$ = $1;
   };
 
 generic_list
@@ -273,10 +275,10 @@ generic_list
   };
 
 annotation_list
- : annotation_list annotation
-  { $$ = static_cast<AidlType::Annotation>($1 | $2); }
- | annotation
-  { $$ = $1; };
+ :
+  { $$ = AidlType::AnnotationNone; }
+ | annotation_list annotation
+  { $$ = static_cast<AidlType::Annotation>($1 | $2); };
 
 annotation
  : ANNOTATION_NULLABLE

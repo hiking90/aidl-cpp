@@ -44,7 +44,7 @@ class ValidatableType;
 }  // namespace aidl
 }  // namespace android
 
-class AidlType : public AidlNode {
+class AidlAnnotatable : public AidlNode {
  public:
   enum Annotation : uint32_t {
     AnnotationNone = 0,
@@ -53,6 +53,31 @@ class AidlType : public AidlNode {
     AnnotationUtf8InCpp = 1 << 2,
   };
 
+  AidlAnnotatable() = default;
+  virtual ~AidlAnnotatable() = default;
+
+  void Annotate(AidlAnnotatable::Annotation annotation) {
+    annotations_ =
+        static_cast<AidlAnnotatable::Annotation>(annotations_ | annotation);
+  }
+  bool IsNullable() const {
+    return annotations_ & AnnotationNullable;
+  }
+  bool IsUtf8() const {
+    return annotations_ & AnnotationUtf8;
+  }
+  bool IsUtf8InCpp() const {
+    return annotations_ & AnnotationUtf8InCpp;
+  }
+
+ private:
+  Annotation annotations_ = AnnotationNone;
+
+  DISALLOW_COPY_AND_ASSIGN(AidlAnnotatable);
+};
+
+class AidlType : public AidlAnnotatable {
+ public:
   AidlType(const std::string& name, unsigned line,
            const std::string& comments, bool is_array);
   virtual ~AidlType() = default;
@@ -73,24 +98,12 @@ class AidlType : public AidlNode {
     return reinterpret_cast<const T*>(language_type_);
   }
 
-  void Annotate(AidlType::Annotation annotation) { annotations_ = annotation; }
-  bool IsNullable() const {
-    return annotations_ & AnnotationNullable;
-  }
-  bool IsUtf8() const {
-    return annotations_ & AnnotationUtf8;
-  }
-  bool IsUtf8InCpp() const {
-    return annotations_ & AnnotationUtf8InCpp;
-  }
-
  private:
   std::string name_;
   unsigned line_;
   bool is_array_;
   std::string comments_;
   const android::aidl::ValidatableType* language_type_ = nullptr;
-  Annotation annotations_ = AnnotationNone;
 
   DISALLOW_COPY_AND_ASSIGN(AidlType);
 };
@@ -274,7 +287,7 @@ class AidlParcelable : public AidlNode {
   DISALLOW_COPY_AND_ASSIGN(AidlParcelable);
 };
 
-class AidlInterface : public AidlNode {
+class AidlInterface : public AidlAnnotatable {
  public:
   AidlInterface(const std::string& name, unsigned line,
                 const std::string& comments, bool oneway_,
