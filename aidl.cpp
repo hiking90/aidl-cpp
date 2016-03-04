@@ -189,6 +189,12 @@ int check_types(const string& filename,
                 TypeNamespace* types) {
   int err = 0;
 
+  if (c->IsUtf8() && c->IsUtf8InCpp()) {
+    cerr << filename << ":" << c->GetLine()
+         << "Interface cannot be marked as both @utf8 and @utf8InCpp";
+    err = 1;
+  }
+
   // Has to be a pointer due to deleting copy constructor. No idea why.
   map<string, const AidlMethod*> method_names;
   for (const auto& m : c->GetMethods()) {
@@ -199,7 +205,7 @@ int check_types(const string& filename,
     }
 
     const ValidatableType* return_type =
-        types->GetReturnType(m->GetType(), filename);
+        types->GetReturnType(m->GetType(), filename, *c);
 
     if (!return_type) {
       err = 1;
@@ -221,7 +227,7 @@ int check_types(const string& filename,
       }
 
       const ValidatableType* arg_type =
-          types->GetArgType(*arg, index, filename);
+          types->GetArgType(*arg, index, filename, *c);
 
       if (!arg_type) {
         err = 1;
