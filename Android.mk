@@ -24,9 +24,6 @@ ifdef BRILLO
   aidl_module_host_os := darwin linux
 endif
 
-# This tool is prebuilt if we're doing an app-only build.
-ifeq ($(TARGET_BUILD_APPS),)
-
 # Logic shared between aidl and its unittests
 include $(CLEAR_VARS)
 LOCAL_MODULE := libaidl-common
@@ -120,8 +117,6 @@ LOCAL_STATIC_LIBRARIES := \
 
 LOCAL_LDLIBS_linux := -lrt
 include $(BUILD_HOST_NATIVE_TEST)
-
-endif # No TARGET_BUILD_APPS or TARGET_BUILD_PDK
 
 #
 # Everything below here is used for integration testing of generated AIDL code.
