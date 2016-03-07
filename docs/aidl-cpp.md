@@ -90,6 +90,7 @@ interfaces.
 | float                 | float               | in    |                                                       |
 | double                | double              | in    |                                                       |
 | String                | String16            | in    | Supports null references.                             |
+| @utf8InCpp String     | std::string         | in    | @utf8InCpp causes UTF16 to UTF8 conversion in C++.    |
 | android.os.Parcelable | android::Parcelable | inout |                                                       |
 | T extends IBinder     | sp<T>               | in    |                                                       |
 | Arrays (T[])          | vector<T>           | inout | May contain only primitives, Strings and parcelables. |
@@ -103,6 +104,11 @@ language communication because they may contain arbitrary types on the Java
 side.  For instance, Map is cast to Map<String,Object> and then the object
 values dynamically inspected and serialized as type/value pairs.  Support
 exists for sending arbitrary Java serializables, Android Bundles, etc.
+
+Note that annotations may be placed at the interface level, as well as on a
+type by type basis.  Interface level annotations will be applied
+opportunistically and be overridden by per type annotations.  For instance, an
+interface marked @nullable will still not allow null int parameters.
 
 ### Implementing a generated interface
 
