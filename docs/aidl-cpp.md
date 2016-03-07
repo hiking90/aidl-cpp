@@ -178,6 +178,14 @@ class MyFoo : public foo::BnFoo {
 Note that the output values, `output` and `returned_value` are passed by
 pointer, and that this pointer is always valid.
 
+#### Dependencies
+
+The generated C++ code will use symbols from libbinder as well as libutils.
+AIDL files using the FileDescriptor type will also explicitly require
+libnativehelper, although this is likely a transitive dependency of the other
+two, and should be included automatically within the Android build tree
+regardless.
+
 ### C++ Parcelables
 
 In Java, a parcelable should extend android.os.Parcelable and provide a static
