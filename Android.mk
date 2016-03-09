@@ -188,8 +188,9 @@ LOCAL_CERTIFICATE := platform
 LOCAL_MANIFEST_FILE := tests/java_app/AndroidManifest.xml
 LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/tests/java_app/resources
 LOCAL_SRC_FILES := \
-    tests/android/aidl/tests/ITestService.aidl \
     tests/android/aidl/tests/INamedCallback.aidl \
+    tests/android/aidl/tests/ITestService.aidl \
+    tests/java_app/src/android/aidl/tests/NullableTests.java \
     tests/java_app/src/android/aidl/tests/SimpleParcelable.java \
     tests/java_app/src/android/aidl/tests/TestFailException.java \
     tests/java_app/src/android/aidl/tests/TestLogger.java \
