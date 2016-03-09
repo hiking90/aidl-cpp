@@ -267,6 +267,7 @@ class IBinderType : public Type {
                      int flags) const override;
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                         Variable** cl) const override;
+  const ValidatableType* NullableType() const override { return this; }
 };
 
 class IInterfaceType : public Type {

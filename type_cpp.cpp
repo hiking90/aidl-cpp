@@ -487,10 +487,15 @@ void TypeNamespace::Init() {
       {"string"}, "::std::string", "readUtf8FromUtf16", "writeUtf8AsUtf16",
       cpp_utf8_string_array, nullable_cpp_utf8_string_type));
 
-  ibinder_type_ = new Type(ValidatableType::KIND_BUILT_IN, "android.os",
-                           "IBinder", {"binder/IBinder.h"},
-                           "::android::sp<::android::IBinder>", "readStrongBinder",
-                           "writeStrongBinder");
+  Type* nullable_ibinder = new Type(
+      ValidatableType::KIND_BUILT_IN, "android.os", "IBinder",
+      {"binder/IBinder.h"}, "::android::sp<::android::IBinder>",
+      "readNullableStrongBinder", "writeStrongBinder");
+  ibinder_type_ = new Type(
+      ValidatableType::KIND_BUILT_IN, "android.os", "IBinder",
+      {"binder/IBinder.h"}, "::android::sp<::android::IBinder>",
+      "readStrongBinder", "writeStrongBinder",
+      kNoArrayType, nullable_ibinder);
   Add(ibinder_type_);
 
   Add(new BinderListType());
