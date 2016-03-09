@@ -191,6 +191,8 @@ LOCAL_SRC_FILES := \
     tests/android/aidl/tests/ITestService.aidl \
     tests/android/aidl/tests/INamedCallback.aidl \
     tests/java_app/src/android/aidl/tests/SimpleParcelable.java \
+    tests/java_app/src/android/aidl/tests/TestFailException.java \
+    tests/java_app/src/android/aidl/tests/TestLogger.java \
     tests/java_app/src/android/aidl/tests/TestServiceClient.java
 LOCAL_AIDL_INCLUDES := \
     system/tools/aidl/tests/ \

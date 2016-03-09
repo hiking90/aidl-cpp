@@ -17,6 +17,8 @@
 package android.aidl.tests;
 
 import android.aidl.tests.SimpleParcelable;
+import android.aidl.tests.TestFailException;
+import android.aidl.tests.TestLogger;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -32,7 +34,6 @@ import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,50 +46,13 @@ import android.aidl.tests.ITestService;
 public class TestServiceClient extends Activity {
     private static final String TAG = "TestServiceClient";
 
-    public class TestFailException extends Exception {
-        public TestFailException(String message) {
-            super(message);
-        }
-    }
-
-    private class Logger {
-      private PrintWriter mLogFile;
-
-      public Logger() {
-        try {
-            mLogFile = new PrintWriter(openFileOutput(
-                    "test-client.log", Context.MODE_WORLD_READABLE));
-        } catch (IOException ex) {
-            throw new RuntimeException("Failed to open log file for writing.");
-        }
-      }
-
-      public void log(String line) {
-          Log.i(TAG, line);
-          mLogFile.println(line);
-      }
-
-      public void logAndThrow(String line) throws TestFailException {
-          Log.e(TAG, line);
-          mLogFile.println(line);
-          throw new TestFailException(line);
-      }
-
-      public void close() {
-          if (mLogFile != null) {
-              mLogFile.close();
-          }
-      }
-    }
-
-
-    private Logger mLog;
+    private TestLogger mLog;
     private String mSuccessSentinel;
     private String mFailureSentinel;
 
     private void init() {
         Intent intent = getIntent();
-        mLog = new Logger();
+        mLog = new TestLogger(this);
         mLog.log("Reading sentinels from intent...");
         mSuccessSentinel = intent.getStringExtra("sentinel.success");
         mFailureSentinel = intent.getStringExtra("sentinel.failure");
