@@ -132,6 +132,67 @@ bool ConfirmNullableType(const sp<ITestService>& s, string type_name,
   return true;
 }
 
+bool CheckAppropriateIBinderHandling(const sp<ITestService>& s) {
+
+  Status status;
+  sp<IBinder> binder = new BBinder();
+  sp<IBinder> null_binder = nullptr;
+  unique_ptr<vector<sp<IBinder>>> list_with_nulls(
+      new vector<sp<IBinder>>{binder, null_binder});
+  unique_ptr<vector<sp<IBinder>>> list_without_nulls(
+      new vector<sp<IBinder>>{binder, binder});
+
+  // Methods without @nullable throw up when given null binders
+  if (s->TakesAnIBinder(null_binder).exceptionCode() !=
+      binder::Status::EX_NULL_POINTER) {
+    cerr << "Did not receive expected null exception on line: "
+         << __LINE__ << endl;
+    return false;
+  }
+  if (s->TakesAnIBinderList(*list_with_nulls).exceptionCode() !=
+      binder::Status::EX_NULL_POINTER) {
+    cerr << "Did not receive expected null exception on line: "
+         << __LINE__ << endl;
+    return false;
+  }
+
+  // But those same methods are fine with valid binders
+  if (!s->TakesAnIBinder(binder).isOk()) {
+    cerr << "Received unexpected exception on line "
+         << __LINE__ << endl;
+    return false;
+  }
+  if (!s->TakesAnIBinderList(*list_without_nulls).isOk()) {
+    cerr << "Received unexpected exception on line "
+         << __LINE__ << endl;
+    return false;
+  }
+
+  // And methods with @nullable don't care.
+  if (!s->TakesANullableIBinder(null_binder).isOk()) {
+    cerr << "Received unexpected exception on line "
+         << __LINE__ << endl;
+    return false;
+  }
+  if (!s->TakesANullableIBinder(binder).isOk()) {
+    cerr << "Received unexpected exception on line "
+         << __LINE__ << endl;
+    return false;
+  }
+  if (!s->TakesANullableIBinderList(list_with_nulls).isOk()) {
+    cerr << "Received unexpected exception on line "
+         << __LINE__ << endl;
+    return false;
+  }
+  if (!s->TakesANullableIBinderList(list_without_nulls).isOk()) {
+    cerr << "Received unexpected exception on line "
+         << __LINE__ << endl;
+    return false;
+  }
+
+  return true;
+}
+
 }  // namespace
 
 bool ConfirmNullables(const sp<ITestService>& s) {
@@ -171,6 +232,11 @@ bool ConfirmNullables(const sp<ITestService>& s) {
                            unique_ptr<SimpleParcelable>(
                                new SimpleParcelable("Booya", 42)),
                            &ITestService::RepeatNullableParcelable)) {
+    return false;
+  }
+
+  if (!CheckAppropriateIBinderHandling(s)) {
+    cerr << "Handled null IBinders poorly." << endl;
     return false;
   }
 

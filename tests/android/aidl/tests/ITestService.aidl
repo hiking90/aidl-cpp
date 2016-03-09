@@ -83,6 +83,11 @@ interface ITestService {
   @nullable List<String> RepeatNullableStringList(in @nullable List<String> input);
   @nullable SimpleParcelable RepeatNullableParcelable(in @nullable SimpleParcelable input);
 
+  void TakesAnIBinder(in IBinder input);
+  void TakesAnIBinderList(in List<IBinder> input);
+  void TakesANullableIBinder(in @nullable IBinder input);
+  void TakesANullableIBinderList(in @nullable List<IBinder> input);
+
   // Test utf8 decoding from utf16 wire format
   @utf8InCpp String RepeatUtf8CppString(@utf8InCpp String token);
   @nullable @utf8InCpp String RepeatNullableUtf8CppString(

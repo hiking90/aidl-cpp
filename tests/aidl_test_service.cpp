@@ -342,6 +342,23 @@ class NativeService : public BnTestService {
     return RepeatNullable(input, _aidl_return);
   }
 
+  Status TakesAnIBinder(const sp<IBinder>& input) override {
+    (void)input;
+    return Status::ok();
+  }
+  Status TakesAnIBinderList(const vector<sp<IBinder>>& input) override {
+    (void)input;
+    return Status::ok();
+  }
+  Status TakesANullableIBinder(const sp<IBinder>& input) {
+    (void)input;
+    return Status::ok();
+  }
+  Status TakesANullableIBinderList(const unique_ptr<vector<sp<IBinder>>>& input) {
+    (void)input;
+    return Status::ok();
+  }
+
   Status RepeatUtf8CppString(const string& token,
                              string* _aidl_return) override {
     ALOGI("Repeating utf8 string '%s' of length=%zu", token.c_str(), token.size());
