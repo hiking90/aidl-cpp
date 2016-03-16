@@ -131,7 +131,7 @@ public class TestServiceClient extends Activity {
                 }
             }
             {
-                long query = 1 << 60;
+                long query = 1L << 60;
                 long response = service.RepeatLong(query);
                 if (query != response) {
                     mLog.logAndThrow("Repeat with " + query +
