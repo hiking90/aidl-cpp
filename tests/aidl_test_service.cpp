@@ -21,12 +21,12 @@
 
 #include <unistd.h>
 
+#include <android-base/unique_fd.h>
 #include <binder/IInterface.h>
 #include <binder/IPCThreadState.h>
 #include <binder/IServiceManager.h>
 #include <binder/ProcessState.h>
 #include <binder/Status.h>
-#include <nativehelper/ScopedFd.h>
 #include <utils/Errors.h>
 #include <utils/Log.h>
 #include <utils/Looper.h>
@@ -41,6 +41,9 @@
 // Used implicitly.
 #undef LOG_TAG
 #define LOG_TAG "aidl_native_service"
+
+// libbase
+using android::base::unique_fd;
 
 // libutils:
 using android::Looper;
@@ -282,20 +285,20 @@ class NativeService : public BnTestService {
     return ReverseArray(input, repeated, _aidl_return);
   }
 
-  Status RepeatFileDescriptor(const ScopedFd& read,
-                              ScopedFd* _aidl_return) override {
+  Status RepeatFileDescriptor(const unique_fd& read,
+                              unique_fd* _aidl_return) override {
     ALOGE("Repeating file descriptor");
-    *_aidl_return = ScopedFd(dup(read.get()));
+    *_aidl_return = unique_fd(dup(read.get()));
     return Status::ok();
   }
 
-  Status ReverseFileDescriptorArray(const vector<ScopedFd>& input,
-                                    vector<ScopedFd>* repeated,
-                                    vector<ScopedFd>* _aidl_return) override {
+  Status ReverseFileDescriptorArray(const vector<unique_fd>& input,
+                                    vector<unique_fd>* repeated,
+                                    vector<unique_fd>* _aidl_return) override {
     ALOGI("Reversing descriptor array of length %zu", input.size());
     for (const auto& item : input) {
-      repeated->push_back(ScopedFd(dup(item.get())));
-      _aidl_return->push_back(ScopedFd(dup(item.get())));
+      repeated->push_back(unique_fd(dup(item.get())));
+      _aidl_return->push_back(unique_fd(dup(item.get())));
     }
     std::reverse(_aidl_return->begin(), _aidl_return->end());
     return Status::ok();

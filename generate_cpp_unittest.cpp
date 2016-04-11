@@ -77,8 +77,8 @@ virtual ~BpComplexTypeInterface() = default;
 ::android::binder::Status NullableBinder(::android::sp<::foo::IFooType>* _aidl_return) override;
 ::android::binder::Status StringListMethod(const ::std::vector<::android::String16>& input, ::std::vector<::android::String16>* output, ::std::vector<::android::String16>* _aidl_return) override;
 ::android::binder::Status BinderListMethod(const ::std::vector<::android::sp<::android::IBinder>>& input, ::std::vector<::android::sp<::android::IBinder>>* output, ::std::vector<::android::sp<::android::IBinder>>* _aidl_return) override;
-::android::binder::Status TakesAFileDescriptor(const ::ScopedFd& f, ::ScopedFd* _aidl_return) override;
-::android::binder::Status TakesAFileDescriptorArray(const ::std::vector<::ScopedFd>& f, ::std::vector<::ScopedFd>* _aidl_return) override;
+::android::binder::Status TakesAFileDescriptor(const ::android::base::unique_fd& f, ::android::base::unique_fd* _aidl_return) override;
+::android::binder::Status TakesAFileDescriptorArray(const ::std::vector<::android::base::unique_fd>& f, ::std::vector<::android::base::unique_fd>* _aidl_return) override;
 };  // class BpComplexTypeInterface
 
 }  // namespace os
@@ -303,7 +303,7 @@ _aidl_status.setFromStatusT(_aidl_ret_status);
 return _aidl_status;
 }
 
-::android::binder::Status BpComplexTypeInterface::TakesAFileDescriptor(const ::ScopedFd& f, ::ScopedFd* _aidl_return) {
+::android::binder::Status BpComplexTypeInterface::TakesAFileDescriptor(const ::android::base::unique_fd& f, ::android::base::unique_fd* _aidl_return) {
 ::android::Parcel _aidl_data;
 ::android::Parcel _aidl_reply;
 ::android::status_t _aidl_ret_status = ::android::OK;
@@ -336,7 +336,7 @@ _aidl_status.setFromStatusT(_aidl_ret_status);
 return _aidl_status;
 }
 
-::android::binder::Status BpComplexTypeInterface::TakesAFileDescriptorArray(const ::std::vector<::ScopedFd>& f, ::std::vector<::ScopedFd>* _aidl_return) {
+::android::binder::Status BpComplexTypeInterface::TakesAFileDescriptorArray(const ::std::vector<::android::base::unique_fd>& f, ::std::vector<::android::base::unique_fd>* _aidl_return) {
 ::android::Parcel _aidl_data;
 ::android::Parcel _aidl_reply;
 ::android::status_t _aidl_ret_status = ::android::OK;
@@ -573,8 +573,8 @@ break;
 break;
 case Call::TAKESAFILEDESCRIPTOR:
 {
-::ScopedFd in_f;
-::ScopedFd _aidl_return;
+::android::base::unique_fd in_f;
+::android::base::unique_fd _aidl_return;
 if (!(_aidl_data.checkInterface(this))) {
 _aidl_ret_status = ::android::BAD_TYPE;
 break;
@@ -599,8 +599,8 @@ break;
 break;
 case Call::TAKESAFILEDESCRIPTORARRAY:
 {
-::std::vector<::ScopedFd> in_f;
-::std::vector<::ScopedFd> _aidl_return;
+::std::vector<::android::base::unique_fd> in_f;
+::std::vector<::android::base::unique_fd> _aidl_return;
 if (!(_aidl_data.checkInterface(this))) {
 _aidl_ret_status = ::android::BAD_TYPE;
 break;
@@ -644,12 +644,12 @@ const char kExpectedComplexTypeInterfaceHeaderOutput[] =
 R"(#ifndef AIDL_GENERATED_ANDROID_OS_I_COMPLEX_TYPE_INTERFACE_H_
 #define AIDL_GENERATED_ANDROID_OS_I_COMPLEX_TYPE_INTERFACE_H_
 
+#include <android-base/unique_fd.h>
 #include <binder/IBinder.h>
 #include <binder/IInterface.h>
 #include <binder/Status.h>
 #include <cstdint>
 #include <foo/IFooType.h>
-#include <nativehelper/ScopedFd.h>
 #include <utils/String16.h>
 #include <utils/StrongPointer.h>
 #include <vector>
@@ -670,8 +670,8 @@ virtual ::android::binder::Status TakesABinder(const ::android::sp<::foo::IFooTy
 virtual ::android::binder::Status NullableBinder(::android::sp<::foo::IFooType>* _aidl_return) = 0;
 virtual ::android::binder::Status StringListMethod(const ::std::vector<::android::String16>& input, ::std::vector<::android::String16>* output, ::std::vector<::android::String16>* _aidl_return) = 0;
 virtual ::android::binder::Status BinderListMethod(const ::std::vector<::android::sp<::android::IBinder>>& input, ::std::vector<::android::sp<::android::IBinder>>* output, ::std::vector<::android::sp<::android::IBinder>>* _aidl_return) = 0;
-virtual ::android::binder::Status TakesAFileDescriptor(const ::ScopedFd& f, ::ScopedFd* _aidl_return) = 0;
-virtual ::android::binder::Status TakesAFileDescriptorArray(const ::std::vector<::ScopedFd>& f, ::std::vector<::ScopedFd>* _aidl_return) = 0;
+virtual ::android::binder::Status TakesAFileDescriptor(const ::android::base::unique_fd& f, ::android::base::unique_fd* _aidl_return) = 0;
+virtual ::android::binder::Status TakesAFileDescriptorArray(const ::std::vector<::android::base::unique_fd>& f, ::std::vector<::android::base::unique_fd>* _aidl_return) = 0;
 enum Call {
   SEND = ::android::IBinder::FIRST_CALL_TRANSACTION + 0,
   PIFF = ::android::IBinder::FIRST_CALL_TRANSACTION + 1,
