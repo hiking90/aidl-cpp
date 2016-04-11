@@ -504,12 +504,13 @@ void TypeNamespace::Init() {
 
   Type* fd_vector_type = new ArrayType(
       ValidatableType::KIND_BUILT_IN, kNoPackage, "FileDescriptor[]",
-      {"nativehelper/ScopedFd.h", "vector"}, "::std::vector<::ScopedFd>",
+      {"android-base/unique_fd.h", "vector"},
+      "::std::vector<::android::base::unique_fd>",
       "readUniqueFileDescriptorVector", "writeUniqueFileDescriptorVector");
 
   Add(new Type(
       ValidatableType::KIND_BUILT_IN, kNoPackage, "FileDescriptor",
-      {"nativehelper/ScopedFd.h"}, "::ScopedFd",
+      {"android-base/unique_fd.h"}, "::android::base::unique_fd",
       "readUniqueFileDescriptor", "writeUniqueFileDescriptor",
       fd_vector_type));
 
