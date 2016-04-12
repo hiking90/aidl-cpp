@@ -61,6 +61,7 @@ class JavaOptions final {
   FRIEND_TEST(EndToEndTest, IExampleInterface);
   FRIEND_TEST(AidlTest, FailOnParcelable);
   FRIEND_TEST(AidlTest, WritePreprocessedFile);
+  FRIEND_TEST(AidlTest, WritesCorrectDependencyFile);
   DISALLOW_COPY_AND_ASSIGN(JavaOptions);
 };
 

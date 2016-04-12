@@ -275,7 +275,8 @@ void write_common_dep_file(const string& output_file,
 
 bool write_java_dep_file(const JavaOptions& options,
                          const vector<unique_ptr<AidlImport>>& imports,
-                         const IoDelegate& io_delegate) {
+                         const IoDelegate& io_delegate,
+                         const string& output_file_name) {
   string dep_file_name = options.DependencyFilePath();
   if (dep_file_name.empty()) {
     return true;  // nothing to do
@@ -293,7 +294,7 @@ bool write_java_dep_file(const JavaOptions& options,
     }
   }
 
-  write_common_dep_file(options.output_file_name_, source_aidl, writer.get());
+  write_common_dep_file(output_file_name, source_aidl, writer.get());
 
   return true;
 }
@@ -707,7 +708,7 @@ int compile_aidl_to_java(const JavaOptions& options,
     return 1;
   }
 
-  if (!write_java_dep_file(options, imports, io_delegate)) {
+  if (!write_java_dep_file(options, imports, io_delegate, output_file_name)) {
     return 1;
   }
 

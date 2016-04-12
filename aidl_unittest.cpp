@@ -39,6 +39,16 @@ using android::aidl::internals::parse_preprocessed_file;
 
 namespace android {
 namespace aidl {
+namespace {
+
+const char kExpectedDepFileContents[] =
+R"(place/for/output/p/IFoo.java : \
+  p/IFoo.aidl
+
+p/IFoo.aidl :
+)";
+
+}  // namespace
 
 class AidlTest : public ::testing::Test {
  protected:
@@ -271,6 +281,23 @@ TEST_F(AidlTest, UnderstandsNativeParcelables) {
   auto java_type = java_types_.FindTypeByCanonicalName("p.Bar");
   ASSERT_NE(nullptr, java_type);
   EXPECT_EQ("p.Bar", java_type->InstantiableName());
+}
+
+TEST_F(AidlTest, WritesCorrectDependencyFile) {
+  // While the in tree build system always gives us an output file name,
+  // other android tools take advantage of our ability to infer the intended
+  // file name.  This test makes sure we handle this correctly.
+  JavaOptions options;
+  options.input_file_name_ = "p/IFoo.aidl";
+  options.output_base_folder_ = "place/for/output";
+  options.dep_file_name_ = "dep/file/path";
+  io_delegate_.SetFileContents(options.input_file_name_,
+                               "package p; interface IFoo {}");
+  EXPECT_EQ(0, ::android::aidl::compile_aidl_to_java(options, io_delegate_));
+  string actual_dep_file_contents;
+  EXPECT_TRUE(io_delegate_.GetWrittenContents(options.dep_file_name_,
+                                              &actual_dep_file_contents));
+  EXPECT_EQ(actual_dep_file_contents, kExpectedDepFileContents);
 }
 
 }  // namespace aidl
