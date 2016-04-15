@@ -99,8 +99,9 @@ bool IoDelegate::CreatedNestedDirs(
 #endif
     // On darwin when you try to mkdir("/", ...) we get EISDIR.
     if (!success && (errno != EEXIST && errno != EISDIR)) {
-       LOG(ERROR) << "Error while creating directories: " << strerror(errno);
-       return false;
+      LOG(ERROR) << "Error while creating " << base_dir << ": "
+                 << strerror(errno);
+      return false;
     }
   }
   return true;
