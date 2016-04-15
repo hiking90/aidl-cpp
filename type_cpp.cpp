@@ -169,13 +169,10 @@ class ByteType : public Type {
 class BinderType : public Type {
  public:
   BinderType(const AidlInterface& interface, const std::string& src_file_name)
-      : Type(ValidatableType::KIND_GENERATED,
-             interface.GetPackage(), interface.GetName(),
-             {GetCppHeader(interface)}, GetCppName(interface),
-             "readStrongBinder", "writeStrongBinder",
-             kNoArrayType, kNoNullableType, src_file_name,
-             interface.GetLine()),
-        write_cast_(GetRawCppName(interface) + "::asBinder") {}
+      : BinderType(interface, src_file_name,
+                   new BinderType(interface, src_file_name, kNoNullableType,
+                                  "readNullableStrongBinder"),
+                   "readStrongBinder") {}
   virtual ~BinderType() = default;
 
   string WriteCast(const string& val) const override {
@@ -183,6 +180,16 @@ class BinderType : public Type {
   }
 
  private:
+  BinderType(const AidlInterface& interface,
+             const std::string& src_file_name,
+             Type* nullable_type, const std::string& read)
+      : Type(ValidatableType::KIND_GENERATED,
+             interface.GetPackage(), interface.GetName(),
+             {GetCppHeader(interface)}, GetCppName(interface),
+             read, "writeStrongBinder", kNoArrayType, nullable_type,
+             src_file_name, interface.GetLine()),
+        write_cast_(GetRawCppName(interface) + "::asBinder") {}
+
   static string GetCppName(const AidlInterface& interface) {
     return "::android::sp<" + GetRawCppName(interface) + ">";
   }

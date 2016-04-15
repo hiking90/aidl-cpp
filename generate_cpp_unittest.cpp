@@ -47,6 +47,7 @@ interface IComplexTypeInterface {
   int[] Send(in @nullable int[] goes_in, inout double[] goes_in_and_out, out boolean[] goes_out);
   oneway void Piff(int times);
   IFooType TakesABinder(IFooType f);
+  @nullable IFooType NullableBinder();
   List<String> StringListMethod(in java.util.List<String> input, out List<String> output);
   List<IBinder> BinderListMethod(in java.util.List<IBinder> input, out List<IBinder> output);
   FileDescriptor TakesAFileDescriptor(in FileDescriptor f);
@@ -73,6 +74,7 @@ virtual ~BpComplexTypeInterface() = default;
 ::android::binder::Status Send(const ::std::unique_ptr<::std::vector<int32_t>>& goes_in, ::std::vector<double>* goes_in_and_out, ::std::vector<bool>* goes_out, ::std::vector<int32_t>* _aidl_return) override;
 ::android::binder::Status Piff(int32_t times) override;
 ::android::binder::Status TakesABinder(const ::android::sp<::foo::IFooType>& f, ::android::sp<::foo::IFooType>* _aidl_return) override;
+::android::binder::Status NullableBinder(::android::sp<::foo::IFooType>* _aidl_return) override;
 ::android::binder::Status StringListMethod(const ::std::vector<::android::String16>& input, ::std::vector<::android::String16>* output, ::std::vector<::android::String16>* _aidl_return) override;
 ::android::binder::Status BinderListMethod(const ::std::vector<::android::sp<::android::IBinder>>& input, ::std::vector<::android::sp<::android::IBinder>>* output, ::std::vector<::android::sp<::android::IBinder>>* _aidl_return) override;
 ::android::binder::Status TakesAFileDescriptor(const ::ScopedFd& f, ::ScopedFd* _aidl_return) override;
@@ -190,6 +192,35 @@ if (!_aidl_status.isOk()) {
 return _aidl_status;
 }
 _aidl_ret_status = _aidl_reply.readStrongBinder(_aidl_return);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+_aidl_error:
+_aidl_status.setFromStatusT(_aidl_ret_status);
+return _aidl_status;
+}
+
+::android::binder::Status BpComplexTypeInterface::NullableBinder(::android::sp<::foo::IFooType>* _aidl_return) {
+::android::Parcel _aidl_data;
+::android::Parcel _aidl_reply;
+::android::status_t _aidl_ret_status = ::android::OK;
+::android::binder::Status _aidl_status;
+_aidl_ret_status = _aidl_data.writeInterfaceToken(getInterfaceDescriptor());
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+_aidl_ret_status = remote()->transact(IComplexTypeInterface::NULLABLEBINDER, _aidl_data, &_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+_aidl_ret_status = _aidl_status.readFromParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+goto _aidl_error;
+}
+if (!_aidl_status.isOk()) {
+return _aidl_status;
+}
+_aidl_ret_status = _aidl_reply.readNullableStrongBinder(_aidl_return);
 if (((_aidl_ret_status) != (::android::OK))) {
 goto _aidl_error;
 }
@@ -457,6 +488,27 @@ break;
 }
 }
 break;
+case Call::NULLABLEBINDER:
+{
+::android::sp<::foo::IFooType> _aidl_return;
+if (!(_aidl_data.checkInterface(this))) {
+_aidl_ret_status = ::android::BAD_TYPE;
+break;
+}
+::android::binder::Status _aidl_status(NullableBinder(&_aidl_return));
+_aidl_ret_status = _aidl_status.writeToParcel(_aidl_reply);
+if (((_aidl_ret_status) != (::android::OK))) {
+break;
+}
+if (!_aidl_status.isOk()) {
+break;
+}
+_aidl_ret_status = _aidl_reply->writeStrongBinder(::foo::IFooType::asBinder(_aidl_return));
+if (((_aidl_ret_status) != (::android::OK))) {
+break;
+}
+}
+break;
 case Call::STRINGLISTMETHOD:
 {
 ::std::vector<::android::String16> in_input;
@@ -615,6 +667,7 @@ enum  : int32_t {
 virtual ::android::binder::Status Send(const ::std::unique_ptr<::std::vector<int32_t>>& goes_in, ::std::vector<double>* goes_in_and_out, ::std::vector<bool>* goes_out, ::std::vector<int32_t>* _aidl_return) = 0;
 virtual ::android::binder::Status Piff(int32_t times) = 0;
 virtual ::android::binder::Status TakesABinder(const ::android::sp<::foo::IFooType>& f, ::android::sp<::foo::IFooType>* _aidl_return) = 0;
+virtual ::android::binder::Status NullableBinder(::android::sp<::foo::IFooType>* _aidl_return) = 0;
 virtual ::android::binder::Status StringListMethod(const ::std::vector<::android::String16>& input, ::std::vector<::android::String16>* output, ::std::vector<::android::String16>* _aidl_return) = 0;
 virtual ::android::binder::Status BinderListMethod(const ::std::vector<::android::sp<::android::IBinder>>& input, ::std::vector<::android::sp<::android::IBinder>>* output, ::std::vector<::android::sp<::android::IBinder>>* _aidl_return) = 0;
 virtual ::android::binder::Status TakesAFileDescriptor(const ::ScopedFd& f, ::ScopedFd* _aidl_return) = 0;
@@ -623,10 +676,11 @@ enum Call {
   SEND = ::android::IBinder::FIRST_CALL_TRANSACTION + 0,
   PIFF = ::android::IBinder::FIRST_CALL_TRANSACTION + 1,
   TAKESABINDER = ::android::IBinder::FIRST_CALL_TRANSACTION + 2,
-  STRINGLISTMETHOD = ::android::IBinder::FIRST_CALL_TRANSACTION + 3,
-  BINDERLISTMETHOD = ::android::IBinder::FIRST_CALL_TRANSACTION + 4,
-  TAKESAFILEDESCRIPTOR = ::android::IBinder::FIRST_CALL_TRANSACTION + 5,
-  TAKESAFILEDESCRIPTORARRAY = ::android::IBinder::FIRST_CALL_TRANSACTION + 6,
+  NULLABLEBINDER = ::android::IBinder::FIRST_CALL_TRANSACTION + 3,
+  STRINGLISTMETHOD = ::android::IBinder::FIRST_CALL_TRANSACTION + 4,
+  BINDERLISTMETHOD = ::android::IBinder::FIRST_CALL_TRANSACTION + 5,
+  TAKESAFILEDESCRIPTOR = ::android::IBinder::FIRST_CALL_TRANSACTION + 6,
+  TAKESAFILEDESCRIPTORARRAY = ::android::IBinder::FIRST_CALL_TRANSACTION + 7,
 };
 };  // class IComplexTypeInterface
 
