@@ -23,10 +23,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <android-base/unique_fd.h>
-
-// libbase
-using android::base::unique_fd;
+#include <nativehelper/ScopedFd.h>
 
 // libutils:
 using android::sp;
@@ -50,7 +47,7 @@ namespace client {
 
 #define FdByName(_fd) #_fd, _fd
 
-bool DoWrite(string name, const unique_fd& fd, const string& buf) {
+bool DoWrite(string name, const ScopedFd& fd, const string& buf) {
   int wrote;
 
   while ((wrote = write(fd.get(), buf.data(), buf.size())) < 0 && errno == EINTR);
@@ -69,7 +66,7 @@ bool DoWrite(string name, const unique_fd& fd, const string& buf) {
   return false;
 }
 
-bool DoRead(string name, const unique_fd& fd, const string& expected) {
+bool DoRead(string name, const ScopedFd& fd, const string& expected) {
   size_t length = expected.size();
   int got;
   string buf;
@@ -90,9 +87,9 @@ bool DoRead(string name, const unique_fd& fd, const string& expected) {
   return true;
 }
 
-bool DoPipe(unique_fd* read_side, unique_fd* write_side) {
+bool DoPipe(ScopedFd* read_side, ScopedFd* write_side) {
   int fds[2];
-  unique_fd return_fd;
+  ScopedFd return_fd;
 
   if (pipe(fds)) {
     cout << "Error creating pipes: " << strerror(errno) << endl;
@@ -108,9 +105,9 @@ bool ConfirmFileDescriptors(const sp<ITestService>& s) {
   Status status;
   cout << "Confirming passing and returning file descriptors works." << endl;
 
-  unique_fd return_fd;
-  unique_fd read_fd;
-  unique_fd write_fd;
+  ScopedFd return_fd;
+  ScopedFd read_fd;
+  ScopedFd write_fd;
 
   if (!DoPipe(&read_fd, &write_fd)) {
     return false;
@@ -139,15 +136,15 @@ bool ConfirmFileDescriptorArrays(const sp<ITestService>& s) {
   Status status;
   cout << "Confirming passing and returning file descriptor arrays works." << endl;
 
-  vector<unique_fd> array;
+  vector<ScopedFd> array;
   array.resize(2);
 
   if (!DoPipe(&array[0], &array[1])) {
     return false;
   }
 
-  vector<unique_fd> repeated;
-  vector<unique_fd> reversed;
+  vector<ScopedFd> repeated;
+  vector<ScopedFd> reversed;
 
   status = s->ReverseFileDescriptorArray(array, &repeated, &reversed);
 

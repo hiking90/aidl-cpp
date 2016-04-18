@@ -97,7 +97,7 @@ interfaces.
 | List<String>          | vector<String16>    | inout |                                                       |
 | PersistableBundle     | PersistableBundle   | inout | binder/PersistableBundle.h                            |
 | List<IBinder>         | vector<sp<IBinder>> | inout |                                                       |
-| FileDescriptor        | unique_fd           | inout | android-base/unique_fd.h from libbase                 |
+| FileDescriptor        | ScopedFd            | inout | nativehelper/ScopedFd.h                               |
 
 Note that java.util.Map and java.utils.List are not good candidates for cross
 language communication because they may contain arbitrary types on the Java
