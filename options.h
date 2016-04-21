@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2015, The Android Open Source Project
- *
+ * Copyright (C) 2015, The Android Open Source Project *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -62,6 +61,8 @@ class JavaOptions final {
   FRIEND_TEST(AidlTest, FailOnParcelable);
   FRIEND_TEST(AidlTest, WritePreprocessedFile);
   FRIEND_TEST(AidlTest, WritesCorrectDependencyFile);
+  FRIEND_TEST(AidlTest, WritesTrivialDependencyFileForParcelable);
+
   DISALLOW_COPY_AND_ASSIGN(JavaOptions);
 };
 

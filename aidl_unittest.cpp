@@ -48,6 +48,13 @@ R"(place/for/output/p/IFoo.java : \
 p/IFoo.aidl :
 )";
 
+const char kExpectedParcelableDepFileContents[] =
+R"( : \
+  p/Foo.aidl
+
+p/Foo.aidl :
+)";
+
 }  // namespace
 
 class AidlTest : public ::testing::Test {
@@ -298,6 +305,25 @@ TEST_F(AidlTest, WritesCorrectDependencyFile) {
   EXPECT_TRUE(io_delegate_.GetWrittenContents(options.dep_file_name_,
                                               &actual_dep_file_contents));
   EXPECT_EQ(actual_dep_file_contents, kExpectedDepFileContents);
+}
+
+TEST_F(AidlTest, WritesTrivialDependencyFileForParcelable) {
+  // The SDK uses aidl to decide whether a .aidl file is a parcelable.  It does
+  // this by calling aidl with every .aidl file it finds, then parsing the
+  // generated dependency files.  Those that reference .java output files are
+  // for interfaces and those that do not are parcelables.  However, for both
+  // parcelables and interfaces, we *must* generate a non-empty dependency file.
+  JavaOptions options;
+  options.input_file_name_ = "p/Foo.aidl";
+  options.output_base_folder_ = "place/for/output";
+  options.dep_file_name_ = "dep/file/path";
+  io_delegate_.SetFileContents(options.input_file_name_,
+                               "package p; parcelable Foo;");
+  EXPECT_EQ(0, ::android::aidl::compile_aidl_to_java(options, io_delegate_));
+  string actual_dep_file_contents;
+  EXPECT_TRUE(io_delegate_.GetWrittenContents(options.dep_file_name_,
+                                              &actual_dep_file_contents));
+  EXPECT_EQ(actual_dep_file_contents, kExpectedParcelableDepFileContents);
 }
 
 }  // namespace aidl

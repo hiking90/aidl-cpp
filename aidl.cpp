@@ -690,7 +690,9 @@ int compile_aidl_to_java(const JavaOptions& options,
   if (aidl_err == AidlError::FOUND_PARCELABLE && !options.fail_on_parcelable_) {
     // We aborted code generation because this file contains parcelables.
     // However, we were not told to complain if we find parcelables.
-    // Just exit quietly.
+    // Just generate a dep file and exit quietly.  The dep file is for a legacy
+    // use case by the SDK.
+    write_java_dep_file(options, imports, io_delegate, "");
     return 0;
   }
   if (aidl_err != AidlError::OK) {
