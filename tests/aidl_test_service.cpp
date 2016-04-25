@@ -86,7 +86,7 @@ class BinderCallback : public LooperCallback {
 
 class NamedCallback : public BnNamedCallback {
  public:
-  NamedCallback(String16 name) : name_(name) {}
+  explicit NamedCallback(String16 name) : name_(name) {}
 
   Status GetName(String16* ret) {
     *ret = name_;
