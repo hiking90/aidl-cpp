@@ -29,7 +29,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libaidl-common
 LOCAL_MODULE_HOST_OS := $(aidl_module_host_os)
 
-LOCAL_C_INCLUDES := external/gtest/include
+LOCAL_WHOLE_STATIC_LIBRARIES := libgtest_prod
 LOCAL_CLANG_CFLAGS := $(aidl_cflags)
 # Tragically, the code is riddled with unused parameters.
 LOCAL_CLANG_CFLAGS += -Wno-unused-parameter
@@ -70,7 +70,7 @@ LOCAL_MODULE := aidl
 
 LOCAL_MODULE_HOST_OS := $(aidl_module_host_os)
 LOCAL_CFLAGS := $(aidl_cflags)
-LOCAL_C_INCLUDES := external/gtest/include
+LOCAL_WHOLE_STATIC_LIBRARIES := libgtest_prod
 LOCAL_SRC_FILES := main_java.cpp
 LOCAL_STATIC_LIBRARIES := libaidl-common $(aidl_static_libraries)
 include $(BUILD_HOST_EXECUTABLE)
@@ -81,7 +81,7 @@ LOCAL_MODULE := aidl-cpp
 
 LOCAL_MODULE_HOST_OS := $(aidl_module_host_os)
 LOCAL_CFLAGS := $(aidl_cflags)
-LOCAL_C_INCLUDES := external/gtest/include
+LOCAL_WHOLE_STATIC_LIBRARIES := libgtest_prod
 LOCAL_SRC_FILES := main_cpp.cpp
 LOCAL_STATIC_LIBRARIES := libaidl-common $(aidl_static_libraries)
 include $(BUILD_HOST_EXECUTABLE)
@@ -113,7 +113,6 @@ LOCAL_STATIC_LIBRARIES := \
     libaidl-common \
     $(aidl_static_libraries) \
     libgmock_host \
-    libgtest_host \
 
 LOCAL_LDLIBS_linux := -lrt
 include $(BUILD_HOST_NATIVE_TEST)
