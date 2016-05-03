@@ -677,7 +677,7 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
       ArgList{vector<string>{ClassName(interface, ClassNames::BASE)}}}});
 
   unique_ptr<Enum> constant_enum{new Enum{"", "int32_t"}};
-  for (const auto& constant : interface.GetConstants()) {
+  for (const auto& constant : interface.GetIntConstants()) {
     constant_enum->AddValue(
         constant->GetName(), std::to_string(constant->GetValue()));
   }
@@ -685,16 +685,18 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
     if_class->AddPublic(std::move(constant_enum));
   }
 
-  unique_ptr<Enum> call_enum{new Enum{"Call"}};
-  for (const auto& method : interface.GetMethods()) {
-    // Each method gets an enum entry and pure virtual declaration.
-    if_class->AddPublic(BuildMethodDecl(*method, types, true));
-    call_enum->AddValue(
-        UpperCase(method->GetName()),
-        StringPrintf("::android::IBinder::FIRST_CALL_TRANSACTION + %d",
-                     method->GetId()));
+  if (!interface.GetMethods().empty()) {
+    unique_ptr<Enum> call_enum{new Enum{"Call"}};
+    for (const auto& method : interface.GetMethods()) {
+      // Each method gets an enum entry and pure virtual declaration.
+      if_class->AddPublic(BuildMethodDecl(*method, types, true));
+      call_enum->AddValue(
+          UpperCase(method->GetName()),
+          StringPrintf("::android::IBinder::FIRST_CALL_TRANSACTION + %d",
+                       method->GetId()));
+    }
+    if_class->AddPublic(std::move(call_enum));
   }
-  if_class->AddPublic(std::move(call_enum));
 
   return unique_ptr<Document>{new CppHeader{
       BuildHeaderGuard(interface, ClassNames::INTERFACE),

@@ -105,6 +105,7 @@ LOCAL_SRC_FILES := \
     tests/main.cpp \
     tests/test_data_example_interface.cpp \
     tests/test_data_ping_responder.cpp \
+    tests/test_data_string_constants.cpp \
     tests/test_util.cpp \
     type_cpp_unittest.cpp \
     type_java_unittest.cpp \

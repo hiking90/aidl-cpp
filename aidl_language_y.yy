@@ -29,7 +29,7 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
     AidlArgument::Direction direction;
     std::vector<std::unique_ptr<AidlArgument>>* arg_list;
     AidlMethod* method;
-    AidlConstant* constant;
+    AidlMember* constant;
     std::vector<std::unique_ptr<AidlMember>>* members;
     AidlQualifiedName* qname;
     AidlInterface* interface_obj;
@@ -41,7 +41,7 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
 %token<integer> INTVALUE
 
 %token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' ';'
-%token IN OUT INOUT PACKAGE IMPORT PARCELABLE CPP_HEADER CONST INT
+%token IN OUT INOUT PACKAGE IMPORT PARCELABLE CPP_HEADER CONST INT STRING
 %token ANNOTATION_NULLABLE ANNOTATION_UTF8 ANNOTATION_UTF8_CPP
 
 %type<parcelable_list> parcelable_decls
@@ -79,7 +79,10 @@ identifier
  | CPP_HEADER
   { $$ = new AidlToken("cpp_header", ""); }
  | INT
-  { $$ = new AidlToken("int", ""); };
+  { $$ = new AidlToken("int", ""); }
+ | STRING
+  { $$ = new AidlToken("String", ""); }
+ ;
 
 package
  : {}
@@ -186,8 +189,15 @@ members
 
 constant_decl
  : CONST INT identifier '=' INTVALUE ';' {
-    $$ = new AidlConstant($3->GetText(), $5);
- };
+    $$ = new AidlIntConstant($3->GetText(), $5);
+    delete $3;
+   }
+ | CONST STRING identifier '=' C_STR ';' {
+    $$ = new AidlStringConstant($3->GetText(), $5->GetText(), @5.begin.line);
+    delete $3;
+    delete $5;
+   }
+ ;
 
 method_decl
  : type identifier '(' arg_list ')' ';' {

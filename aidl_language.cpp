@@ -87,9 +87,29 @@ string AidlArgument::ToString() const {
   return ret;
 }
 
-AidlConstant::AidlConstant(std::string name, int32_t value)
+AidlIntConstant::AidlIntConstant(std::string name, int32_t value)
     : name_(name),
       value_(value) {}
+
+AidlStringConstant::AidlStringConstant(std::string name,
+                                       std::string value,
+                                       unsigned line_number)
+    : name_(name),
+      value_(value) {
+  is_valid_ = true;
+  for (size_t i = 0; i < value_.length(); ++i) {
+    const char& c = value_[i];
+    if (c <= 0x1f || // control characters are < 0x20
+        c >= 0x7f || // DEL is 0x7f
+        c == '\\') { // Disallow backslashes for future proofing.
+      LOG(ERROR) << "Found invalid character at index " << i
+                 << " in string constant '" << value_
+                 << "' beginning on line " << line_number;
+      is_valid_ = false;
+      break;
+    }
+  }
+}
 
 AidlMethod::AidlMethod(bool oneway, AidlType* type, std::string name,
                        std::vector<std::unique_ptr<AidlArgument>>* args,
@@ -157,12 +177,15 @@ AidlInterface::AidlInterface(const std::string& name, unsigned line,
   for (auto& member : *members) {
     AidlMember* local = member.release();
     AidlMethod* method = local->AsMethod();
-    AidlConstant* constant = local->AsConstant();
+    AidlIntConstant* int_constant = local->AsIntConstant();
+    AidlStringConstant* string_constant = local->AsStringConstant();
 
     if (method) {
       methods_.emplace_back(method);
-    } else if (constant) {
-      constants_.emplace_back(constant);
+    } else if (int_constant) {
+      int_constants_.emplace_back(int_constant);
+    } else if (string_constant) {
+      string_constants_.emplace_back(string_constant);
     } else {
       LOG(FATAL) << "Member is neither method nor constant!";
     }

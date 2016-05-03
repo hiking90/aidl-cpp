@@ -67,6 +67,7 @@ parcelable            { return yy::parser::token::PARCELABLE; }
 import                { return yy::parser::token::IMPORT; }
 package               { return yy::parser::token::PACKAGE; }
 int                   { return yy::parser::token::INT; }
+String                { return yy::parser::token::STRING; }
 in                    { return yy::parser::token::IN; }
 out                   { return yy::parser::token::OUT; }
 inout                 { return yy::parser::token::INOUT; }
