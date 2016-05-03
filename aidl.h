@@ -40,6 +40,7 @@ enum class AidlError {
   BAD_TYPE,
   BAD_METHOD_ID,
   GENERATION_ERROR,
+  BAD_CONSTANTS,
 
   OK = 0,
 };

@@ -154,7 +154,12 @@ public class TestServiceClient extends Activity {
                                      " responded " + response);
                 }
             }
-            for (String query : Arrays.asList("not empty", "", "\0")) {
+
+            List<String> queries = Arrays.asList(
+                "not empty", "", "\0",
+                ITestService.STRING_TEST_CONSTANT,
+                ITestService.STRING_TEST_CONSTANT2);
+            for (String query : queries) {
                 String response = service.RepeatString(query);
                 if (!query.equals(response)) {
                     mLog.logAndThrow("Repeat request with '" + query + "'" +

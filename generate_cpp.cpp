@@ -60,6 +60,7 @@ const char kIBinderHeader[] = "binder/IBinder.h";
 const char kIInterfaceHeader[] = "binder/IInterface.h";
 const char kParcelHeader[] = "binder/Parcel.h";
 const char kStatusHeader[] = "binder/Status.h";
+const char kString16Header[] = "utils/String16.h";
 const char kStrongPointerHeader[] = "utils/StrongPointer.h";
 
 unique_ptr<AstNode> BreakOnStatusNotOk() {
@@ -572,14 +573,30 @@ unique_ptr<Document> BuildInterfaceSource(const TypeNamespace& /* types */,
     fq_name = interface.GetPackage() + "." + fq_name;
   }
 
+  vector<unique_ptr<Declaration>> decls;
+
   unique_ptr<MacroDecl> meta_if{new MacroDecl{
       "IMPLEMENT_META_INTERFACE",
       ArgList{vector<string>{ClassName(interface, ClassNames::BASE),
                              '"' + fq_name + '"'}}}};
+  decls.push_back(std::move(meta_if));
+
+  for (const auto& constant: interface.GetStringConstants()) {
+    unique_ptr<MethodImpl> getter(new MethodImpl(
+        "const ::android::String16&",
+        ClassName(interface, ClassNames::INTERFACE),
+        constant->GetName(),
+        {}));
+    getter->GetStatementBlock()->AddLiteral(
+        StringPrintf("static const ::android::String16 value(%s)",
+                     constant->GetValue().c_str()));
+    getter->GetStatementBlock()->AddLiteral("return value");
+    decls.push_back(std::move(getter));
+  }
 
   return unique_ptr<Document>{new CppSource{
       include_list,
-      NestInNamespaces(std::move(meta_if), interface.GetSplitPackage())}};
+      NestInNamespaces(std::move(decls), interface.GetSplitPackage())}};
 }
 
 unique_ptr<Document> BuildClientHeader(const TypeNamespace& types,
@@ -683,6 +700,16 @@ unique_ptr<Document> BuildInterfaceHeader(const TypeNamespace& types,
   }
   if (constant_enum->HasValues()) {
     if_class->AddPublic(std::move(constant_enum));
+  }
+
+  if (!interface.GetStringConstants().empty()) {
+    includes.insert(kString16Header);
+  }
+  for (const auto& constant : interface.GetStringConstants()) {
+    unique_ptr<MethodDecl> getter(new MethodDecl(
+          "const ::android::String16&", constant->GetName(),
+          {}, MethodDecl::IS_STATIC));
+    if_class->AddPublic(std::move(getter));
   }
 
   if (!interface.GetMethods().empty()) {

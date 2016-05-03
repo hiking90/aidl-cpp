@@ -66,11 +66,12 @@ class AidlTest : public ::testing::Test {
 
   unique_ptr<AidlInterface> Parse(const string& path,
                                   const string& contents,
-                                  TypeNamespace* types) {
+                                  TypeNamespace* types,
+                                  AidlError* error = nullptr) {
     io_delegate_.SetFileContents(path, contents);
     unique_ptr<AidlInterface> ret;
     std::vector<std::unique_ptr<AidlImport>> imports;
-    ::android::aidl::internals::load_and_validate_aidl(
+    AidlError actual_error = ::android::aidl::internals::load_and_validate_aidl(
         preprocessed_files_,
         import_paths_,
         path,
@@ -78,6 +79,9 @@ class AidlTest : public ::testing::Test {
         types,
         &ret,
         &imports);
+    if (error != nullptr) {
+      *error = actual_error;
+    }
     return ret;
   }
 
@@ -261,6 +265,21 @@ TEST_F(AidlTest, FailOnParcelable) {
   EXPECT_EQ(0, ::android::aidl::compile_aidl_to_java(options, io_delegate_));
   options.fail_on_parcelable_ = true;
   EXPECT_NE(0, ::android::aidl::compile_aidl_to_java(options, io_delegate_));
+}
+
+TEST_F(AidlTest, FailOnDuplicateConstantNames) {
+  AidlError reported_error;
+  EXPECT_EQ(nullptr,
+            Parse("p/IFoo.aidl",
+                   R"(package p;
+                      interface IFoo {
+                        const String DUPLICATED = "d";
+                        const int DUPLICATED = 1;
+                      }
+                   )",
+                   &cpp_types_,
+                   &reported_error));
+  EXPECT_EQ(AidlError::BAD_CONSTANTS, reported_error);
 }
 
 TEST_F(AidlTest, UnderstandsNativeParcelables) {

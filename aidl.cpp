@@ -424,6 +424,32 @@ int check_and_assign_method_ids(const char * filename,
     return 0;
 }
 
+bool validate_constants(const AidlInterface& interface) {
+  bool success = true;
+  set<string> names;
+  for (const std::unique_ptr<AidlIntConstant>& int_constant :
+       interface.GetIntConstants()) {
+    if (names.count(int_constant->GetName()) > 0) {
+      LOG(ERROR) << "Found duplicate constant name '" << int_constant->GetName()
+                 << "'";
+      success = false;
+    }
+    names.insert(int_constant->GetName());
+  }
+  for (const std::unique_ptr<AidlStringConstant>& string_constant :
+       interface.GetStringConstants()) {
+    if (names.count(string_constant->GetName()) > 0) {
+      LOG(ERROR) << "Found duplicate constant name '" << string_constant->GetName()
+                 << "'";
+      success = false;
+    }
+    names.insert(string_constant->GetName());
+    // We've logged an error message for this on object construction.
+    success = success && string_constant->IsValid();
+  }
+  return success;
+}
+
 // TODO: Remove this in favor of using the YACC parser b/25479378
 bool ParsePreprocessedLine(const string& line, string* decl,
                            vector<string>* package, string* class_name) {
@@ -635,6 +661,9 @@ AidlError load_and_validate_aidl(
   if (check_and_assign_method_ids(input_file_name.c_str(),
                                   interface->GetMethods()) != 0) {
     return AidlError::BAD_METHOD_ID;
+  }
+  if (!validate_constants(*interface)) {
+    return AidlError::BAD_CONSTANTS;
   }
 
   if (returned_interface)

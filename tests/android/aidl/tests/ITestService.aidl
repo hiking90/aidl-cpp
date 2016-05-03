@@ -31,6 +31,9 @@ interface ITestService {
   const int TEST_CONSTANT7 = +0;
   const int TEST_CONSTANT8 = 0;
 
+  const String STRING_TEST_CONSTANT = "foo";
+  const String STRING_TEST_CONSTANT2 = "bar";
+
   // Test that primitives work as parameters and return types.
   boolean RepeatBoolean(boolean token);
   byte RepeatByte(byte token);

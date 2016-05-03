@@ -86,6 +86,8 @@ bool ConfirmPrimitiveRepeat(const sp<ITestService>& s) {
       //   U+10437: The 'small letter yee' character in the deseret alphabet
       //   U+20AC: A euro sign
       String16("\xD8\x01\xDC\x37\x20\xAC"),
+      ITestService::STRING_TEST_CONSTANT(),
+      ITestService::STRING_TEST_CONSTANT2(),
   };
   for (const auto& input : inputs) {
     String16 reply;

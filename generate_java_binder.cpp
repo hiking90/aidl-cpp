@@ -245,12 +245,16 @@ static void generate_create_from_parcel(const Type* t, StatementBlock* addTo,
   t->CreateFromParcel(addTo, v, parcel, cl);
 }
 
-static void generate_constant(const AidlIntConstant& constant,
-                              Class* interface) {
-  Constant* decl = new Constant;
-  decl->name = constant.GetName();
-  decl->value = constant.GetValue();
+static void generate_int_constant(const AidlIntConstant& constant,
+                                  Class* interface) {
+  IntConstant* decl = new IntConstant(constant.GetName(), constant.GetValue());
+  interface->elements.push_back(decl);
+}
 
+static void generate_string_constant(const AidlStringConstant& constant,
+                                     Class* interface) {
+  StringConstant* decl = new StringConstant(constant.GetName(),
+                                            constant.GetValue());
   interface->elements.push_back(decl);
 }
 
@@ -529,7 +533,10 @@ Class* generate_binder_interface_class(const AidlInterface* iface,
 
   // all the declared constants of the interface
   for (const auto& item : iface->GetIntConstants()) {
-    generate_constant(*item, interface);
+    generate_int_constant(*item, interface);
+  }
+  for (const auto& item : iface->GetStringConstants()) {
+    generate_string_constant(*item, interface);
   }
 
   // all the declared methods of the interface

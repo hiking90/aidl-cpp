@@ -326,12 +326,24 @@ struct Method : public ClassElement {
   void Write(CodeWriter* to) const override;
 };
 
-struct Constant : public ClassElement {
-  std::string name;
-  int value;
+struct IntConstant : public ClassElement {
+  const std::string name;
+  const int value;
 
-  Constant() = default;
-  virtual ~Constant() = default;
+  IntConstant(std::string name, int value)
+      : name(name), value(value) {}
+  virtual ~IntConstant() = default;
+
+  void Write(CodeWriter* to) const override;
+};
+
+struct StringConstant : public ClassElement {
+  const std::string name;
+  const std::string value;
+
+  StringConstant(std::string name, std::string value)
+      : name(name), value(value) {}
+  ~StringConstant() override = default;
 
   void Write(CodeWriter* to) const override;
 };
