@@ -31,7 +31,6 @@ This document describes how C++ generation works with attention to:
  - C++ parcelables
  - cross-language error reporting
  - cross-language null reference handling
- - cross-language integer constants
 
 ## Detailed Design
 
@@ -275,20 +274,3 @@ to the service, use `Status::fromServiceSpecificError()`.  This kind of
 exception comes with a helpful message and an integer error code.  Make your
 error codes consistent across services by using interface constants (see
 below).
-
-### Integer Constants
-
-AIDL has been enhanced to support defining integer constants as part of an
-interface:
-
-```
-interface IMyInterface {
-    const int CONST_A = 1;
-    const int CONST_B = 2;
-    const int CONST_C = 3;
-    ...
-}
-```
-
-These map to appropriate 32 bit integer class constants in Java and C++ (e.g.
-`IMyInterface.CONST_A` and `IMyInterface::CONST_A` respectively).
