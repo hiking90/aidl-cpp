@@ -246,7 +246,7 @@ class AidlInterface;
 class AidlDocument : public AidlNode {
  public:
   AidlDocument() = default;
-  AidlDocument(AidlInterface* interface);
+  explicit AidlDocument(AidlInterface* interface);
   virtual ~AidlDocument() = default;
 
   const AidlInterface* GetInterface() const { return interface_.get(); }

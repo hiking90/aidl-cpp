@@ -303,7 +303,7 @@ class MethodCall : public AstNode {
 
 class IfStatement : public AstNode {
  public:
-  IfStatement(AstNode* expression,
+  explicit IfStatement(AstNode* expression,
               bool invert_expression = false);
   virtual ~IfStatement() = default;
   StatementBlock* OnTrue() { return &on_true_; }
@@ -365,7 +365,7 @@ class CppNamespace : public Declaration {
                std::vector<std::unique_ptr<Declaration>> declarations);
   CppNamespace(const std::string& name,
                std::unique_ptr<Declaration> declaration);
-  CppNamespace(const std::string& name);
+  explicit CppNamespace(const std::string& name);
   virtual ~CppNamespace() = default;
 
   void Write(CodeWriter* to) const override;
