@@ -34,6 +34,12 @@ class IoDelegate {
   IoDelegate() = default;
   virtual ~IoDelegate() = default;
 
+  // Stores an absolute version of |path| to |*absolute_path|,
+  // possibly prefixing it with the current working directory.
+  // Returns false and does not set |*absolute_path| on error.
+  static bool GetAbsolutePath(const std::string& path,
+                              std::string* absolute_path);
+
   // Returns a unique_ptr to the contents of |filename|.
   // Will append the optional |content_suffix| to the returned contents.
   virtual std::unique_ptr<std::string> GetFileContents(

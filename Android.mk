@@ -99,6 +99,7 @@ LOCAL_SRC_FILES := \
     ast_cpp_unittest.cpp \
     ast_java_unittest.cpp \
     generate_cpp_unittest.cpp \
+    io_delegate_unittest.cpp \
     options_unittest.cpp \
     tests/end_to_end_tests.cpp \
     tests/fake_io_delegate.cpp \

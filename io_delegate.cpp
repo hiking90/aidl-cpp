@@ -41,6 +41,45 @@ using android::base::Split;
 namespace android {
 namespace aidl {
 
+bool IoDelegate::GetAbsolutePath(const string& path, string* absolute_path) {
+#ifdef _WIN32
+
+  char buf[4096];
+  DWORD path_len = GetFullPathName(path.c_str(), sizeof(buf), buf, nullptr);
+  if (path_len <= 0 || path_len >= sizeof(buf)) {
+    LOG(ERROR) << "Failed to GetFullPathName(" << path << ")";
+    return false;
+  }
+  *absolute_path = buf;
+
+  return true;
+
+#else
+
+  if (path.empty()) {
+    LOG(ERROR) << "Giving up on finding an absolute path to represent the "
+                  "empty string.";
+    return false;
+  }
+  if (path[0] == OS_PATH_SEPARATOR) {
+    *absolute_path = path;
+    return true;
+  }
+
+  char buf[4096];
+  if (getcwd(buf, sizeof(buf)) == nullptr) {
+    LOG(ERROR) << "Path of current working directory does not fit in "
+               << sizeof(buf) << " bytes";
+    return false;
+  }
+
+  *absolute_path = buf;
+  *absolute_path += OS_PATH_SEPARATOR;
+  *absolute_path += path;
+  return true;
+#endif
+}
+
 unique_ptr<string> IoDelegate::GetFileContents(
     const string& filename,
     const string& content_suffix) const {
@@ -112,15 +151,26 @@ bool IoDelegate::CreatePathForFile(const string& path) const {
     return true;
   }
 
-  string base = ".";
-  if (path[0] == OS_PATH_SEPARATOR) {
-    base = "/";
+  string absolute_path;
+  if (!GetAbsolutePath(path, &absolute_path)) {
+    return false;
   }
 
-  auto split = Split(path, string{1u, OS_PATH_SEPARATOR});
-  split.pop_back();
+  auto directories = Split(absolute_path, string{1u, OS_PATH_SEPARATOR});
 
-  return CreatedNestedDirs(base, split);
+  // The "base" directory is just the root of the file system.  On Windows,
+  // this will look like "C:\" but on Unix style file systems we get an empty
+  // string after splitting "/foo" with "/"
+  string base = directories[0];
+  if (base.empty()) {
+    base = "/";
+  }
+  directories.erase(directories.begin());
+
+  // Remove the actual file in question, we're just creating the directory path.
+  directories.pop_back();
+
+  return CreatedNestedDirs(base, directories);
 }
 
 unique_ptr<CodeWriter> IoDelegate::GetCodeWriter(

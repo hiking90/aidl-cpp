@@ -77,23 +77,10 @@ bool check_filename(const std::string& filename,
     string expected;
     string fn;
     size_t len;
-    char cwd[MAXPATHLEN];
     bool valid = false;
 
-#ifdef _WIN32
-    if (isalpha(filename[0]) && filename[1] == ':'
-        && filename[2] == OS_PATH_SEPARATOR) {
-#else
-    if (filename[0] == OS_PATH_SEPARATOR) {
-#endif
-        fn = filename;
-    } else {
-        fn = getcwd(cwd, sizeof(cwd));
-        len = fn.length();
-        if (fn[len-1] != OS_PATH_SEPARATOR) {
-            fn += OS_PATH_SEPARATOR;
-        }
-        fn += filename;
+    if (!IoDelegate::GetAbsolutePath(filename, &fn)) {
+      return false;
     }
 
     if (!package.empty()) {
