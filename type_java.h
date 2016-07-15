@@ -397,6 +397,7 @@ class InterfaceType : public Type {
                      int flags) const override;
   void CreateFromParcel(StatementBlock* addTo, Variable* v, Variable* parcel,
                         Variable** cl) const override;
+  const ValidatableType* NullableType() const override { return this; }
   const Type* GetStub() const { return stub_; }
   const Type* GetProxy() const { return proxy_; }
 
