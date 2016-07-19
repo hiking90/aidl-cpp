@@ -17,7 +17,7 @@ consistently pass against a device/emulator:
 
 ```
 $ mmma system/tools/aidl && \
-    out/host/linux-x86/bin/aidl_unittests  && \
+    out/host/linux-x86/nativetest64/aidl_unittests/aidl_unittests && \
     adb remount && adb sync && \
     adb install -r `find out/ -name aidl_test_services.apk` && \
     (pushd system/tools/aidl/ && tests/integration-test.py) && \

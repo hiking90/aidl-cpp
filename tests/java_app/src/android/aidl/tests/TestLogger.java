@@ -28,7 +28,7 @@ public class TestLogger {
     public TestLogger(Context context) {
         try {
             mLogFile = new PrintWriter(context.openFileOutput(
-                    "test-client.log", Context.MODE_WORLD_READABLE));
+                    "test-client.log", Context.MODE_PRIVATE));
         } catch (IOException ex) {
             throw new RuntimeException("Failed to open log file for writing.");
         }
