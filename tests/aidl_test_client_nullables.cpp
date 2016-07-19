@@ -193,6 +193,32 @@ bool CheckAppropriateIBinderHandling(const sp<ITestService>& s) {
   return true;
 }
 
+bool CheckAppropriateIInterfaceHandling(const sp<ITestService>& s) {
+
+  sp<INamedCallback> callback;
+  if (!s->GetCallback(false, &callback).isOk()) {
+    cerr << "Received unexpected exception on line "
+         << __LINE__ << endl;
+    return false;
+  }
+  if (callback.get() == nullptr) {
+    cerr << "Expected to receive a non-null binder on line: "
+         << __LINE__ << endl;
+    return false;
+  }
+  if (!s->GetCallback(true, &callback).isOk()) {
+    cerr << "Received unexpected exception on line "
+         << __LINE__ << endl;
+    return false;
+  }
+  if (callback.get() != nullptr) {
+    cerr << "Expected to receive a null binder on line: "
+         << __LINE__ << endl;
+    return false;
+  }
+  return true;
+}
+
 }  // namespace
 
 bool ConfirmNullables(const sp<ITestService>& s) {
@@ -237,6 +263,11 @@ bool ConfirmNullables(const sp<ITestService>& s) {
 
   if (!CheckAppropriateIBinderHandling(s)) {
     cerr << "Handled null IBinders poorly." << endl;
+    return false;
+  }
+
+  if (!CheckAppropriateIInterfaceHandling(s)) {
+    cerr << "Handled nullable IInterface instances poorly." << endl;
     return false;
   }
 

@@ -81,9 +81,28 @@ class NullableTests {
                          "null parameter, but nothing was thrown??");
     }
 
+    public void checkNullInterfaceHandling() throws TestFailException {
+        mLog.log("Checking @nullable IInterface handling...");
+        try {
+            INamedCallback callback  = mService.GetCallback(false);
+            if (callback == null) {
+                mLog.logAndThrow("Expected to get non-null INamedCallback.");
+            }
+            callback  = mService.GetCallback(true);
+            if (callback != null) {
+                mLog.logAndThrow("Expected to get null INamedCallback.");
+            }
+        } catch (Exception ex) {
+            mLog.logAndThrow("Unexpected exception during @nullable IInterface test: " +
+                             ex.toString());
+        }
+        mLog.log("@nullable IInterface handling works as expected.");
+    }
+
     public void runTests() throws TestFailException {
         checkNullHandling();
         checkNullBinderDetection();
         checkNullBinderInListDetection();
+        checkNullInterfaceHandling();
     }
 }

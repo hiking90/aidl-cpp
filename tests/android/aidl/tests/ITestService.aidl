@@ -102,4 +102,6 @@ interface ITestService {
   @nullable @utf8InCpp List<String> ReverseUtf8CppStringList(
       in @nullable @utf8InCpp List<String> input,
       out @nullable @utf8InCpp List<String> repeated);
+
+  @nullable INamedCallback GetCallback(boolean return_null);
 }

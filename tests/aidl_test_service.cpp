@@ -412,6 +412,13 @@ class NativeService : public BnTestService {
     return Status::ok();
   }
 
+  Status GetCallback(bool return_null, sp<INamedCallback>* ret) {
+    if (!return_null) {
+      return GetOtherTestService(String16("ABT: always be testing"), ret);
+    }
+    return Status::ok();
+  }
+
  private:
   map<String16, sp<INamedCallback>> service_map_;
 };
