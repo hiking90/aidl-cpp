@@ -282,6 +282,56 @@ TEST_F(AidlTest, FailOnDuplicateConstantNames) {
   EXPECT_EQ(AidlError::BAD_CONSTANTS, reported_error);
 }
 
+TEST_F(AidlTest, FailOnMalformedConstHexValue) {
+  AidlError reported_error;
+  EXPECT_EQ(nullptr,
+            Parse("p/IFoo.aidl",
+                   R"(package p;
+                      interface IFoo {
+                        const int BAD_HEX_VALUE = 0xffffffffffffffffff;
+                      }
+                   )",
+                   &cpp_types_,
+                   &reported_error));
+  EXPECT_EQ(AidlError::BAD_CONSTANTS, reported_error);
+}
+
+TEST_F(AidlTest, ParsePositiveConstHexValue) {
+  AidlError reported_error;
+  auto cpp_parse_result =
+    Parse("p/IFoo.aidl",
+           R"(package p;
+              interface IFoo {
+                const int POSITIVE_HEX_VALUE = 0xf5;
+              }
+           )",
+           &cpp_types_,
+           &reported_error);
+  EXPECT_NE(nullptr, cpp_parse_result);
+  const auto& cpp_int_constants = cpp_parse_result->GetIntConstants();
+  EXPECT_EQ((size_t)1, cpp_int_constants.size());
+  EXPECT_EQ("POSITIVE_HEX_VALUE", cpp_int_constants[0]->GetName());
+  EXPECT_EQ(245, cpp_int_constants[0]->GetValue());
+}
+
+TEST_F(AidlTest, ParseNegativeConstHexValue) {
+  AidlError reported_error;
+  auto cpp_parse_result =
+    Parse("p/IFoo.aidl",
+           R"(package p;
+              interface IFoo {
+                const int NEGATIVE_HEX_VALUE = 0xffffffff;
+              }
+           )",
+           &cpp_types_,
+           &reported_error);
+  EXPECT_NE(nullptr, cpp_parse_result);
+  const auto& cpp_int_constants = cpp_parse_result->GetIntConstants();
+  EXPECT_EQ((size_t)1, cpp_int_constants.size());
+  EXPECT_EQ("NEGATIVE_HEX_VALUE", cpp_int_constants[0]->GetName());
+  EXPECT_EQ(-1, cpp_int_constants[0]->GetValue());
+}
+
 TEST_F(AidlTest, UnderstandsNativeParcelables) {
   io_delegate_.SetFileContents(
       "p/Bar.aidl",

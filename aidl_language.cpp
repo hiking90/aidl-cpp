@@ -89,7 +89,29 @@ string AidlArgument::ToString() const {
 
 AidlIntConstant::AidlIntConstant(std::string name, int32_t value)
     : name_(name),
-      value_(value) {}
+      value_(value),
+      is_valid_(true) {}
+
+AidlIntConstant::AidlIntConstant(std::string name,
+                                 std::string value,
+                                 unsigned line_number)
+    : name_(name) {
+  char *end;
+  // Use long long to ensure 0xFFFFFFFF -> -1 works on 32 bit devices.
+  unsigned long long int long_value = std::strtoull(value.c_str(), &end, 16);
+  // Ensure that we parsed the string fully and the value fits in int32.
+  if ((*end != '\0') ||
+      ((long_value == ULLONG_MAX) && (errno == ERANGE)) ||
+      (long_value > std::numeric_limits<uint32_t>::max())) {
+    is_valid_ = false;
+    LOG(ERROR) << "Found invalid int value '" << value
+               << "' on line " << line_number;
+  } else {
+    // Converting from unsigned long to signed integer.
+    value_ = long_value;
+    is_valid_ = true;
+  }
+}
 
 AidlStringConstant::AidlStringConstant(std::string name,
                                        std::string value,

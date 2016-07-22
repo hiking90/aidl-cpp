@@ -73,7 +73,15 @@ bool ConfirmPrimitiveRepeat(const sp<ITestService>& s) {
       !RepeatPrimitive(
           s, &ITestService::RepeatInt, ITestService::TEST_CONSTANT7) ||
       !RepeatPrimitive(
-          s, &ITestService::RepeatInt, ITestService::TEST_CONSTANT8)
+          s, &ITestService::RepeatInt, ITestService::TEST_CONSTANT8) ||
+      !RepeatPrimitive(
+          s, &ITestService::RepeatInt, ITestService::TEST_CONSTANT9) ||
+      !RepeatPrimitive(
+          s, &ITestService::RepeatInt, ITestService::TEST_CONSTANT10) ||
+      !RepeatPrimitive(
+          s, &ITestService::RepeatInt, ITestService::TEST_CONSTANT11) ||
+      !RepeatPrimitive(
+          s, &ITestService::RepeatInt, ITestService::TEST_CONSTANT12)
       ) {
     return false;
   }

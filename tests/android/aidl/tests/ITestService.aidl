@@ -30,6 +30,10 @@ interface ITestService {
   const int TEST_CONSTANT6 = -0;
   const int TEST_CONSTANT7 = +0;
   const int TEST_CONSTANT8 = 0;
+  const int TEST_CONSTANT9 = 0x56;
+  const int TEST_CONSTANT10 = 0xa5;
+  const int TEST_CONSTANT11 = 0xFA;
+  const int TEST_CONSTANT12 = 0xffffffff;
 
   const String STRING_TEST_CONSTANT = "foo";
   const String STRING_TEST_CONSTANT2 = "bar";

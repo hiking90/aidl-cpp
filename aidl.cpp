@@ -422,6 +422,8 @@ bool validate_constants(const AidlInterface& interface) {
       success = false;
     }
     names.insert(int_constant->GetName());
+    // We've logged an error message for this on object construction.
+    success = success && int_constant->IsValid();
   }
   for (const std::unique_ptr<AidlStringConstant>& string_constant :
        interface.GetStringConstants()) {

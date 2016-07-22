@@ -37,7 +37,7 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
     AidlDocument* parcelable_list;
 }
 
-%token<token> IDENTIFIER INTERFACE ONEWAY C_STR
+%token<token> IDENTIFIER INTERFACE ONEWAY C_STR HEXVALUE
 %token<integer> INTVALUE
 
 %token '(' ')' ',' '=' '[' ']' '<' '>' '.' '{' '}' ';'
@@ -190,6 +190,10 @@ members
 constant_decl
  : CONST INT identifier '=' INTVALUE ';' {
     $$ = new AidlIntConstant($3->GetText(), $5);
+    delete $3;
+   }
+ | CONST INT identifier '=' HEXVALUE ';' {
+    $$ = new AidlIntConstant($3->GetText(), $5->GetText(), @5.begin.line);
     delete $3;
    }
  | CONST STRING identifier '=' C_STR ';' {

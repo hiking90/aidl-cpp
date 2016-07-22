@@ -158,16 +158,19 @@ class AidlMember : public AidlNode {
 class AidlIntConstant : public AidlMember {
  public:
   AidlIntConstant(std::string name, int32_t value);
+  AidlIntConstant(std::string name, std::string value, unsigned line_number);
   virtual ~AidlIntConstant() = default;
 
   const std::string& GetName() const { return name_; }
   int GetValue() const { return value_; }
+  bool IsValid() const { return is_valid_; }
 
   AidlIntConstant* AsIntConstant() override { return this; }
 
  private:
   std::string name_;
   int32_t value_;
+  bool is_valid_;
 
   DISALLOW_COPY_AND_ASSIGN(AidlIntConstant);
 };

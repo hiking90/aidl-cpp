@@ -19,6 +19,7 @@
 identifier  [_a-zA-Z][_a-zA-Z0-9]*
 whitespace  ([ \t\r]+)
 intvalue    [-+]?(0|[1-9][0-9]*)
+hexvalue    0[x|X][0-9a-fA-F]+
 
 %%
 %{
@@ -90,6 +91,8 @@ oneway                { yylval->token = new AidlToken("oneway", extra_text);
                       }
 {intvalue}            { yylval->integer = std::stoi(yytext);
                         return yy::parser::token::INTVALUE; }
+{hexvalue}            { yylval->token = new AidlToken(yytext, extra_text);
+                        return yy::parser::token::HEXVALUE; }
 
     /* syntax error! */
 .                     { printf("UNKNOWN(%s)", yytext);
