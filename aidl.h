@@ -55,8 +55,8 @@ bool preprocess_aidl(const JavaOptions& options,
 namespace internals {
 
 AidlError load_and_validate_aidl(
-    const std::vector<std::string> preprocessed_files,
-    const std::vector<std::string> import_paths,
+    const std::vector<std::string>& preprocessed_files,
+    const std::vector<std::string>& import_paths,
     const std::string& input_file_name,
     const IoDelegate& io_delegate,
     TypeNamespace* types,

@@ -279,7 +279,7 @@ class AidlQualifiedName : public AidlNode {
   const std::string& GetComments() const { return comments_; }
   std::string GetDotName() const { return android::base::Join(terms_, '.'); }
 
-  void AddTerm(std::string term);
+  void AddTerm(const std::string& term);
 
  private:
   std::vector<std::string> terms_;

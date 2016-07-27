@@ -60,7 +60,7 @@ class Type : public ValidatableType {
   }
 
   void GetHeaders(std::set<std::string>* headers) const {
-    for (std::string header : headers_) {
+    for (const std::string& header : headers_) {
       if (!header.empty()) {
         headers->insert(header);
       }

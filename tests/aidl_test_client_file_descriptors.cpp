@@ -50,7 +50,7 @@ namespace client {
 
 #define FdByName(_fd) #_fd, _fd
 
-bool DoWrite(string name, const unique_fd& fd, const string& buf) {
+bool DoWrite(const string& name, const unique_fd& fd, const string& buf) {
   int wrote;
 
   while ((wrote = write(fd.get(), buf.data(), buf.size())) < 0 && errno == EINTR);
@@ -69,7 +69,7 @@ bool DoWrite(string name, const unique_fd& fd, const string& buf) {
   return false;
 }
 
-bool DoRead(string name, const unique_fd& fd, const string& expected) {
+bool DoRead(const string& name, const unique_fd& fd, const string& expected) {
   size_t length = expected.size();
   int got;
   string buf;

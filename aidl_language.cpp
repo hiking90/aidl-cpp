@@ -244,7 +244,7 @@ AidlQualifiedName::AidlQualifiedName(std::string term,
   }
 }
 
-void AidlQualifiedName::AddTerm(std::string term) {
+void AidlQualifiedName::AddTerm(const std::string& term) {
   terms_.push_back(term);
 }
 

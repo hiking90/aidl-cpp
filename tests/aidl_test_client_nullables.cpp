@@ -89,7 +89,7 @@ bool ValuesEqual<vector<unique_ptr<String16>>>(
 }
 
 template<typename T>
-bool ConfirmNullableType(const sp<ITestService>& s, string type_name,
+bool ConfirmNullableType(const sp<ITestService>& s, const string& type_name,
                          unique_ptr<T> in,
                          Status(ITestService::*func)(const unique_ptr<T>&,
                                                      unique_ptr<T>*)) {

@@ -330,7 +330,7 @@ bool write_cpp_dep_file(const CppOptions& options,
 
 string generate_outputFileName(const JavaOptions& options,
                                const AidlInterface& interface) {
-    string name = interface.GetName();
+    const string& name = interface.GetName();
     string package = interface.GetPackage();
     string result;
 
@@ -536,8 +536,8 @@ bool parse_preprocessed_file(const IoDelegate& io_delegate,
 }
 
 AidlError load_and_validate_aidl(
-    const std::vector<std::string> preprocessed_files,
-    const std::vector<std::string> import_paths,
+    const std::vector<std::string>& preprocessed_files,
+    const std::vector<std::string>& import_paths,
     const std::string& input_file_name,
     const IoDelegate& io_delegate,
     TypeNamespace* types,

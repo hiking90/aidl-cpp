@@ -272,7 +272,7 @@ bool LanguageTypeNamespace<T>::MaybeAddContainerType(
     const AidlType& aidl_type) {
   using android::base::Join;
 
-  std::string type_name = aidl_type.GetName();
+  const std::string& type_name = aidl_type.GetName();
   if (!IsContainerType(type_name)) {
     return true;
   }
