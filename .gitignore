@@ -1,0 +1,11 @@
+*.o
+*.so
+CMakeFiles
+CMakeCache.txt
+.build
+install_manifest.txt
+cmake_install.cmake
+*.sublime-workspace
+Makefile
+Testing
+CTestTestfile.cmake

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 #include "aidl_language.h"
-#include "aidl_language_y.h"
+#include "aidl_language_y.hpp"
 
 #define YY_USER_ACTION yylloc->columns(yyleng);
 %}

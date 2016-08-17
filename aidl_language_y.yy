@@ -1,6 +1,6 @@
 %{
 #include "aidl_language.h"
-#include "aidl_language_y.h"
+#include "aidl_language_y.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,7 +14,6 @@ int yylex(yy::parser::semantic_type *, yy::parser::location_type *, void *);
 %parse-param { Parser* ps }
 %lex-param { void *lex_scanner }
 
-%pure-parser
 %skeleton "glr.cc"
 
 %union {
